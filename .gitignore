@@ -1,0 +1,18 @@
+.codegraph/
+/.repo-harness/tmp/
+/.repo-harness/archive/
+/.repo-harness/state/
+/.repo-harness/memory-bk/
+
+# Local-only research material (vendor APKs, HCI captures, decompiled output). Never commit.
+_private/
+
+# Python
+.venv/
+__pycache__/
+
+# Playwright CLI artifacts
+.playwright-cli/
+
+# Local third-party tools and their venv (Bluetooth, chip). Never commit.
+_tools/

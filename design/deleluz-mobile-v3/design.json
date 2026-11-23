@@ -1,0 +1,28 @@
+{
+  "title": "DeleLuz · Phone v3 (combined, 3 skins)",
+  "brief": "Option 1's five tabs plus the best of four AI references: segmented strip ribbon, power dock, scene tiles, clear reconnect states, ruler and ± steppers, and an optional quick-action floating button. Six 390×844 phone screens per skin.",
+  "feature": "odd/tasks/device-research.md",
+  "artboards": [
+    {
+      "file": "01-ember.html",
+      "title": "Ember (warm)",
+      "tradeoff": "Warm charcoal and amber with a glowing neon ribbon: cozy and residential; less precise for pixel work.",
+      "width": 1440,
+      "height": 2000
+    },
+    {
+      "file": "02-graphite.html",
+      "title": "Graphite (technical)",
+      "tradeoff": "Cool graphite and cyan with a ruler-marked pixel instrument: exact and technical; feels more like a tool than a home app.",
+      "width": 1440,
+      "height": 2000
+    },
+    {
+      "file": "03-prism.html",
+      "title": "Prism (neutral)",
+      "tradeoff": "Neutral glass UI tinted by the live light color, neon ribbon in control and ruler in the pixel editor: most adaptive; accent changes with every color.",
+      "width": 1440,
+      "height": 2000
+    }
+  ]
+}

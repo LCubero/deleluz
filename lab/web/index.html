@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DeleLuz LED Lab</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+<header><p>DELELUZ / BENCH TOOL</p><h1>LED Lab</h1><p>Test the LEDDMX controller and record what actually happens.</p></header>
+<main>
+<section aria-labelledby="transport"><h2 id="transport">Connection</h2>
+  <div class="line"><button id="connect">Connect</button><button id="reconnect" disabled>Reconnect</button><button id="disconnect" disabled>Disconnect</button><label><input id="simulate" type="checkbox"> Simulate device</label></div>
+  <p id="status" role="status"></p>
+</section>
+<section aria-labelledby="control"><h2 id="control">Controller</h2>
+  <div class="line"><button id="on">Power on</button><button id="off">Power off</button><label><input id="repeat" type="checkbox"> Send twice (power off / speed)</label></div>
+  <div class="line"><label>Color <input id="color" type="color" value="#ff0000"></label><button id="send-color">Send color</button><div class="line" id="swatches" aria-label="Color swatches"></div></div>
+  <div class="line"><label>Brightness (%) <input id="brightness" type="number" min="0" max="100" value="50" required></label><button id="send-brightness">Send brightness</button></div>
+  <div class="line"><label>Effect <select id="effect"></select></label><button id="prev">Previous effect</button><button id="next">Next effect</button><button id="send-effect">Send effect</button></div>
+  <div class="line"><label>Speed (%) <input id="speed" type="number" min="1" max="100" value="50" required></label><button id="send-speed">Send speed</button></div>
+</section>
+<section aria-labelledby="traffic"><h2 id="traffic">Traffic log</h2><div id="log" role="log" aria-label="Traffic log entries" tabindex="0"></div><button id="clear-log">Clear log</button>
+  <details><summary>Experimental raw frame</summary>
+    <p>Only documented frames are accepted. Never replay the handshake or chip configuration outside an explicitly approved, dedicated, reversible test. Variations and unknown opcodes are blocked.</p>
+    <label><input id="experimental" type="checkbox"> I confirm experimental raw sending</label>
+    <fieldset id="raw-controls" disabled><legend>Raw write</legend>
+      <label><input id="unlock" type="checkbox"> Unlock the exact captured handshake and chip frame for one dedicated reversible test</label>
+      <div class="line"><label>9 hex bytes <input id="raw" type="text" placeholder="7B … BF" spellcheck="false"></label><button id="send-raw">Send raw</button></div>
+    </fieldset>
+  </details>
+</section>
+<section aria-labelledby="rate"><h2 id="rate">Rate test</h2>
+  <p>Alternates whole-strip red and blue, 20 frames per interval. Only this test can go below the 150 ms throttle.</p>
+  <p>Turn on the strip and set a comfortable brightness first. Rapid color changes may be uncomfortable; stop if needed. Timestamps measure browser send attempts, not strip updates.</p>
+  <div class="line"><label>Intervals (ms, comma-separated) <input id="rate-intervals" value="300, 200, 150, 100, 70, 50"></label><button id="start-rate">Start rate test</button><button id="stop-rate" disabled>Stop rate test</button></div>
+  <div class="line"><label>First interval with skipped changes <select id="rate-skipped"></select></label><button id="mark-skipped" disabled>Mark first skip</button></div>
+  <p id="rate-status" role="status"></p>
+</section>
+<section aria-labelledby="notes"><h2 id="notes">Observations</h2><p id="target">No frame sent yet.</p>
+  <label>Note <textarea id="note" rows="3"></textarea></label>
+  <div class="line"><label>Observed result <select id="result"><option>worked</option><option>no change</option><option>unexpected</option></select></label><button id="save-note">Save observation</button><button id="json">Export JSON</button><button id="markdown">Export Markdown</button></div>
+  <ul id="observations"></ul>
+</section>
+<section aria-labelledby="studio"><h2 id="studio">Mode studio</h2><p>This page sequences frames. The controller does not store these modes. Fade transitions affect color, not brightness.</p>
+  <h3>Presets</h3>
+  <p>Tap a preset to play it on repeat. Static Christmas (red and green at once) and static three-band Rasta are not possible with the stock controller's known controls. Try Christmas glow for slow red/green breathing, or explore native effects for built-in multicolor patterns.</p>
+  <p>Police and Flashing produce rapid color changes.</p>
+  <label>Step interval (ms, minimum 150) <input id="preset-interval" type="number" min="150" max="600000" placeholder="Auto"></label>
+  <p>Leave blank to use each preset's default. Use Stop mode to end playback.</p>
+  <div id="presets" class="line" aria-label="Play a preset"></div>
+  <p id="mode-status" role="status"></p>
+  <div class="line"><label>Mode name <input id="mode-name" maxlength="80" value="New mode"></label><button id="save-mode">Save mode</button><label>Saved modes <select id="modes"></select></label><button id="load-mode">Load mode</button></div>
+  <div id="steps"></div><div class="line"><button id="add-step">Add step</button><label><input id="loop" type="checkbox"> Loop</label><button id="play">Play mode</button><button id="stop" disabled>Stop mode</button></div>
+  <p>Step duration starts after its initial writes; transitions are limited by the send throttle.</p>
+</section>
+<section aria-labelledby="painter"><h2 id="painter">Strip painter</h2><p><strong>Preview only: per-pixel frame not found on this controller</strong></p>
+  <div class="line"><label>LED count <input id="count" type="number" min="1" max="1024" value="150" required></label><button id="resize">Set count</button></div>
+  <div class="line"><label>Range start <input id="first" type="number" min="1" value="1" required></label><label>Range end <input id="last" type="number" min="1" value="10" required></label><label>Paint <input id="paint" type="color" value="#ff5733"></label><label>Gradient end <input id="gradient-end" type="color" value="#3355ff"></label></div>
+  <div class="line"><button id="paint-range">Paint range</button><button id="fill">Fill strip</button><button id="gradient">Gradient range</button></div>
+  <div id="pixels" aria-label="LED preview"></div>
+</section>
+</main>
+</body>
+</html>

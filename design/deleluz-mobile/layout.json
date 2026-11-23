@@ -1,0 +1,25 @@
+{
+  "arrangement": "free",
+  "positions": {
+    "01-classic-tabs.html": {
+      "x": 0,
+      "y": 280
+    },
+    "02-strip-first.html": {
+      "x": 1677,
+      "y": 0
+    },
+    "03-quick-scenes.html": {
+      "x": 3040,
+      "y": 280
+    },
+    "04-mode-studio.html": {
+      "x": 4560,
+      "y": 280
+    },
+    "05-light-remote.html": {
+      "x": 6080,
+      "y": 280
+    }
+  }
+}
