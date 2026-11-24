@@ -1,5 +1,7 @@
 // Home quick scenes chosen by the user: colors, included page scenes or saved sequences, at most six.
 // Stored in this browser only; storage failures fall back to the defaults or memory.
+import { readStoredJson } from './state.js';
+
 export const SHORTCUTS_KEY = 'deleluz.webapp.shortcuts';
 export const MAX_SHORTCUTS = 6;
 export const DEFAULT_SHORTCUTS = Object.freeze([
@@ -30,15 +32,12 @@ export const filterShortcuts = (list, presetIds, sequenceIds) =>
   list.filter(item => valid(item, presetIds, sequenceIds)).slice(0, MAX_SHORTCUTS);
 
 export function loadShortcuts(storage, presetIds, sequenceIds = []) {
-  try {
-    const raw = storage.getItem(SHORTCUTS_KEY);
-    if (raw === null) return defaults();
-    const list = JSON.parse(raw);
-    if (!Array.isArray(list)) return defaults();
-    return filterShortcuts(list, presetIds, sequenceIds).map(copy);
-  } catch {
-    return defaults();
-  }
+  const list = readStoredJson(storage, SHORTCUTS_KEY);
+  if (list === undefined) return defaults();
+  if (!Array.isArray(list)) { storage.invalid?.(); return defaults(); }
+  const filtered = filterShortcuts(list, presetIds, sequenceIds);
+  if (filtered.length !== list.length) storage.invalid?.();
+  return filtered.map(copy);
 }
 
 export function saveShortcuts(storage, list) {

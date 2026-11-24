@@ -5,19 +5,29 @@ import { createSender } from './sender.js';
 import { runStartup } from './startup.js';
 import { createPlayer } from './player.js';
 import { smoothSteps } from './smooth.js';
-import { persistState } from './state.js';
+import { loadState, persistState, solidSelection } from './state.js';
 import { DEFAULT_SHORTCUTS, MAX_SHORTCUTS, loadShortcuts, saveShortcuts, addShortcut, replaceShortcut,
   removeShortcut, moveShortcut, gridColumns, filterShortcuts } from './shortcuts.js';
 import { MAX_SEQUENCES, MAX_COLORS, loadSequences, saveSequences, createSequence, updateSequence,
   removeSequence, setColor as setFrameColor, addColor, removeColor, speedPercent, intervalFromSpeed } from './sequences.js';
 import { formatRemaining, fadeBrightness, parseTimerDuration } from './timer.js';
 import { createLink } from './ble.js';
-import { hueToRgb, hueFromPoint, rgbCss } from './color.js';
+import { hueToRgb, hueFromPoint, rgbCss, rgbFromHex } from './color.js';
 import { CUSTOM_COLORS_KEY, loadCustomColors, addCustomColor } from './colors.js';
 
 import { LANGUAGE_KEY, loadLanguage, translate } from './i18n.js';
 
-let language = loadLanguage({ getItem: key => localStorage.getItem(key) });
+let storageReadFailed = false;
+let storageInvalid = false;
+const localStore = {
+  getItem(key) {
+    try { return localStorage.getItem(key); }
+    catch (error) { storageReadFailed = true; throw error; }
+  },
+  setItem: (key, value) => localStorage.setItem(key, value),
+  invalid: () => { storageInvalid = true; },
+};
+let language = loadLanguage(localStore);
 const t = (key, vars) => translate(language, key, vars);
 
 const $ = selector => document.querySelector(selector);
@@ -29,11 +39,15 @@ const text = (name, value) => bind(name).forEach(el => { el.textContent = value;
 const STORE = 'deleluz.webapp.state';
 const WARM = [255, 200, 128];
 const WHITE = [255, 255, 255];
-const saved = (() => { try { return JSON.parse(localStorage.getItem(STORE)) ?? {}; } catch { return {}; } })();
-const state = { on: false, bri: 80, rgb: WARM, label: ['warmWhite'], scene: 'warm', fx: 1, speed: 50, lastSentAt: null, ...saved };
+const presetIds = PRESETS.map(p => p.id);
+let sequences = loadSequences(localStore);
+const sequenceKey = id => `sequence:${id}`;
+const state = loadState(STORE, { on: false, bri: 80, rgb: WARM, label: ['warmWhite'], scene: 'warm', fx: 1, speed: 50, lastSentAt: null },
+  sequences.map(item => sequenceKey(item.id)), () => localStore, presetIds);
+let lastPlayedRgb;
 const persist = () => {
   const { on, bri, rgb, label, scene, mode, fx, speed: sp } = state;
-  persistState(STORE, { on, bri, rgb, label, scene, mode, fx, speed: sp });
+  if (!persistState(STORE, { on, bri, rgb, label, scene, mode, fx, speed: sp })) toast('storageFailed', true);
 };
 
 // ---- link, sender, player ----
@@ -46,9 +60,12 @@ const sender = createSender({ write: bytes => link.write(bytes), interval: SEND_
 const player = createPlayer({ send: async bytes => {
   if (document.hidden) return;
   const run = playback;
-  if (await send(bytes, 'color') === 'sent' && run === playback && activeSequence && activeSequence !== draftPlayback) {
-    state.rgb = Array.from(bytes.subarray(3, 6));
-    renderStrip();
+  if (await send(bytes, 'color') === 'sent' && run === playback) {
+    lastPlayedRgb = Array.from(bytes.subarray(3, 6));
+    if (activeSequence && activeSequence !== draftPlayback) {
+      state.rgb = lastPlayedRgb;
+      renderStrip();
+    }
   }
 } });
 let playback = 0;
@@ -64,6 +81,7 @@ function stopPlayback() {
 
 async function startMode(mode, { sequence = state.scene, bri = state.bri } = {}) {
   stopPlayback();
+  lastPlayedRgb = null;
   const run = playback;
   if (mode.colors) {
     activeSequence = sequence;
@@ -83,11 +101,8 @@ async function startMode(mode, { sequence = state.scene, bri = state.bri } = {})
     else if (mode.rgb) await send(color(...mode.rgb), 'color');
     else if (mode.voice) await send(voiceMode(mode.voice), 'effect');
     else await send(effect(mode.effect), 'effect');
-  } catch {
-    if (run === playback && dialog.open) {
-      if (selected) text('preview-error', t('sceneFailed'));
-      if (activeSequence === draftPlayback) text('sequence-error', t('sceneFailed'));
-    }
+  } catch (error) {
+    if (run === playback && !(error instanceof SendFailure)) toast('sceneFailed', true);
   } finally {
     if (run === playback && mode.colors) {
       activeSequence = null;
@@ -98,8 +113,10 @@ async function startMode(mode, { sequence = state.scene, bri = state.bri } = {})
 
 let toastKey;
 function toast(key, error = false) {
-  toastKey = key;
   const el = bind('toast')[0];
+  if (dialog.open && el.parentElement !== dialog) dialog.append(el);
+  if (toastKey === key) return;
+  toastKey = key;
   el.textContent = t(key);
   el.classList.toggle('error', error);
   clearTimeout(toast.timer);
@@ -114,18 +131,20 @@ function needsLink() {
   return true;
 }
 
+class SendFailure extends Error {}
+
 async function send(bytes, key) {
   if (!link.ready) {
-    toast('connectFirst', true);
-    throw new Error('Not connected');
+    needsLink();
+    throw new SendFailure();
   }
   try {
     const result = await sender.send(bytes, key);
     if (result === 'sent') { state.lastSentAt = Date.now(); renderLastSent(); }
     return result;
-  } catch (error) {
-    toast('commandFailed', true);
-    throw error;
+  } catch {
+    if (link.state.status !== 'lost') toast('commandFailed', true);
+    throw new SendFailure();
   }
 }
 const fire = (bytes, key) => send(bytes, key).catch(() => {});
@@ -166,13 +185,6 @@ function playPreset(id, interval = PRESETS.find(p => p.id === id).interval, labe
 }
 
 // ---- quick scenes (user shortcuts) ----
-const presetIds = PRESETS.map(p => p.id);
-const localStore = {
-  getItem: key => localStorage.getItem(key),
-  setItem: (key, value) => localStorage.setItem(key, value),
-};
-let sequences = loadSequences(localStore);
-const sequenceKey = id => `sequence:${id}`;
 let shortcuts = loadShortcuts(localStore, presetIds, sequences.map(item => item.id));
 const hex = rgb => `#${rgb.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
 function shortcutName(item) {
@@ -180,11 +192,12 @@ function shortcutName(item) {
   if (item.kind === 'scene') return t(item.preset);
   return item.name ? t(item.name) : t('colorHex', { hex: hex(item.rgb) });
 }
-const shortcutId = item => item.kind === 'scene' ? item.preset : `color:${item.rgb.join(',')}`;
+const shortcutId = item => item.kind === 'sequence' ? sequenceKey(item.id) :
+  item.kind === 'scene' ? item.preset : `color:${item.rgb.join(',')}`;
 
 function storeShortcuts(next) {
   shortcuts = next;
-  saveShortcuts(localStore, shortcuts);
+  if (!saveShortcuts(localStore, shortcuts)) toast('storageFailed', true);
   renderQuick();
   render();
 }
@@ -283,12 +296,12 @@ function renderQuick() {
   const validShortcuts = filterShortcuts(shortcuts, presetIds, sequences.map(item => item.id));
   if (validShortcuts.length !== shortcuts.length) {
     shortcuts = validShortcuts;
-    saveShortcuts(localStore, shortcuts);
+    if (!saveShortcuts(localStore, shortcuts)) toast('storageFailed', true);
   }
   const tiles = shortcuts.map((item, index) => {
     const button = shortcutTile(item);
     button.dataset.index = String(index);
-    button.dataset.scene = item.kind === 'sequence' ? sequenceKey(item.id) : shortcutId(item);
+    button.dataset.scene = shortcutId(item);
     attachPress(button, {
       tap: () => applyShortcut(item),
       hold: () => openShortcutMenu(index, button),
@@ -349,14 +362,21 @@ function chooseShortcut(item) {
 // ---- collapsible quick scenes (open/closed remembered in this browser) ----
 const QUICK_OPEN_KEY = 'deleluz.webapp.quickOpen';
 const quickToggle = $('[data-action="toggle-quick"]');
-function setQuickOpen(open) {
+function setQuickOpen(open, save = true) {
   quickToggle.setAttribute('aria-expanded', String(open));
   bind('quick')[0].hidden = !open;
   bind('home-speed')[0].hidden = open;
-  try { localStorage.setItem(QUICK_OPEN_KEY, open ? '1' : '0'); } catch { /* keep it for this session */ }
+  if (!save) return;
+  try { localStorage.setItem(QUICK_OPEN_KEY, open ? '1' : '0'); } catch { toast('storageFailed', true); }
 }
 quickToggle.addEventListener('click', () => setQuickOpen(quickToggle.getAttribute('aria-expanded') !== 'true'));
-setQuickOpen((() => { try { return localStorage.getItem(QUICK_OPEN_KEY) !== '0'; } catch { return true; } })());
+setQuickOpen((() => {
+  try {
+    const value = localStore.getItem(QUICK_OPEN_KEY);
+    if (value !== null && value !== '0' && value !== '1') localStore.invalid();
+    return value !== '0';
+  } catch { return true; }
+})(), false);
 
 // ---- power and brightness ----
 $('[data-action="power"]').addEventListener('click', () => {
@@ -558,19 +578,18 @@ function renderLinkText(s = link.state) {
 }
 
 function renderLink(s) {
+  const wasConnected = document.body.dataset.status === 'connected';
   renderLinkText(s);
-  if (s.status === 'lost') {
+  if (s.status === 'lost' && wasConnected) {
     trying = false;
-    if (activeSequence === draftPlayback) text('sequence-error', t('previewLost'));
     stopPlayback();
-    if (selected) text('preview-error', t('previewLost'));
     toast('reconnectPrompt', true);
   }
 }
 
 $('[data-action="disconnect"]').addEventListener('click', () => {
   stopPlayback();
-  link.disconnect();
+  try { link.disconnect(); } catch { toast('disconnectFailed', true); }
 });
 
 // ---- render ----
@@ -641,6 +660,8 @@ function closeSheet({ restoreTry = true } = {}) {
   selected = null;
   editingSequence = null;
   dialog.close();
+  const notice = bind('toast')[0];
+  if (notice.parentElement === dialog) document.body.append(notice);
   if (opener?.isConnected && !opener.closest('[hidden]')) opener.focus();
 }
 
@@ -756,10 +777,16 @@ $('[data-action="shortcut-change"]').addEventListener('click', () => {
 });
 $('[data-action="shortcut-left"]').addEventListener('click', () => { storeShortcuts(moveShortcut(shortcuts, shortcutIndex, shortcutIndex - 1)); closeSheet(); });
 $('[data-action="shortcut-right"]').addEventListener('click', () => { storeShortcuts(moveShortcut(shortcuts, shortcutIndex, shortcutIndex + 1)); closeSheet(); });
-$('[data-action="shortcut-remove"]').addEventListener('click', () => { storeShortcuts(removeShortcut(shortcuts, shortcutIndex)); closeSheet(); });
+$('[data-action="shortcut-remove"]').addEventListener('click', () => {
+  const item = shortcuts[shortcutIndex];
+  if (item && shortcutId(item) === (state.mode?.preset ?? state.scene)) clearSceneMode();
+  storeShortcuts(removeShortcut(shortcuts, shortcutIndex));
+  closeSheet();
+});
 bind('shortcut-other')[0].addEventListener('change', event => {
-  const value = event.target.value.slice(1);
-  chooseShortcut({ kind: 'color', rgb: [0, 2, 4].map(i => parseInt(value.slice(i, i + 2), 16)) });
+  const rgb = rgbFromHex(event.target.value);
+  if (!rgb) { closeSheet(); toast('colorFailed', true); return; }
+  chooseShortcut({ kind: 'color', rgb });
 });
 
 // ---- saved color sequences ----
@@ -771,8 +798,7 @@ const frameList = bind('sequence-frames')[0];
 const sequenceOther = bind('sequence-other')[0];
 const sequenceSwatches = bind('sequence-swatches')[0];
 const sequenceAdd = $('[data-action="sequence-add-color"]');
-let customColors = loadCustomColors({ getItem: key => localStorage.getItem(key) });
-const rgbFromHex = value => [1, 3, 5].map(i => parseInt(value.slice(i, i + 2), 16));
+let customColors = loadCustomColors(localStore);
 const pickSequenceColor = rgb => editSequence(setFrameColor(editingSequence, selectedFrame, rgb), 'colors');
 const renderSequenceWheel = createHueWheel(bind('sequence-wheel')[0], pickSequenceColor);
 const sequenceSpeed = $('#sequence-speed');
@@ -922,13 +948,15 @@ function previewSequence() {
 sequenceOther.addEventListener('change', () => {
   if (!editingSequence) return;
   const value = sequenceOther.value;
+  const rgb = rgbFromHex(value);
+  if (!rgb) { toast('colorFailed', true); return; }
   const next = addCustomColor(customColors, value);
   if (next !== customColors) {
     customColors = next;
-    try { localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(customColors)); } catch { /* Keep colors for this session. */ }
+    try { localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(customColors)); } catch { toast('storageFailed', true); }
     renderSequenceSwatches();
   }
-  pickSequenceColor(rgbFromHex(value));
+  pickSequenceColor(rgb);
 });
 sequenceAdd.addEventListener('click', () => {
   const next = addColor(editingSequence);
@@ -954,8 +982,12 @@ function playSequence({ id, name, colors, interval, bri }) {
   render();
   startMode(mode);
 }
-function clearSequenceMode() {
-  Object.assign(state, { label: ['colorHex', { hex: hex(state.rgb) }], scene: null, mode: null });
+function clearSceneMode() {
+  const previewColor = activeSequence === draftPlayback && lastPlayedRgb;
+  const rgb = previewColor || (state.on && (state.mode?.colors || state.mode?.preset) ? lastPlayedRgb ?? state.rgb : state.rgb);
+  trying = false;
+  stopPlayback();
+  Object.assign(state, { rgb, on: Boolean(previewColor) || state.on }, solidSelection(rgb));
   persist();
   render();
 }
@@ -968,7 +1000,7 @@ $('[data-action="sequence-save"]').addEventListener('click', () => {
   const { id } = editingSequence;
   const next = isNewSequence ? [...sequences, editingSequence] : updateSequence(sequences, id, editingSequence);
   if (!saveSequences(localStore, next)) {
-    text('sequence-error', t('sequenceSaveFailed'));
+    toast('sequenceSaveFailed', true);
     return;
   }
   sequences = next;
@@ -995,13 +1027,13 @@ $('[data-action="sequence-delete-confirm"]').addEventListener('click', () => {
   const { id } = editingSequence;
   const next = removeSequence(sequences, id);
   if (!saveSequences(localStore, next)) {
-    text('sequence-error', t('sequenceSaveFailed'));
+    toast('sequenceDeleteFailed', true);
     return;
   }
   sequences = next;
   const key = sequenceKey(id);
-  if (activeSequence === key) stopPlayback();
-  if (state.scene === key) clearSequenceMode();
+  if (state.scene === key || activeSequence === draftPlayback) clearSceneMode();
+  else if (activeSequence === key) stopPlayback();
   renderSequences();
   renderQuick();
   render();
@@ -1145,10 +1177,12 @@ function renderLanguage() {
 
 $$('[data-language]').forEach(button => button.addEventListener('click', () => {
   language = button.dataset.language;
-  try { localStorage.setItem(LANGUAGE_KEY, language); } catch { /* Keep the choice for this session. */ }
+  try { localStorage.setItem(LANGUAGE_KEY, language); } catch { toast('storageFailed', true); }
   renderLanguage();
 }));
 
 renderLanguage();
 route();
+if (storageReadFailed) toast('storageReadFailed', true);
+else if (storageInvalid) toast('storageInvalid', true);
 setInterval(() => { renderLastSent(); renderLostDetail(); updateTimer(); }, 1000);

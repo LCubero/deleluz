@@ -128,6 +128,7 @@ nav.tabs a[aria-current="page"] svg{stroke:#f0abfc;filter:drop-shadow(0 0 8px va
 .sheet::backdrop{background:rgba(5,4,14,.55)}
 .sheet h2{font-size:1.375rem;margin:0;overflow-wrap:anywhere}
 .sheet p,.screen p{margin:0}
+.sheet .toast{position:static;transform:none;width:auto;max-width:none}
 .sheet .error{color:#fecaca}
 .sheet .error:empty{display:none}
 .grabber{width:44px;height:5px;flex:none;border-radius:999px;background:rgba(255,255,255,.3);margin:0 auto}

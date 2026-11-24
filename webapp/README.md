@@ -30,6 +30,12 @@ Spanish is the default; choose English in Help (Ayuda).
 - Commands are spaced 50 ms apart (the strip follows changes down to ~35 ms, see `docs/CAPABILITIES.md`); the scene step interval starts at 150 ms, and fade scenes send intermediate colors about every 50 ms.
 - No per-LED control is known for this controller.
 
+## Privacy and errors
+
+The app loads static files from its host and makes no application network requests after loading. It asks Chrome to show the Bluetooth chooser only on Connect; Reconnect can reuse the chosen strip. Disconnect is available on Home. The app does not access your location, phone microphone, notifications, or accounts. Music modes use the strip’s microphone. The foreground off timer may use Screen Wake Lock; it still runs in the foreground if wake lock is unavailable or denied.
+
+Settings stay in this browser’s local storage. The keys all start with `deleluz.webapp.`: `state`, `shortcuts`, `sequences`, `quickOpen`, `customColors`, and `language`. Unreadable or invalid saved settings fall back to safe defaults. Command, connection, and save failures show a short localized message, not the browser’s raw error. A storage failure does not block strip commands. Simulation logs command bytes only, not device identifiers.
+
 ## Tests
 
 ```sh

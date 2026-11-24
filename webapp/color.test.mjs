@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hueToRgb, hueFromPoint, rgbCss } from './color.js';
+import * as colors from './color.js';
+const { hueToRgb, hueFromPoint, rgbCss } = colors;
+
+test('native color input accepts six hex digits and rejects malformed values', () => {
+  assert.deepEqual(colors.rgbFromHex('#01aBFF'), [1, 171, 255]);
+  for (const value of ['', '#123', '#112233ff', '#11zz33', null]) assert.equal(colors.rgbFromHex(value), null);
+});
 
 test('hue maps to full-saturation RGB at the wheel anchors', () => {
   assert.deepEqual(hueToRgb(0), [255, 0, 0]);

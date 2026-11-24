@@ -9,7 +9,6 @@ export function createLink({ onChange, simulate = false }) {
     status: simulate || !supported ? 'simulated' : 'idle', // idle | connecting | connected | lost | simulated
     name: null,
     lostAt: null,
-    error: null,
     supported,
   };
   let device;
@@ -18,6 +17,7 @@ export function createLink({ onChange, simulate = false }) {
   const set = patch => { Object.assign(state, patch); onChange?.({ ...state }); };
 
   function lost() {
+    if (state.status !== 'connected') return;
     writer = undefined;
     set({ status: 'lost', lostAt: Date.now() });
   }
@@ -42,22 +42,28 @@ export function createLink({ onChange, simulate = false }) {
   }
 
   async function connect({ choose }) {
-    if (state.status === 'simulated') return;
-    set({ status: 'connecting', error: null });
+    if (!['idle', 'lost'].includes(state.status)) return;
+    set({ status: 'connecting' });
+    let choosing = false;
     try {
       if (choose || !device) {
+        choosing = true;
         const chosen = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'LEDDMX' }], optionalServices: [SERVICE] });
+        choosing = false;
         device?.removeEventListener('gattserverdisconnected', lost);
         device = chosen;
         device.addEventListener('gattserverdisconnected', lost);
       }
       await open();
+      if (!device.gatt.connected) throw new Error('Not connected');
       set({ status: 'connected', name: device.name ?? 'LEDDMX', lostAt: null });
     } catch (error) {
-      if (device?.gatt.connected) device.gatt.disconnect();
+      if (device?.gatt.connected) {
+        try { device.gatt.disconnect(); } catch { /* Preserve the original connection error. */ }
+      }
       writer = undefined;
-      const canceled = error.name === 'NotFoundError';
-      set({ status: state.lostAt ? 'lost' : 'idle', error: canceled ? null : error.message });
+      const canceled = choosing && error.name === 'NotFoundError';
+      set({ status: state.lostAt ? 'lost' : 'idle' });
       if (!canceled) throw error;
     }
   }
@@ -70,10 +76,13 @@ export function createLink({ onChange, simulate = false }) {
     disconnect() {
       if (state.status !== 'connected') return;
       device?.removeEventListener('gattserverdisconnected', lost);
-      if (device?.gatt.connected) device.gatt.disconnect();
-      writer = undefined;
-      set({ status: 'idle', lostAt: null, error: null });
-      device?.addEventListener('gattserverdisconnected', lost);
+      try {
+        if (device?.gatt.connected) device.gatt.disconnect();
+        writer = undefined;
+        set({ status: 'idle', lostAt: null });
+      } finally {
+        device?.addEventListener('gattserverdisconnected', lost);
+      }
     },
     get ready() { return state.status === 'connected' || state.status === 'simulated'; },
     async write(bytes) {

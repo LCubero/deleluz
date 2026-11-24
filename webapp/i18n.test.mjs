@@ -29,6 +29,11 @@ test('translation interpolates variables', () => {
   assert.equal(translate('en', 'sequenceFrame', { number: 3, hex: '#00FF00' }), 'Square 3: #00FF00');
 });
 
+test('custom shortcut names are literal text, not dictionary keys', () => {
+  assert.equal(translate('en', '<img src=x> {id}'), '<img src=x> {id}');
+  assert.equal(translate('es', '__proto__'), '__proto__');
+});
+
 test('all HTML translation attributes have dictionary entries', () => {
   const html = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
   const keys = [...html.matchAll(/\bdata-i18n(?:-[\w-]+)?="([^"]+)"/g)].map(match => match[1]);

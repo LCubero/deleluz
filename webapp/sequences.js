@@ -1,3 +1,5 @@
+import { readStoredJson } from './state.js';
+
 export const SEQUENCES_KEY = 'deleluz.webapp.sequences';
 export const MAX_SEQUENCES = 12;
 export const MAX_COLORS = 8;
@@ -13,18 +15,18 @@ export const speedPercent = interval => Math.round(Math.min(100, Math.max(0, (20
 export const intervalFromSpeed = percent => Math.round(2000 - Math.min(100, Math.max(0, percent)) * 1850 / 100);
 
 export function loadSequences(storage) {
-  try {
-    const items = JSON.parse(storage.getItem(SEQUENCES_KEY));
-    if (!Array.isArray(items)) return [];
-    const unique = new Map();
-    for (const item of items) {
-      if (!valid(item) || unique.has(item.id)) continue;
-      const { id, name, colors, interval, bri } = item;
-      unique.set(id, { id, name, colors, interval, bri });
-      if (unique.size === MAX_SEQUENCES) break;
-    }
-    return [...unique.values()];
-  } catch { return []; }
+  const items = readStoredJson(storage, SEQUENCES_KEY);
+  if (items === undefined) return [];
+  if (!Array.isArray(items)) { storage.invalid?.(); return []; }
+  const unique = new Map();
+  for (const item of items) {
+    if (!valid(item) || unique.has(item.id)) continue;
+    const { id, name, colors, interval, bri } = item;
+    unique.set(id, { id, name, colors, interval, bri });
+    if (unique.size === MAX_SEQUENCES) break;
+  }
+  if (unique.size !== items.length) storage.invalid?.();
+  return [...unique.values()];
 }
 
 export function saveSequences(storage, items) {

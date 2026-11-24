@@ -66,13 +66,22 @@ const strings = {
   deleteScene: ['Eliminar', 'Delete'],
   cancelDelete: ['Cancelar', 'Cancel'],
   saveSequence: ['Guardar', 'Save'],
-  sequenceSaveFailed: ['No se pudo guardar. Los cambios solo se mantendrán en esta sesión.', 'Could not save. Changes will only last for this session.'],
+  sequenceSaveFailed: ['No se pudo guardar la escena. Puedes volver a intentar sin cerrar el editor.', 'Could not save the scene. You can try again without closing the editor.'],
+  sequenceDeleteFailed: ['No se pudo eliminar la escena. No se hicieron cambios.', 'Could not delete the scene. No changes were made.'],
+  storageInvalid: ['Algunos ajustes guardados no eran válidos y se ignoraron.', 'Some saved settings were invalid and were ignored.'],
+  storageReadFailed: ['No se pudieron leer los ajustes guardados. Se usarán los valores predeterminados.', 'Could not read saved settings. Defaults will be used.'],
+  storageFailed: ['No se pudo guardar en este navegador. Algunos cambios podrían perderse al salir.', 'Could not save in this browser. Some changes may be lost when you leave.'],
+  colorFailed: ['No se pudo usar ese color. Elige otro.', 'Could not use that color. Choose another.'],
+  disconnectFailed: ['No se pudo desconectar. Inténtalo de nuevo.', 'Could not disconnect. Try again.'],
   help: ["Ayuda", "Help"],
   reconnect: ["Reconectar", "Reconnect"],
   troubleshoot: ["Solución de problemas", "Fix a problem"],
   missingStrip: ["La tira no aparece en la lista", "The strip is not in the list"],
   closeLamp: ["Cierra la app LED LAMP. Solo se puede conectar un teléfono o una app a la vez.", "Close the LED LAMP app. Only one phone or app can connect at a time."],
-  enableBluetooth: ["Activa Bluetooth y la ubicación.", "Turn on Bluetooth and Location."],
+  enableBluetooth: ['Activa Bluetooth. Si Android te pide un ajuste del sistema para encontrar dispositivos cercanos, revisa ese aviso.', 'Turn on Bluetooth. If Android asks you to change a system setting to find nearby devices, check that prompt.'],
+  privacyTitle: ['Privacidad y permisos', 'Privacy and permissions'],
+  privacyText: ['Cuando tocas Conectar, tú eliges la tira en Chrome. Puedes desconectarla desde Inicio cuando quieras. Después de cargar, la app no envía datos por internet ni usa el micrófono del teléfono, la ubicación ni cuentas. Tus escenas y colores solo se guardan en este navegador.', 'When you tap Connect, you choose the strip in Chrome. You can disconnect from Home at any time. After loading, the app does not send data over the internet or use your phone microphone, location, or accounts. Your scenes and colors are stored only in this browser.'],
+  privacyTimer: ['Mientras corre el temporizador, la app intenta mantener la pantalla encendida. Los modos de música usan el micrófono de la tira, no el de tu teléfono.', 'While the timer runs, the app tries to keep the screen awake. Music modes use the strip’s microphone, not your phone’s.'],
   standNear: ["Acércate a la tira y toca Conectar.", "Stand within a few meters of the strip and tap Connect."],
   frequentDrops: ["Se desconecta a menudo", "It disconnects often"],
   steadyPower: ["Acércate y comprueba que el controlador recibe alimentación estable.", "Move closer and check that the controller has steady power."],
@@ -166,10 +175,17 @@ export const dictionaries = Object.fromEntries(['es', 'en'].map((language, index
 export const LANGUAGE_KEY = 'deleluz.webapp.language';
 
 export function loadLanguage(storage) {
-  try { return storage.getItem(LANGUAGE_KEY) === 'en' ? 'en' : 'es'; }
+  try {
+    const value = storage.getItem(LANGUAGE_KEY);
+    if (value !== null && value !== 'es' && value !== 'en') storage.invalid?.();
+    return value === 'en' ? 'en' : 'es';
+  }
   catch { return 'es'; }
 }
 
 export function translate(language, key, vars = {}) {
-  return dictionaries[language][key].replace(/\{(\w+)\}/g, (match, name) => vars[name] ?? match);
+  const dictionary = dictionaries[language];
+  if (!Object.hasOwn(dictionary, key)) return key;
+  return dictionary[key].replace(/\{(\w+)\}/g, (match, name) =>
+    vars && Object.hasOwn(vars, name) ? vars[name] ?? match : match);
 }

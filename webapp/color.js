@@ -12,3 +12,8 @@ export function hueFromPoint(dx, dy) {
 }
 
 export const rgbCss = ([r, g, b]) => `rgb(${r} ${g} ${b})`;
+
+export function rgbFromHex(value) {
+  if (typeof value !== 'string' || !/^#[0-9a-f]{6}$/i.test(value)) return null;
+  return [1, 3, 5].map(i => parseInt(value.slice(i, i + 2), 16));
+}
