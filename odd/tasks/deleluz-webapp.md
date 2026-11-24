@@ -20,6 +20,7 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - S15 — "sin conexion, en escenas al aplicar alguna escena no avisa que no está conectado, como en las otras cosas que si lo hace."
 - S16 — "me parece que falta las opciones de configuracion del chip. cuantos leds por metro y de cuantos metros es la tira."
 - S17 — "en lugar de escenas rapidas quiza shortcuts o con ese mismo nombre escenas rapidas, pero que el usuario pueda poner las que quiere o quitarlas y que se acomode segun la cantidad. por defecto blanco calido, blanco frio, azul, verde, amarillo y rojo, pero que permita, borrarlas, reordenarlas, o camiarlas de posicion, de preferencia arrastrando, y dejar precionado para tener el menu de opciones tmb. maximo 6."
+- S18 — "una pestaña para \"Mis Escenas\"  y no s´´e, dame ideas usa gentle design quiza o stich o algo para ver que usamos de ui para eso"; sequences as described in L37 ("cuadritos cada cuadro es un color y se tocan para cambiar el color ... solo se puede cambiar la velocidad e intensidad").
 - S12 — "frontend debes revisar con tus herramientas, alineamientos, saltos raros en la pagina, orden, margenes, espacios, nada encima o pegado de otra cosa, simetrico y alineado, agradable a la vista, que se lea y se vea bien, contraste, letra, que funcione en cualquier pantalla y sobre todo que revises." Also: "Nada de rutas ni datos personales en archivos o commits: usa placeholders." "Español neutro con \"tú\" en la interfaz."
 
 ## Tasks
@@ -44,6 +45,7 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - T21 — S15 — Scene Try/Apply while disconnected closes the sheet and shows the same top toast as other actions — inline — done (L35)
 - T22 — S17,S12,S7 — Customizable quick scenes (max 6, defaults, add/change/remove, drag to reorder, long-press menu, layout by count) — inline (worker failed: provider_unavailable) — done (L36)
 - T23 — S16 — Strip configuration (LEDs per meter × meters = pixel count) — blocked: needs a dedicated reversible test of the config frame on the real strip (docs/PROTOCOL.md rule) — pending
+- T24 — S18,S12,S7 — Design directions for a 'Mis Escenas' tab of color-square sequences, as gentle-design artboards in `design/deleluz-sequences/` matching Glow Glass — worker — pending
 
 ## Log
 
