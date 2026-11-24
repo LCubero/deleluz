@@ -49,6 +49,7 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - S45 — "por defecto o de inicio mas bien, en escenas rapidas quiero solo blanco calido, blanco frio y nada más y obvio el de agregar. / y si puedes hacer que el estado de las combobox expandidas o contraidas sea indipendiente es decir que si la dejo cerrada en seccion color, pestaña color fijo, no cambia las de los otros lugares, asi debe ser cualquier dropdown o combobox compartidas"
 - S46 — "todas las combobox al inciom o por default deben venir minimizadas. / debe poderse deslizar a la izq o derecha y navegar por las sessciones."
 - S47 — "las excenas incluidas deberian de verse igual que mis escenas para aprovechar espacio quiza y que funcionen parecido, si tocas se activa si dejas apretado te lleva al menu de ella / la navegacion o deslizamento debe permitir de primero a ultimo y ulñtimo a primero es decir en circulo igual los efectos integrados"
+- S48 — "los cards de cada escena y mis escenas deben ser del mismo tamaño / rrevisar la longtitud de texto y poner un maximo luego ... y debes poder hacer que a mis esceneas se le pueda cambiar el nombre, un lapiz al lado del nombre o algo. / el estado (conectado, sin conexion) en seccion \"Color\" debe estar en en seccion escenas y ayuda, y el de ayuda cquitar el que tiene y poner ese, ya que en todas menos inicio, esa opcion al tocarla si esta desconectado permite conectar o desconectar"
 - S12 — "frontend debes revisar con tus herramientas, alineamientos, saltos raros en la pagina, orden, margenes, espacios, nada encima o pegado de otra cosa, simetrico y alineado, agradable a la vista, que se lea y se vea bien, contraste, letra, que funcione en cualquier pantalla y sobre todo que revises." Also: "Nada de rutas ni datos personales en archivos o commits: usa placeholders." "Español neutro con \"tú\" en la interfaz."
 
 ## Tasks
@@ -91,6 +92,7 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - T41 — S45 — Default quick scenes Blanco cálido + Blanco frío (+ add); Favoritos open/closed state per place — inline — done (L58)
 - T42 — S46,S12 — All collapsible sections closed by default (Escenas rápidas, Ayuda accordion, chooser sections, Favoritos); swipe left/right between tabs — inline — done (L59)
 - T43 — S47,S12 — Incluidas as 2-column cards like Mis escenas (tap = apply, hold = its sheet); swipe and effect arrows wrap around — inline — done (L60)
+- T44 — S48,S12,S7 — Equal-size scene cards with 2-line ellipsis; rename Mis escenas with a pencil; Color header status chip also in Escenas and Ayuda (replacing Ayuda's), tap = connect when disconnected / disconnect when connected — worker — pending
 
 ## Log
 
