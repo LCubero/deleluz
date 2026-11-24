@@ -247,3 +247,8 @@ body:has(#sheet[open]) .more-below{opacity:0}
 .favorites-toggle{align-self:flex-start;font-weight:600}
 html,body{overscroll-behavior-x:none}
 .sequence-card .strip{display:block;height:10px;width:100%;border-radius:999px;background:var(--strip)}
+.voice-strip-1{--strip:linear-gradient(90deg,#ec4899,#a855f7)}
+.voice-strip-2{--strip:linear-gradient(90deg,#22d3ee,#3b82f6)}
+.voice-strip-3{--strip:linear-gradient(90deg,#22c55e,#facc15)}
+.voice-strip-4{--strip:linear-gradient(90deg,#f97316,#ef4444)}
+.voice-modes .sequence-card[aria-pressed="true"]{border-color:#d8a2f5}

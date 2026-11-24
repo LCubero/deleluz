@@ -116,15 +116,14 @@
         <p class="small muted" data-bind="sequences-empty" data-i18n="sequencesEmpty">Aún no tienes escenas. Toca + para crear una.</p>
         <div class="sequence-grid" data-bind="sequence-list"></div>
       </div>
-      <section class="glass pad stack" data-scene-panel="music" aria-labelledby="music-title" hidden>
-        <h2 id="music-title" class="slider-head" data-i18n="musicTitle">Música (micrófono de la tira)</h2>
-        <div class="seg voice-modes" role="group" aria-labelledby="music-title">
-          <button data-voice="1" aria-pressed="false">1</button>
-          <button data-voice="2" aria-pressed="false">2</button>
-          <button data-voice="3" aria-pressed="false">3</button>
-          <button data-voice="4" aria-pressed="false">4</button>
+      <section class="stack" data-scene-panel="music" aria-labelledby="music-title" hidden>
+        <p id="music-title" class="small muted" data-i18n="musicHint">La tira reacciona al sonido con su propio micrófono.</p>
+        <div class="sequence-grid voice-modes" role="group" aria-labelledby="music-title">
+          <button class="scene sequence-card" data-voice="1" aria-pressed="false"><b class="meta"><span data-i18n="voiceModeWord">Modo</span> 1</b><span class="strip voice-strip-1" aria-hidden="true"></span></button>
+          <button class="scene sequence-card" data-voice="2" aria-pressed="false"><b class="meta"><span data-i18n="voiceModeWord">Modo</span> 2</b><span class="strip voice-strip-2" aria-hidden="true"></span></button>
+          <button class="scene sequence-card" data-voice="3" aria-pressed="false"><b class="meta"><span data-i18n="voiceModeWord">Modo</span> 3</b><span class="strip voice-strip-3" aria-hidden="true"></span></button>
+          <button class="scene sequence-card" data-voice="4" aria-pressed="false"><b class="meta"><span data-i18n="voiceModeWord">Modo</span> 4</b><span class="strip voice-strip-4" aria-hidden="true"></span></button>
         </div>
-        <p class="small muted" data-i18n="musicHint">La tira reacciona al sonido con su propio micrófono.</p>
       </section>
     </section>
 

@@ -38,6 +38,7 @@ const strings = {
   solid: ["Color fijo", "Solid"],
   music: ['Música', 'Music'],
   musicTitle: ['Música (micrófono de la tira)', 'Music (strip microphone)'],
+  voiceModeWord: ["Modo", "Mode"],
   musicHint: ['La tira reacciona al sonido con su propio micrófono.', 'The strip reacts to sound with its own microphone.'],
   musicMode: ['Música {id}', 'Music {id}'],
   builtIn: ["Efectos integrados", "Built-in effects"],
