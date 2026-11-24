@@ -56,6 +56,11 @@
         <div class="grid3" id="quick-grid" data-bind="quick"></div>
       </section>
 
+      <section class="glass thumb" data-bind="home-speed" aria-label="Velocidad" data-i18n-aria="speed" hidden>
+        <label class="slider-head" for="speed-home"><span data-i18n="speed">Velocidad</span><output data-bind="speed-out">50 %</output></label>
+        <input id="speed-home" class="range" type="range" min="1" max="100" value="50" data-bind="speed">
+      </section>
+
       <section class="glass thumb" aria-label="Brillo" data-i18n-aria="brightness">
         <label class="slider-head" for="bri-home"><span class="with-icon"><svg width="20" height="20" aria-hidden="true"><use href="#i-sun"/></svg><span data-i18n="brightness">Brillo</span></span><output data-bind="bri-out">80%</output></label>
         <input id="bri-home" class="range" type="range" min="1" max="100" value="80" data-bind="bri">
@@ -71,7 +76,7 @@
 
       <div data-panel="solid" class="stack">
         <div class="wheel" data-bind="wheel" role="slider" tabindex="0" aria-label="Tono" data-i18n-aria="hue" aria-valuemin="0" aria-valuemax="359" aria-valuenow="0">
-          <div class="cur" data-bind="wheel-cur"></div><div class="handle" data-bind="wheel-handle"></div>
+          <div class="cur"></div><div class="handle"></div>
         </div>
         <div class="swatches" role="group" aria-label="Colores rápidos" data-i18n-aria="quickColors" data-bind="swatches"></div>
       </div>
@@ -81,27 +86,13 @@
           <div class="slider-head"><span data-i18n="effect">Efecto</span><output data-bind="fx-out">1</output></div>
           <div class="quick">
             <button class="btn ghost" data-action="fx-prev" aria-label="Efecto anterior" data-i18n-aria="previousEffect">‹</button>
-            <input class="num grow" type="number" min="1" max="210" value="1" inputmode="numeric" aria-label="Número de efecto, del 1 al 210" data-i18n-aria="effectRange" data-bind="fx">
+            <input class="num grow" type="text" value="1" inputmode="numeric" aria-describedby="fx-name" aria-label="Número de efecto, del 1 al 210" data-i18n-aria="effectRange" data-bind="fx">
             <button class="btn ghost" data-action="fx-next" aria-label="Efecto siguiente" data-i18n-aria="nextEffect">›</button>
           </div>
-          <p class="fx-name" data-bind="fx-name" aria-live="polite">Forward Dreaming</p>
-          <button class="btn ghost" data-action="fx-auto" data-i18n="autoCycleAll">Ciclo automático (todos los efectos)</button>
+          <p id="fx-name" class="fx-name" data-bind="fx-name" aria-live="polite">Forward Dreaming</p>
+          <button class="btn ghost" data-action="fx-auto" data-i18n="autoCycle" aria-pressed="false">Ciclo automático</button>
           <p class="small muted" data-i18n="effectsNote">El controlador incluye los efectos del 1 al 210. Los nombres son los de la app del fabricante.</p>
         </div>
-        <div class="glass pad">
-          <label class="slider-head" for="speed"><span data-i18n="speed">Velocidad</span><output data-bind="speed-out">50 %</output></label>
-          <input id="speed" class="range" type="range" min="1" max="100" value="50" data-bind="speed">
-        </div>
-        <section class="glass pad stack" aria-labelledby="music-title">
-          <h2 id="music-title" class="slider-head" data-i18n="musicTitle">Música (micrófono de la tira)</h2>
-          <div class="seg voice-modes" role="group" aria-labelledby="music-title">
-            <button data-voice="1" aria-pressed="false">1</button>
-            <button data-voice="2" aria-pressed="false">2</button>
-            <button data-voice="3" aria-pressed="false">3</button>
-            <button data-voice="4" aria-pressed="false">4</button>
-          </div>
-          <p class="small muted" data-i18n="musicHint">La tira reacciona al sonido con su propio micrófono.</p>
-        </section>
       </div>
 
       <section class="glass thumb" aria-label="Brillo" data-i18n-aria="brightness">
@@ -109,18 +100,32 @@
         <input id="bri-color" class="range" type="range" min="1" max="100" value="80" data-bind="bri">
         <div class="small muted" data-i18n="dragNote">Los cambios se envían al deslizar, como máximo una vez cada 50 ms.</div>
       </section>
+      <div class="glass pad" data-bind="effect-speed" hidden>
+        <label class="slider-head" for="speed"><span data-i18n="speed">Velocidad</span><output data-bind="speed-out">50 %</output></label>
+        <input id="speed" class="range" type="range" min="1" max="100" value="50" data-bind="speed">
+      </div>
     </section>
 
     <section id="scenes" class="screen" aria-labelledby="scenes-title" hidden>
       <div class="top"><h1 id="scenes-title" data-i18n="scenes">Escenas</h1><button class="icon-btn" data-action="sequence-new" aria-label="Nueva escena" data-i18n-aria="newSequence" hidden>+</button></div>
-      <div class="seg" role="group" aria-label="Escenas" data-i18n-aria="scenes">
-        <button aria-pressed="true" data-scene-tab="included" data-i18n="includedScenes">Incluidas</button><button aria-pressed="false" data-scene-tab="mine" data-i18n="myScenes">Mis escenas</button>
+      <div class="seg scene-tabs" role="group" aria-label="Escenas" data-i18n-aria="scenes">
+        <button aria-pressed="true" data-scene-tab="included" data-i18n="includedScenes">Incluidas</button><button aria-pressed="false" data-scene-tab="mine" data-i18n="myScenes">Mis escenas</button><button aria-pressed="false" data-scene-tab="music" data-i18n="music">Música</button>
       </div>
       <div class="stack" data-bind="scene-list" data-scene-panel="included"></div>
       <div class="stack" data-scene-panel="mine" hidden>
         <p class="small muted" data-bind="sequences-empty" data-i18n="sequencesEmpty">Aún no tienes escenas. Toca + para crear una.</p>
         <div class="sequence-grid" data-bind="sequence-list"></div>
       </div>
+      <section class="glass pad stack" data-scene-panel="music" aria-labelledby="music-title" hidden>
+        <h2 id="music-title" class="slider-head" data-i18n="musicTitle">Música (micrófono de la tira)</h2>
+        <div class="seg voice-modes" role="group" aria-labelledby="music-title">
+          <button data-voice="1" aria-pressed="false">1</button>
+          <button data-voice="2" aria-pressed="false">2</button>
+          <button data-voice="3" aria-pressed="false">3</button>
+          <button data-voice="4" aria-pressed="false">4</button>
+        </div>
+        <p class="small muted" data-i18n="musicHint">La tira reacciona al sonido con su propio micrófono.</p>
+      </section>
     </section>
 
     <section id="help" class="screen" aria-labelledby="help-title" hidden>
@@ -178,7 +183,7 @@
     <p class="small muted" data-i18n="shortcutHint">Mantén presionada una escena rápida y arrástrala para moverla.</p>
   </section>
   <section class="stack" data-sheet="shortcut-pick" hidden>
-    <details class="glass shortcut-section" data-bind="shortcut-scene-section" open>
+    <details class="glass shortcut-section" data-bind="shortcut-scene-section">
       <summary><span data-i18n="scenes">Escenas</span><svg aria-hidden="true"><use href="#i-chev"/></svg></summary>
       <div class="stack shortcut-section-body">
         <div class="grid3" data-bind="shortcut-scenes"></div>
@@ -201,9 +206,17 @@
     </div>
     <p class="small muted" data-i18n="sequenceEditHint">Toca un cuadro para cambiar su color.</p>
     <div class="sequence-frames" role="group" aria-label="Cuadros de color" data-i18n-aria="sequenceFrames" data-bind="sequence-frames"></div>
-    <button class="btn ghost" data-action="sequence-remove-color" data-i18n="removeFrame">Quitar cuadro</button>
-    <div class="swatches" role="group" aria-label="Colores rápidos" data-i18n-aria="quickColors" data-bind="sequence-swatches"></div>
-    <label class="btn ghost seq-pick"><span data-i18n="otherColor">Otro color</span><input type="color" data-bind="sequence-other"></label>
+    <div class="quick sequence-actions">
+      <button class="btn ghost grow" data-action="sequence-add-color" data-i18n="addColor">Agregar color</button>
+      <button class="btn ghost grow" data-action="sequence-remove-color" data-i18n="removeColor">Quitar color</button>
+    </div>
+    <div class="wheel" data-bind="sequence-wheel" role="slider" tabindex="0" aria-label="Tono" data-i18n-aria="hue" aria-valuemin="0" aria-valuemax="359" aria-valuenow="0">
+      <div class="cur"></div><div class="handle"></div>
+    </div>
+    <div class="swatches sequence-swatches" role="group" aria-label="Colores rápidos" data-i18n-aria="quickColors">
+      <div data-bind="sequence-swatches"></div>
+      <label class="swatch seq-pick sequence-other"><span aria-hidden="true">+</span><input type="color" data-bind="sequence-other" aria-label="Otro color" data-i18n-aria="otherColor"></label>
+    </div>
     <div>
       <label class="slider-head" for="sequence-speed"><span data-i18n="speed">Velocidad</span> <output data-bind="sequence-speed-out"></output></label>
       <input class="range" id="sequence-speed" type="range" min="0" max="100" step="1">

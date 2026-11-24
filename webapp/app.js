@@ -13,6 +13,7 @@ import { MAX_SEQUENCES, MAX_COLORS, loadSequences, saveSequences, createSequence
 import { formatRemaining, fadeBrightness, parseTimerDuration } from './timer.js';
 import { createLink } from './ble.js';
 import { hueToRgb, hueFromPoint, rgbCss } from './color.js';
+import { CUSTOM_COLORS_KEY, loadCustomColors, addCustomColor } from './colors.js';
 
 import { LANGUAGE_KEY, loadLanguage, translate } from './i18n.js';
 
@@ -335,7 +336,7 @@ function openShortcutChooser(index, trigger) {
   const savedChoices = bind('shortcut-sequences')[0];
   savedChoices.replaceChildren(...sequences.map(({ id }) => choice({ kind: 'sequence', id })));
   savedChoices.hidden = bind('shortcut-divider')[0].hidden = sequences.length === 0;
-  bind('shortcut-scene-section')[0].open = true;
+  bind('shortcut-scene-section')[0].open = false;
   bind('shortcut-color-section')[0].open = false;
   openSheet('shortcut-pick', t(index === null ? 'addShortcut' : 'changeShortcut'), trigger);
 }
@@ -351,6 +352,7 @@ const quickToggle = $('[data-action="toggle-quick"]');
 function setQuickOpen(open) {
   quickToggle.setAttribute('aria-expanded', String(open));
   bind('quick')[0].hidden = !open;
+  bind('home-speed')[0].hidden = open;
   try { localStorage.setItem(QUICK_OPEN_KEY, open ? '1' : '0'); } catch { /* keep it for this session */ }
 }
 quickToggle.addEventListener('click', () => setQuickOpen(quickToggle.getAttribute('aria-expanded') !== 'true'));
@@ -402,27 +404,43 @@ function currentLabel() {
   return t(key ?? 'solid');
 }
 
-const wheel = bind('wheel')[0];
-let hue = 0;
-function pickHue(next) {
-  hue = (next + 360) % 360;
-  setColor(hueToRgb(hue), ['hueValue', { degrees: hue }]);
+function createHueWheel(wheel, onPick) {
+  const handle = wheel.querySelector('.handle');
+  let hue = 0;
+  const pick = degrees => {
+    const next = (degrees + 360) % 360;
+    onPick(hueToRgb(next), next);
+  };
+  function point(event) {
+    const r = wheel.getBoundingClientRect();
+    pick(hueFromPoint(event.clientX - r.left - r.width / 2, event.clientY - r.top - r.height / 2));
+  }
+  wheel.addEventListener('pointerdown', event => { wheel.setPointerCapture(event.pointerId); point(event); });
+  wheel.addEventListener('pointermove', event => { if (wheel.hasPointerCapture(event.pointerId)) point(event); });
+  wheel.addEventListener('keydown', event => {
+    const step = { ArrowRight: 5, ArrowUp: 5, ArrowLeft: -5, ArrowDown: -5 }[event.key];
+    if (step) { event.preventDefault(); pick(hue + step); }
+  });
+  return rgb => {
+    const [r, g, b] = rgb;
+    const max = Math.max(...rgb);
+    const delta = max - Math.min(...rgb);
+    const sector = !delta ? 0 : max === r ? (g - b) / delta : max === g ? 2 + (b - r) / delta : 4 + (r - g) / delta;
+    hue = (Math.round(sector * 60) + 360) % 360;
+    const angle = hue * Math.PI / 180;
+    wheel.style.setProperty('--c', rgbCss(rgb));
+    handle.style.left = `${50 + 38 * Math.sin(angle)}%`;
+    handle.style.top = `${50 - 38 * Math.cos(angle)}%`;
+    wheel.setAttribute('aria-valuenow', String(hue));
+  };
 }
-function wheelPoint(event) {
-  const r = wheel.getBoundingClientRect();
-  pickHue(hueFromPoint(event.clientX - r.left - r.width / 2, event.clientY - r.top - r.height / 2));
-}
-wheel.addEventListener('pointerdown', event => { wheel.setPointerCapture(event.pointerId); wheelPoint(event); });
-wheel.addEventListener('pointermove', event => { if (wheel.hasPointerCapture(event.pointerId)) wheelPoint(event); });
-wheel.addEventListener('keydown', event => {
-  const step = { ArrowRight: 5, ArrowUp: 5, ArrowLeft: -5, ArrowDown: -5 }[event.key];
-  if (step) { event.preventDefault(); pickHue(hue + step); }
-});
+const renderColorWheel = createHueWheel(bind('wheel')[0], (rgb, degrees) => setColor(rgb, ['hueValue', { degrees }]));
 
 // ---- built-in effects ----
 $$('[data-mode]').forEach(button => button.addEventListener('click', () => {
   $$('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b === button)));
   $$('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== button.dataset.mode; });
+  bind('effect-speed')[0].hidden = button.dataset.mode !== 'effects';
 }));
 const fxInput = bind('fx')[0];
 function playEffect(id) {
@@ -435,12 +453,36 @@ function playEffect(id) {
   startMode(mode);
 }
 const clampFx = n => Math.min(210, Math.max(1, Math.round(n) || 1));
-fxInput.addEventListener('input', () => text('fx-name', effectName(clampFx(Number(fxInput.value)))));
+const fxAuto = $('[data-action="fx-auto"]');
+const isAutoEffect = () => state.on && state.mode?.effect === 'AUTO';
+function renderEffect() {
+  const auto = isAutoEffect();
+  const current = auto ? t('allEffects') : String(state.fx);
+  fxInput.value = auto ? '' : current;
+  fxInput.placeholder = auto ? current : '';
+  fxAuto.setAttribute('aria-pressed', String(auto));
+  text('fx-out', current);
+  text('fx-name', auto ? t('autoCycleAll') : effectName(state.fx));
+}
+fxInput.addEventListener('input', () => {
+  if (!isAutoEffect() && /^\d+$/.test(fxInput.value)) text('fx-name', effectName(clampFx(Number(fxInput.value))));
+});
 $('[data-action="fx-prev"]').addEventListener('click', () => playEffect(clampFx(state.fx - 1)));
 $('[data-action="fx-next"]').addEventListener('click', () => playEffect(clampFx(state.fx + 1)));
 // Typing a number applies it when done (Enter / Listo or leaving the field), like the arrows.
-fxInput.addEventListener('change', () => playEffect(clampFx(Number(fxInput.value))));
-$('[data-action="fx-auto"]').addEventListener('click', () => playEffect('AUTO'));
+fxInput.addEventListener('change', () => {
+  const value = fxInput.value.trim();
+  if (/^\d+$/.test(value)) playEffect(clampFx(Number(value)));
+  renderEffect();
+});
+fxInput.addEventListener('keydown', event => {
+  if (event.key === 'Enter') { event.preventDefault(); fxInput.blur(); }
+  if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+    event.preventDefault();
+    playEffect(clampFx(state.fx + (event.key === 'ArrowUp' ? 1 : -1)));
+  }
+});
+fxAuto.addEventListener('click', () => playEffect('AUTO'));
 const voiceButtons = $$('[data-voice]');
 voiceButtons.forEach(button => button.addEventListener('click', () => {
   if (needsLink()) return;
@@ -461,12 +503,19 @@ document.addEventListener('input', event => {
   input.style.setProperty('--p', `${100 * (Number(input.value) - min) / (max - min)}%`);
 });
 
-bind('speed')[0].addEventListener('input', event => {
-  state.speed = Number(event.target.value);
-  persist();
+function renderSpeed() {
+  bind('speed').forEach(input => {
+    input.value = state.speed;
+    input.style.setProperty('--p', `${100 * (state.speed - input.min) / (input.max - input.min)}%`);
+  });
   text('speed-out', `${state.speed} %`);
+}
+bind('speed').forEach(input => input.addEventListener('input', () => {
+  state.speed = Number(input.value);
+  persist();
+  renderSpeed();
   fire(speed(state.speed), 'speed');
-});
+}));
 
 // ---- connection ----
 $$('[data-action="connect"], [data-action="help-connect"]').forEach(button => button.addEventListener('click', () => {
@@ -549,16 +598,10 @@ function render() {
   renderStrip();
   $$('.tile[data-scene]').forEach(t => t.setAttribute('aria-pressed', String(state.on && t.dataset.scene === quickId)));
   $$('.swatch[data-rgb]').forEach(s => s.setAttribute('aria-pressed', String(s.dataset.rgb === state.rgb.join(','))));
-  wheel.style.setProperty('--c', rgbCss(state.rgb));
-  bind('wheel-handle')[0].style.cssText = `left:${50 + 38 * Math.sin(hue * Math.PI / 180)}%;top:${50 - 38 * Math.cos(hue * Math.PI / 180)}%`;
-  wheel.setAttribute('aria-valuenow', String(hue));
+  renderColorWheel(state.rgb);
   voiceButtons.forEach(button => button.setAttribute('aria-pressed', String(state.on && state.mode?.voice === Number(button.dataset.voice))));
-  fxInput.value = state.fx;
-  text('fx-out', String(state.fx));
-  text('fx-name', effectName(state.fx));
-  bind('speed')[0].value = state.speed;
-  bind('speed')[0].style.setProperty('--p', `${state.speed}%`);
-  text('speed-out', `${state.speed} %`);
+  renderEffect();
+  renderSpeed();
   renderBrightness();
   renderLastSent();
   renderSceneSelection();
@@ -726,6 +769,12 @@ let selectedFrame = 0;
 const sequenceList = bind('sequence-list')[0];
 const frameList = bind('sequence-frames')[0];
 const sequenceOther = bind('sequence-other')[0];
+const sequenceSwatches = bind('sequence-swatches')[0];
+const sequenceAdd = $('[data-action="sequence-add-color"]');
+let customColors = loadCustomColors({ getItem: key => localStorage.getItem(key) });
+const rgbFromHex = value => [1, 3, 5].map(i => parseInt(value.slice(i, i + 2), 16));
+const pickSequenceColor = rgb => editSequence(setFrameColor(editingSequence, selectedFrame, rgb), 'colors');
+const renderSequenceWheel = createHueWheel(bind('sequence-wheel')[0], pickSequenceColor);
 const sequenceSpeed = $('#sequence-speed');
 const sequenceBri = $('#sequence-bri');
 const sequenceStop = $('[data-action="sequence-stop"]');
@@ -783,25 +832,14 @@ function renderSequencePlayback() {
 }
 
 function renderSequenceFrames(item, focusFrame = false) {
-  const squares = item.colors.map((rgb, i) => {
+  const squares = item.colors.map((_, i) => {
     const button = document.createElement('button');
     button.className = 'swatch sequence-frame';
-    button.style.background = rgbCss(rgb);
-    button.setAttribute('aria-label', t('sequenceFrame', { number: i + 1, hex: hex(rgb) }));
-    button.addEventListener('click', () => { selectedFrame = i; renderSequencePalette(item); });
+    button.addEventListener('click', () => { selectedFrame = i; renderSequencePalette(editingSequence); });
     return button;
   });
-  const add = document.createElement('button');
-  add.className = 'btn ghost sequence-frame';
-  add.textContent = '+';
-  add.setAttribute('aria-label', t('addFrame'));
-  add.disabled = item.colors.length === MAX_COLORS;
-  add.addEventListener('click', () => {
-    const next = addColor(item);
-    selectedFrame = next.colors.length - 1;
-    editSequence(next, 'colors', true);
-  });
-  frameList.replaceChildren(...squares, add);
+  frameList.replaceChildren(...squares);
+  sequenceAdd.disabled = item.colors.length === MAX_COLORS;
   $('[data-action="sequence-remove-color"]').disabled = item.colors.length === 1;
   renderSequencePalette(item);
   if (focusFrame) squares[selectedFrame].focus();
@@ -809,11 +847,18 @@ function renderSequenceFrames(item, focusFrame = false) {
 
 function renderSequencePalette(item) {
   const rgb = item.colors[selectedFrame];
-  [...frameList.querySelectorAll('.swatch')].forEach((button, i) => button.setAttribute('aria-pressed', String(i === selectedFrame)));
-  [...bind('sequence-swatches')[0].children].forEach((button, i) => {
-    button.setAttribute('aria-pressed', String(hex(SWATCHES[i][1]) === hex(rgb)));
+  [...frameList.children].forEach((button, i) => {
+    const frame = item.colors[i];
+    button.style.background = rgbCss(frame);
+    button.setAttribute('aria-label', t('sequenceFrame', { number: i + 1, hex: hex(frame) }));
+    button.setAttribute('aria-pressed', String(i === selectedFrame));
   });
-  sequenceOther.value = hex(rgb).toLowerCase();
+  const value = hex(rgb).toLowerCase();
+  [...sequenceSwatches.children].forEach(button => {
+    button.setAttribute('aria-pressed', String(button.dataset.color === value));
+  });
+  sequenceOther.value = value;
+  renderSequenceWheel(rgb);
 }
 
 function renderSequenceSliders(item) {
@@ -828,19 +873,28 @@ function renderSequenceSliders(item) {
   sequenceBri.setAttribute('aria-valuetext', `${item.bri}%`);
 }
 
+function renderSequenceSwatches() {
+  const swatch = (label, rgb) => {
+    const button = document.createElement('button');
+    button.className = 'swatch';
+    button.style.background = rgbCss(rgb);
+    button.dataset.color = hex(rgb).toLowerCase();
+    button.setAttribute('aria-label', label);
+    button.addEventListener('click', () => pickSequenceColor(rgb));
+    return button;
+  };
+  sequenceSwatches.replaceChildren(
+    ...SWATCHES.map(([name, rgb]) => swatch(t(name), rgb)),
+    ...customColors.map(value => swatch(t('customColor', { hex: value.toUpperCase() }), rgbFromHex(value))),
+  );
+}
+
 function openSequence(item, trigger, isNew = false) {
   editingSequence = { ...item, colors: item.colors.map(rgb => [...rgb]) };
   isNewSequence = isNew;
   selectedFrame = 0;
   text('sequence-error', '');
-  bind('sequence-swatches')[0].replaceChildren(...SWATCHES.map(([name, rgb]) => {
-    const button = document.createElement('button');
-    button.className = 'swatch';
-    button.style.background = rgbCss(rgb);
-    button.setAttribute('aria-label', t(name));
-    button.addEventListener('click', () => editSequence(setFrameColor(editingSequence, selectedFrame, rgb), 'colors'));
-    return button;
-  }));
+  renderSequenceSwatches();
   renderSequenceFrames(editingSequence);
   renderSequenceSliders(editingSequence);
   renderSequencePlayback();
@@ -849,8 +903,10 @@ function openSequence(item, trigger, isNew = false) {
 
 function editSequence(next, field, focusFrame = false) {
   editingSequence = next;
-  if (field === 'colors') renderSequenceFrames(next, focusFrame);
-  else renderSequenceSliders(next);
+  if (field === 'colors') {
+    if (frameList.children.length !== next.colors.length) renderSequenceFrames(next, focusFrame);
+    else renderSequencePalette(next);
+  } else renderSequenceSliders(next);
   if (activeSequence !== draftPlayback || !link.ready) return;
   if (field === 'bri') fire(brightness(targetBrightness(next.bri)), 'brightness');
   else previewSequence();
@@ -866,8 +922,18 @@ function previewSequence() {
 sequenceOther.addEventListener('change', () => {
   if (!editingSequence) return;
   const value = sequenceOther.value;
-  const rgb = [1, 3, 5].map(i => parseInt(value.slice(i, i + 2), 16));
-  editSequence(setFrameColor(editingSequence, selectedFrame, rgb), 'colors');
+  const next = addCustomColor(customColors, value);
+  if (next !== customColors) {
+    customColors = next;
+    try { localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(customColors)); } catch { /* Keep colors for this session. */ }
+    renderSequenceSwatches();
+  }
+  pickSequenceColor(rgbFromHex(value));
+});
+sequenceAdd.addEventListener('click', () => {
+  const next = addColor(editingSequence);
+  selectedFrame = next.colors.length - 1;
+  editSequence(next, 'colors', true);
 });
 sequenceSpeed.addEventListener('input', () => editSequence({ ...editingSequence, interval: intervalFromSpeed(sequenceSpeed.value) }, 'interval'));
 sequenceBri.addEventListener('input', () => editSequence({ ...editingSequence, bri: Number(sequenceBri.value) }, 'bri'));
