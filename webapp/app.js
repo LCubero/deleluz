@@ -464,7 +464,7 @@ document.addEventListener('input', event => {
 bind('speed')[0].addEventListener('input', event => {
   state.speed = Number(event.target.value);
   persist();
-  text('speed-out', String(state.speed));
+  text('speed-out', `${state.speed} %`);
   fire(speed(state.speed), 'speed');
 });
 
@@ -558,7 +558,7 @@ function render() {
   text('fx-name', effectName(state.fx));
   bind('speed')[0].value = state.speed;
   bind('speed')[0].style.setProperty('--p', `${state.speed}%`);
-  text('speed-out', String(state.speed));
+  text('speed-out', `${state.speed} %`);
   renderBrightness();
   renderLastSent();
   renderSceneSelection();
