@@ -6,6 +6,8 @@ This file records meaningful completed changes in chronological order, newest fi
 
 ## 2026-11-24
 
+- Reworked the webapp around user-editable content (`odd/tasks/deleluz-webapp.md` T21-T45, L28-L64): customizable quick scenes (2 defaults, up to 6, hold for options, drag to reorder), "Mis escenas" color sequences (gallery cards, editor with wheel, drag-reorder, rename, speed %, intensity), one shared favorites palette (green, yellow, red by default, up to 15, replace/move/delete by drag to the trash), Música as cards, Incluidas as cards, swipe between tabs (wraps), collapsible sections closed by default, Disconnect, status chip in every section, AUTO indicator, privacy and permissions in Help, safer error and deletion handling. Saved custom scenes from the previous version were replaced by "Mis escenas" sequences.
+
 - Removed saved custom scenes ("Mis escenas", the + button and the save sheet) from the webapp at the user's request; Scenes lists only the included scenes and built-in effects (`odd/tasks/deleluz-webapp.md` L34).
 - The webapp shows the vendor names of the 210 built-in effects (Color and Scenes), cross-checked against an independent catalog (`odd/tasks/deleluz-webapp.md` T16, L32).
 - Polished the webapp: voice modes 1-4 in Color → Efectos integrados → Música (verified on the strip), Home fits short screens 320x568-412x915, symmetric color and scene grids, storage failures never block strip commands, scenes resume cleanly after a late wake-up (`odd/tasks/deleluz-webapp.md` T12-T15, L29-L30).

@@ -53,7 +53,9 @@ button.chip[data-action="link-toggle"]:disabled{opacity:1;cursor:default}
 .power[aria-pressed="true"]{color:#fff;box-shadow:0 0 0 6px rgba(168,85,247,.18),0 0 50px rgba(236,72,153,.45),inset 0 0 30px rgba(168,85,247,.35)}
 .power svg{width:52px;height:52px}
 .power-label{font-weight:700;font-size:1.125rem;text-align:center}
-.power-label,.tile-name,#sheet-title{max-width:100%;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.power-label,#sheet-title{max-width:100%;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+/* Tile names wrap to two lines before the ellipsis, so short names like "Blanco cálido" stay whole. */
+.tile-name{max-width:100%;min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:break-word}
 
 .grid3{display:grid;grid-template-columns:repeat(var(--cols,3),minmax(0,1fr));gap:10px}
 .tile{min-height:60px;border-radius:var(--r-md);padding:10px;display:flex;flex-direction:column;justify-content:flex-start;gap:6px;text-align:left;font-weight:600;font-size:0.875rem;border:1px solid var(--line);background:var(--glass)}
