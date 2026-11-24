@@ -469,7 +469,8 @@ intervalInput.addEventListener('input', updatePreview);
 reducedMotion.addEventListener('change', updatePreview);
 
 function useScene(apply) {
-  if (!link.ready) { text('preview-error', t('connectFirst')); return; }
+  // Same warning as every other strip action: close the sheet so the top toast is visible.
+  if (!link.ready) { closeSheet(); needsLink(); return; }
   const { id, preset, effect: fx } = selected;
   const mode = preset ? { preset, interval: Number(intervalInput.value) } : { effect: fx };
   if (apply) {
