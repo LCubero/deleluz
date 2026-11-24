@@ -505,8 +505,9 @@ function renderEffect() {
 fxInput.addEventListener('input', () => {
   if (!isAutoEffect() && /^\d+$/.test(fxInput.value)) text('fx-name', effectName(clampFx(Number(fxInput.value))));
 });
-$('[data-action="fx-prev"]').addEventListener('click', () => playEffect(clampFx(state.fx - 1)));
-$('[data-action="fx-next"]').addEventListener('click', () => playEffect(clampFx(state.fx + 1)));
+const wrapFx = n => ((n - 1 + 210) % 210) + 1;
+$('[data-action="fx-prev"]').addEventListener('click', () => playEffect(wrapFx(state.fx - 1)));
+$('[data-action="fx-next"]').addEventListener('click', () => playEffect(wrapFx(state.fx + 1)));
 // Typing a number applies it when done (Enter / Listo or leaving the field), like the arrows.
 fxInput.addEventListener('change', () => {
   const value = fxInput.value.trim();
@@ -721,19 +722,19 @@ function renderSceneSelection() {
 function renderScenes() {
   bind('scene-list')[0].replaceChildren(...gallery.map(scene => {
     const button = document.createElement('button');
-    button.className = 'scene';
+    button.className = 'scene sequence-card';
     button.dataset.id = scene.id;
-    const strip = document.createElement('span');
-    strip.className = 'strip';
-    strip.style.setProperty('--strip', sceneSwatch(scene));
     const name = document.createElement('b');
     name.className = 'meta';
     name.textContent = sceneName(scene);
-    const tag = document.createElement('span');
-    tag.className = 'tag';
-    tag.textContent = t(scene.preset ? 'page' : 'builtInTag');
-    button.append(strip, name, tag);
-    button.addEventListener('click', () => openPreview(scene, button));
+    const strip = document.createElement('span');
+    strip.className = 'strip';
+    strip.style.setProperty('--strip', sceneSwatch(scene));
+    button.append(name, strip);
+    attachPress(button, {
+      tap: () => (scene.preset ? playPreset(scene.preset, scene.interval) : playEffect(scene.effect)),
+      hold: () => openPreview(scene, button),
+    });
     return button;
   }));
   renderSceneSelection();
@@ -1310,8 +1311,8 @@ addEventListener('touchend', event => {
   swipe = null;
   if (!fast || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
   const current = TAB_ORDER.indexOf((location.hash || '#home').slice(1));
-  const next = TAB_ORDER[Math.max(0, current) + (dx < 0 ? 1 : -1)];
-  if (next) location.hash = `#${next}`;
+  const next = TAB_ORDER[(Math.max(0, current) + (dx < 0 ? 1 : -1) + TAB_ORDER.length) % TAB_ORDER.length];
+  location.hash = `#${next}`;
 }, { passive: true });
 
 // ---- tabs (hash routing) ----

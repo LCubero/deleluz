@@ -108,7 +108,7 @@ nav.tabs a[aria-current="page"] svg{stroke:#f0abfc;filter:drop-shadow(0 0 8px va
 .scene .meta{flex:1;min-width:0;overflow-wrap:break-word}
 .scene[aria-current="true"]{border-color:#d8a2f5}
 .sequence-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.sequence-card{display:grid;align-content:start;gap:8px;min-width:0}
+.sequence-card{display:grid;align-content:space-between;gap:8px;min-width:0}
 .sequence-card{-webkit-touch-callout:none;user-select:none}
 .sequence-thumb{display:grid;grid-template-columns:repeat(8,minmax(0,12px));gap:3px}
 .sequence-thumb > span{aspect-ratio:1;border-radius:3px}
@@ -241,3 +241,4 @@ body:has(#sheet[open]) .more-below{opacity:0}
 @media (max-width:340px){.swatches{grid-template-columns:repeat(5,44px);column-gap:clamp(4px,calc((100% - 220px) / 4),16px)}}
 .favorites-toggle{align-self:flex-start;font-weight:600}
 html,body{overscroll-behavior-x:none}
+.sequence-card .strip{display:block;height:10px;width:100%;border-radius:999px;background:var(--strip)}
