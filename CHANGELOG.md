@@ -6,6 +6,7 @@ This file records meaningful completed changes in chronological order, newest fi
 
 ## 2026-11-24
 
+- Published the project as a public GitHub repository under the MIT license; stopped tracking `.pi/` and moved superseded designs, the store-links note and the original brief to a local, git-ignored `_archive/` (`odd/tasks/deleluz-webapp.md` L67-L69).
 - Reworked the webapp around user-editable content (`odd/tasks/deleluz-webapp.md` T21-T45, L28-L64): customizable quick scenes (2 defaults, up to 6, hold for options, drag to reorder), "Mis escenas" color sequences (gallery cards, editor with wheel, drag-reorder, rename, speed %, intensity), one shared favorites palette (green, yellow, red by default, up to 15, replace/move/delete by drag to the trash), Música as cards, Incluidas as cards, swipe between tabs (wraps), collapsible sections closed by default, Disconnect, status chip in every section, AUTO indicator, privacy and permissions in Help, safer error and deletion handling. Saved custom scenes from the previous version were replaced by "Mis escenas" sequences.
 
 - Removed saved custom scenes ("Mis escenas", the + button and the save sheet) from the webapp at the user's request; Scenes lists only the included scenes and built-in effects (`odd/tasks/deleluz-webapp.md` L34).
