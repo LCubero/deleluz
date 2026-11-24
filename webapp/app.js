@@ -13,7 +13,7 @@ import { MAX_SEQUENCES, MAX_COLORS, loadSequences, saveSequences, createSequence
 import { formatRemaining, fadeBrightness, parseTimerDuration } from './timer.js';
 import { createLink } from './ble.js';
 import { hueToRgb, hueFromPoint, rgbCss, rgbFromHex } from './color.js';
-import { CUSTOM_COLORS_KEY, loadCustomColors, addCustomColor } from './colors.js';
+import { CUSTOM_COLORS_KEY, CUSTOM_LIMIT, loadCustomColors, addCustomColor, replaceCustomColor } from './colors.js';
 
 import { LANGUAGE_KEY, loadLanguage, translate } from './i18n.js';
 
@@ -190,7 +190,7 @@ const hex = rgb => `#${rgb.map(v => v.toString(16).padStart(2, '0')).join('').to
 function shortcutName(item) {
   if (item.kind === 'sequence') return sequences.find(scene => scene.id === item.id).name;
   if (item.kind === 'scene') return t(item.preset);
-  return item.name ? t(item.name) : t('colorHex', { hex: hex(item.rgb) });
+  return item.name ? t(item.name) : t('solid');
 }
 const shortcutId = item => item.kind === 'sequence' ? sequenceKey(item.id) :
   item.kind === 'scene' ? item.preset : `color:${item.rgb.join(',')}`;
@@ -207,7 +207,7 @@ function applyShortcut(item) {
     const scene = sequences.find(scene => scene.id === item.id);
     if (scene) playSequence(scene);
   } else if (item.kind === 'scene') playPreset(item.preset);
-  else setColor(item.rgb, item.name ? [item.name] : ['colorHex', { hex: hex(item.rgb) }], shortcutId(item));
+  else setColor(item.rgb, item.name ? [item.name] : ['solid'], shortcutId(item));
 }
 
 const HOLD_MS = 450;
@@ -398,16 +398,15 @@ bind('bri').forEach(input => input.addEventListener('input', () => {
 // ---- color wheel and swatches ----
 const SWATCHES = [['red', [255, 0, 0]], ['orange', [255, 110, 0]], ['yellow', [255, 200, 0]], ['green', [0, 255, 0]],
   ['cyan', [0, 255, 255]], ['blue', [0, 0, 255]], ['pink', [255, 0, 120]], ['white', WHITE]];
+let colorPalette;
 function renderSwatches() {
-  bind('swatches')[0].replaceChildren(...SWATCHES.map(([name, rgb]) => {
-    const b = document.createElement('button');
-    b.className = 'swatch';
-    b.style.background = rgbCss(rgb);
-    b.setAttribute('aria-label', t(name));
-    b.dataset.rgb = rgb.join(',');
-    b.addEventListener('click', () => setColor(rgb, [name]));
-    return b;
-  }));
+  colorPalette ??= createPalette({
+    container: bind('swatches')[0],
+    mark: rgb => ({ rgb: rgb.join(',') }),
+    current: () => state.rgb,
+    apply: (rgb, label) => setColor(rgb, label),
+  });
+  colorPalette.render();
 }
 
 function currentLabel() {
@@ -789,6 +788,57 @@ const renderShortcutWheel = createHueWheel(bind('shortcut-wheel')[0], rgb => { s
 renderShortcutWheel(shortcutWheelRgb);
 $('[data-action="shortcut-add-wheel"]').addEventListener('click', () => chooseShortcut({ kind: 'color', rgb: [...shortcutWheelRgb] }));
 
+// Quick circles + up to 7 saved colors + a dashed "+" shared by the Color tab and the scene editor.
+// Tap a saved circle to choose it as the slot; "+" then replaces that slot with the current color,
+// otherwise it adds a new one. Nothing is overwritten silently when the list is full.
+let customColors = loadCustomColors(localStore);
+const palettes = [];
+function storeCustomColors(next) {
+  if (next === customColors) return;
+  customColors = next;
+  try { localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(customColors)); } catch { toast('storageFailed', true); }
+  palettes.forEach(palette => palette.render());
+}
+function createPalette({ container, mark, current, apply }) {
+  let slot = null;
+  const circle = (label, rgb, onTap, extra = {}) => {
+    const button = document.createElement('button');
+    button.className = 'swatch';
+    button.style.background = rgbCss(rgb);
+    button.setAttribute('aria-label', label);
+    Object.assign(button.dataset, mark(rgb), extra);
+    button.addEventListener('click', onTap);
+    return button;
+  };
+  const plus = document.createElement('button');
+  plus.className = 'swatch palette-plus';
+  plus.innerHTML = '<span aria-hidden="true">+</span>';
+  plus.addEventListener('click', () => {
+    const value = hex(current()).toLowerCase();
+    if (SWATCHES.some(([, c]) => hex(c).toLowerCase() === value)) return;
+    if (slot !== null) storeCustomColors(replaceCustomColor(customColors, slot, value));
+    else if (customColors.length >= CUSTOM_LIMIT) { toast('customFull', true); return; }
+    else storeCustomColors(addCustomColor(customColors, value));
+  });
+  function render() {
+    if (slot !== null && slot >= customColors.length) slot = null;
+    plus.setAttribute('aria-label', t(slot === null ? 'saveSelectedColor' : 'replaceSavedColor'));
+    container.replaceChildren(
+      ...SWATCHES.map(([name, rgb]) => circle(t(name), rgb, () => { slot = null; apply(rgb, [name]); render(); })),
+      ...customColors.map((value, i) => {
+        const rgb = rgbFromHex(value);
+        const button = circle(t('customColor', { hex: value.toUpperCase() }), rgb, () => { slot = i; apply(rgb, ['solid']); render(); });
+        button.classList.toggle('slot', i === slot);
+        return button;
+      }),
+      plus,
+    );
+  }
+  const palette = { render, clearSlot() { slot = null; render(); } };
+  palettes.push(palette);
+  return palette;
+}
+
 // ---- saved color sequences ----
 let editingSequence = null;
 let isNewSequence = false;
@@ -799,10 +849,8 @@ const frameHint = document.createElement('p');
 frameHint.className = 'sequence-reorder-hint';
 frameHint.dataset.i18n = 'sequenceReorderHint';
 frameList.after(frameHint);
-const sequenceOther = bind('sequence-other')[0];
 const sequenceSwatches = bind('sequence-swatches')[0];
 const sequenceAdd = $('[data-action="sequence-add-color"]');
-let customColors = loadCustomColors(localStore);
 const pickSequenceColor = rgb => editSequence(setFrameColor(editingSequence, selectedFrame, rgb), 'colors');
 const renderSequenceWheel = createHueWheel(bind('sequence-wheel')[0], pickSequenceColor);
 const sequenceSpeed = $('#sequence-speed');
@@ -914,20 +962,15 @@ function renderSequenceSliders(item) {
   sequenceBri.setAttribute('aria-valuetext', `${item.bri}%`);
 }
 
+let sequencePalette;
 function renderSequenceSwatches() {
-  const swatch = (label, rgb) => {
-    const button = document.createElement('button');
-    button.className = 'swatch';
-    button.style.background = rgbCss(rgb);
-    button.dataset.color = hex(rgb).toLowerCase();
-    button.setAttribute('aria-label', label);
-    button.addEventListener('click', () => pickSequenceColor(rgb));
-    return button;
-  };
-  sequenceSwatches.replaceChildren(
-    ...SWATCHES.map(([name, rgb]) => swatch(t(name), rgb)),
-    ...customColors.map(value => swatch(t('customColor', { hex: value.toUpperCase() }), rgbFromHex(value))),
-  );
+  sequencePalette ??= createPalette({
+    container: sequenceSwatches,
+    mark: rgb => ({ color: hex(rgb).toLowerCase() }),
+    current: () => editingSequence.colors[selectedFrame],
+    apply: rgb => pickSequenceColor(rgb),
+  });
+  sequencePalette.render();
 }
 
 function openSequence(item, trigger, isNew = false) {
@@ -961,20 +1004,6 @@ function previewSequence() {
 }
 
 // The dashed "+" saves the selected square's color (picked on the wheel) as a custom color.
-sequenceOther.addEventListener('click', () => {
-  if (!editingSequence) return;
-  const rgb = editingSequence.colors[selectedFrame];
-  const value = hex(rgb).toLowerCase();
-  // A color that is already one of the quick circles is not saved twice.
-  const quick = SWATCHES.some(([, c]) => hex(c).toLowerCase() === value);
-  const next = quick ? customColors : addCustomColor(customColors, value);
-  if (next !== customColors) {
-    customColors = next;
-    try { localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(customColors)); } catch { toast('storageFailed', true); }
-    renderSequenceSwatches();
-  }
-  pickSequenceColor(rgb);
-});
 sequenceAdd.addEventListener('click', () => {
   const next = addColor(editingSequence);
   selectedFrame = next.colors.length - 1;
