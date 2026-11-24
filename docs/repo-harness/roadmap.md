@@ -21,9 +21,10 @@ This roadmap is the canonical lifecycle owner. Track only non-trivial work with 
 - Firmware: the unpopulated header hole B is the Bluetrum one-wire download port; the ROM bootloader answers with chip ID `BLUEMATE` (L44-L46). Flash read is blocked: the public bluetrum-tools blob does not run on MATE (L45). ROM `MEM_READ` works (L49-L51): the 3 KB plaintext boot code was read and CRC-verified. Open (L51): a full flash read needs a custom RAM blob and code analysis with no guarantee; continue or pause is the user's choice. Use the gold or blue adapter; red is dead (L50). Every risky step needs user approval (`odd/tasks/led-lab.md` S4); never run write/erase.
 - Windows BLE: UB500 Plus test done (lab L48); Windows cannot discover the controller's characteristics through its Bluetooth stack. Open option (untested, needs user decision): bypass the Windows stack with a dedicated USB dongle (for example Bumble over WinUSB).
 - Bench tests that need the user at the strip (Android Chrome lab): range, preset modes, native effect catalog (210 IDs).
-- Capture remaining vendor frames: music/mic (`0B`, `0C`), timer (`10`), 10 m strip.
+- Capture remaining vendor frames: timer (`10`), 10 m strip, mic sensitivity (`0C`, untested). Voice modes `0B` 1-4 are confirmed (L53-L54).
+- App platform: webapp on `feat/app` (Android Chrome only). Flutter 3.50.1 + Android toolchain ready in `_tools/flutter` for a native Android/iPhone app if needed; iPhone builds need a Mac. Decide after merging `feat/app`.
 - Phone design: v3 skins in `design/deleluz-mobile-v3/` and Stitch project "DeleLuz v3"; resume after device knowledge.
-- First commit and private GitHub repository, when the user asks.
+- Private GitHub repository, when the user asks (local commits exist).
 
 ## Resolved Records
 <!-- doc-role:resolved-records -->

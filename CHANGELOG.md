@@ -4,8 +4,15 @@
 
 This file records meaningful completed changes in chronological order, newest first. Current state and future work belong in `docs/repo-harness/current-state.md`.
 
+## 2026-11-24
+
+- Confirmed the onboard-mic voice modes 1-4 over BLE from Android Chrome without the vendor app (`docs/PROTOCOL.md`, `odd/tasks/led-lab.md` L53-L54).
+- Installed Flutter 3.50.1 and the Android command-line tools as local tooling for a possible native app (`_tools/`, not committed).
+
 ## 2026-11-23
 
+- Found why Windows cannot control the strip: the controller's `FFE2` characteristic declaration is malformed and Windows rejects characteristic discovery; the adapter is not the cause (`odd/tasks/led-lab.md` L48).
+- Read the chip's RAM and its 3 KB plaintext boot code over the one-wire port; ROM and flash stay unreadable; compared three USB-serial adapters (red one is dead) (`odd/tasks/led-lab.md` L49-L52).
 - Documented the LEDDMX-03 device investigation: per-pixel control not found in vendor or public sources; controller identified as a Bluetrum SoC (ROM chip ID `BLUEMATE`) with its one-wire download port on the unpopulated header; flash readout blocked with public tools (`odd/tasks/led-lab.md` L28-L47, `docs/CAPABILITIES.md`).
 
 ## 2026-11-22
