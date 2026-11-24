@@ -1,6 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { power, color, brightness, effect, speed, voiceMode, hex, parseRaw, experimentalFrame } from './protocol.js';
+import { power, color, brightness, effect, speed, voiceMode, CHIP_ORDERS, chipConfig, hex, parseRaw, experimentalFrame } from './protocol.js';
+
+test('chip configuration uses vendor order codes and big-endian pixel counts', () => {
+  assert.deepEqual(CHIP_ORDERS, ['RGB', 'RBG', 'GRB', 'GBR', 'BRG', 'BGR', 'RGBW', 'RBGW', 'GRBW', 'GBRW', 'BRGW', 'BGRW']);
+  CHIP_ORDERS.forEach((order, index) => assert.equal(chipConfig(order, 150)[6], index + 1));
+  for (const [order, pixels, bytes] of [
+    ['GRB', 150, '00 96 03'], ['RGB', 150, '00 96 01'], ['BGR', 150, '00 96 06'],
+    ['GRB', 1024, '04 00 03'], ['GRB', 1, '00 01 03'],
+  ]) frame(chipConfig(order, pixels), `05 04 ${bytes}`);
+  for (const count of [0, 1025, 150.5]) assert.throws(() => chipConfig('GRB', count), RangeError);
+  assert.throws(() => chipConfig('XYZ', 150), RangeError);
+});
 
 function frame(actual, expected) {
   assert.ok(actual instanceof Uint8Array);

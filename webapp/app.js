@@ -1,4 +1,5 @@
-import { power, color, brightness, effect, speed, voiceMode } from '../lab/web/protocol.js';
+import { power, color, brightness, effect, speed, voiceMode, CHIP_ORDERS, chipConfig } from '../lab/web/protocol.js';
+import { stripPixels } from './strip-settings.js';
 import { effectName } from './effects.js';
 import { PRESETS, presetFrames } from '../lab/web/presets.js';
 import { createSender } from './sender.js';
@@ -568,10 +569,12 @@ function connectStrip({ reconnect = false } = {}) {
 
 $('[data-action="connect"]').addEventListener('click', () => connectStrip({ reconnect: link.state.status === 'lost' }));
 
-$$('.acc button').forEach(button => button.addEventListener('click', () => {
+$$('.acc > button').forEach(button => button.addEventListener('click', () => {
   const open = button.getAttribute('aria-expanded') === 'true';
+  const panel = document.getElementById(button.getAttribute('aria-controls'));
   button.setAttribute('aria-expanded', String(!open));
-  document.getElementById(button.getAttribute('aria-controls')).hidden = open;
+  panel.hidden = open;
+  if (open && panel.id === 'strip-settings') showStripConfirmation(false);
 }));
 
 function renderLinkText(s = link.state) {
@@ -1333,9 +1336,10 @@ new MutationObserver(scheduleMore).observe(document.body, { childList: true, sub
 // ---- swipe left/right between sections ----
 // A clear horizontal swipe on the page (not on sliders, the color wheel, a lifted tile or an open sheet)
 // moves to the next or previous tab, in the bottom-nav order.
-const TAB_ORDER = ['home', 'color', 'scenes', 'help'];
+const TAB_ORDER = ['home', 'color', 'scenes', 'settings'];
+const currentTab = () => location.hash === '#help' ? 'settings' : (location.hash || '#home').slice(1);
 let swipe = null;
-const NO_SWIPE = 'input, .wheel, .lifted, [data-bind="sequence-frames"], .swatches, nav.tabs, dialog';
+const NO_SWIPE = 'input, select, .wheel, .lifted, [data-bind="sequence-frames"], .swatches, nav.tabs, dialog';
 addEventListener('touchstart', event => {
   if (dialog.open || event.touches.length !== 1 || event.target.closest(NO_SWIPE)) { swipe = null; return; }
   const touch = event.touches[0];
@@ -1349,7 +1353,7 @@ addEventListener('touchend', event => {
   const fast = Date.now() - swipe.at < 600;
   swipe = null;
   if (!fast || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
-  const current = TAB_ORDER.indexOf((location.hash || '#home').slice(1));
+  const current = TAB_ORDER.indexOf(currentTab());
   const next = TAB_ORDER[(Math.max(0, current) + (dx < 0 ? 1 : -1) + TAB_ORDER.length) % TAB_ORDER.length];
   location.hash = `#${next}`;
 }, { passive: true });
@@ -1357,7 +1361,8 @@ addEventListener('touchend', event => {
 // ---- tabs (hash routing) ----
 function route() {
   if (dialog.open) closeSheet();
-  const id = (location.hash || '#home').slice(1);
+  showStripConfirmation(false);
+  const id = currentTab();
   const target = document.getElementById(id)?.classList.contains('screen') ? id : 'home';
   if (target !== 'color') colorPalette?.clearSlot();
   $$('.screen').forEach(s => { s.hidden = s.id !== target; });
@@ -1368,6 +1373,72 @@ addEventListener('hashchange', route);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && player.playing) toast('backgroundPause', true);
   if (!document.hidden) { updateTimer(); requestWakeLock(); }
+});
+
+// ---- strip settings ----
+const STRIP_SETTINGS_KEY = 'deleluz.webapp.stripSettings';
+const stripOrder = $('#strip-order');
+const stripDensity = $('#strip-density');
+const stripMeters = $('#strip-meters');
+const stripError = $('#strip-error');
+const stripSend = $('#strip-send');
+const stripConfirm = $('#strip-confirm');
+const stripConfirmSend = $('#strip-confirm-send');
+const stripCancel = $('#strip-cancel');
+const readStripPixels = () => stripPixels(stripDensity.valueAsNumber, stripMeters.valueAsNumber);
+
+stripOrder.replaceChildren(...CHIP_ORDERS.map(order => new Option(order, order)));
+stripOrder.value = 'GRB';
+try {
+  const saved = JSON.parse(localStore.getItem(STRIP_SETTINGS_KEY));
+  if (CHIP_ORDERS.includes(saved?.order) && stripPixels(saved.density, saved.meters) !== null) {
+    stripOrder.value = saved.order;
+    stripDensity.value = saved.density;
+    stripMeters.value = saved.meters;
+  }
+} catch { /* Keep defaults if saved strip settings are unavailable. */ }
+
+function renderStripSettings() {
+  const pixels = readStripPixels();
+  const invalid = pixels === null;
+  text('strip-total', t('stripTotal', { pixels: pixels ?? '—' }));
+  stripError.hidden = !invalid;
+  stripSend.disabled = stripConfirmSend.disabled = invalid;
+}
+
+for (const field of [stripOrder, stripDensity, stripMeters]) {
+  field.addEventListener('input', renderStripSettings);
+  field.addEventListener('change', () => {
+    if (readStripPixels() === null) return;
+    try {
+      localStore.setItem(STRIP_SETTINGS_KEY, JSON.stringify({
+        order: stripOrder.value, density: stripDensity.valueAsNumber, meters: stripMeters.valueAsNumber,
+      }));
+    } catch { toast('storageFailed', true); }
+  });
+}
+
+function showStripConfirmation(show) {
+  stripConfirm.hidden = !show;
+  stripSend.setAttribute('aria-expanded', String(show));
+}
+
+function closeStripConfirmation() {
+  showStripConfirmation(false);
+  (stripSend.disabled ? stripDensity : stripSend).focus();
+}
+
+stripSend.addEventListener('click', () => {
+  if (needsLink()) return;
+  showStripConfirmation(true);
+  stripCancel.focus();
+});
+stripCancel.addEventListener('click', closeStripConfirmation);
+stripConfirmSend.addEventListener('click', () => {
+  const pixels = readStripPixels();
+  closeStripConfirmation();
+  if (pixels === null || needsLink()) return;
+  fire(chipConfig(stripOrder.value, pixels));
 });
 
 function renderLanguage() {
@@ -1384,6 +1455,7 @@ function renderLanguage() {
   renderLinkText();
   renderTimer(timer ? (timer.end - performance.now()) / 1000 : 0);
   if (timerError.textContent) showTimerError(true);
+  renderStripSettings();
   if (toastKey) text('toast', t(toastKey));
 }
 

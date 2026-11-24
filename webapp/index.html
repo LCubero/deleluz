@@ -16,6 +16,7 @@
     <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
     <symbol id="i-color" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></symbol>
     <symbol id="i-scenes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
     <symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14"/><path d="M12 17.5h.01"/></symbol>
     <symbol id="i-bt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10-5 4V3l5 4L7 17"/></symbol>
     <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
@@ -127,8 +128,33 @@
       </section>
     </section>
 
-    <section id="help" class="screen" aria-labelledby="help-title" hidden>
-      <div class="top"><h1 id="help-title" data-i18n="help">Ayuda</h1><span class="chip" role="status"><span class="dot" aria-hidden="true"></span><span data-bind="chip-text" data-i18n="idle">Sin conexión</span></span></div>
+    <section id="settings" class="screen" aria-labelledby="settings-title" hidden>
+      <div class="top"><h1 id="settings-title" data-i18n="settings">Ajustes</h1><span class="chip" role="status"><span class="dot" aria-hidden="true"></span><span data-bind="chip-text" data-i18n="idle">Sin conexión</span></span></div>
+      <div class="acc"><button aria-expanded="false" aria-controls="strip-settings"><span data-i18n="stripSettings">Tira</span><span aria-hidden="true">›</span></button>
+        <div id="strip-settings" class="pad stack" hidden>
+          <label class="slider-head"><span data-i18n="stripOrder">Orden de colores</span><select id="strip-order"></select></label>
+          <label class="slider-head"><span data-i18n="stripDensity">LEDs por metro</span><input id="strip-density" type="number" step="any" value="30" aria-describedby="strip-error"></label>
+          <label class="slider-head"><span data-i18n="stripMeters">Metros</span><input id="strip-meters" type="number" step="any" value="5" aria-describedby="strip-error"></label>
+          <output for="strip-density strip-meters" data-bind="strip-total"></output>
+          <p id="strip-error" class="error small" role="status" data-i18n="stripError" hidden>Ingresa valores positivos que den un total de 1 a 1024 LEDs.</p>
+          <button class="btn primary" id="strip-send" aria-expanded="false" aria-controls="strip-confirm" data-i18n="stripSend">Enviar a la tira</button>
+          <div class="glass pad stack" id="strip-confirm" role="group" aria-labelledby="strip-confirm-title" hidden>
+            <p id="strip-confirm-title" data-i18n="stripConfirm">Esto cambia la configuración guardada en la tira. Si los colores se ven cruzados, vuelve a GRB.</p>
+            <div class="quick sequence-actions"><button class="btn primary grow" id="strip-confirm-send" data-i18n="send">Enviar</button><button class="btn ghost grow" id="strip-cancel" data-i18n="cancel">Cancelar</button></div>
+          </div>
+          <p class="small muted" data-i18n="stripFactory">Valores de fábrica de esta tira: GRB, 150 LEDs.</p>
+        </div>
+      </div>
+      <div class="acc"><button id="language-title" aria-expanded="false" aria-controls="settings-language"><span data-i18n="settingsLanguage">Idioma</span><span aria-hidden="true">›</span></button>
+        <div id="settings-language" class="pad" hidden>
+          <div class="seg" role="group" aria-labelledby="language-title">
+            <button data-language="es" lang="es" aria-pressed="true" data-i18n="spanish">Español</button>
+            <button data-language="en" lang="en" aria-pressed="false" data-i18n="english">English</button>
+          </div>
+        </div>
+      </div>
+      <div class="acc"><button aria-expanded="false" aria-controls="settings-help"><span data-i18n="help">Ayuda</span><span aria-hidden="true">›</span></button>
+      <div id="settings-help" class="pad stack" hidden>
       <h2 class="h3" data-i18n="troubleshoot">Solución de problemas</h2>
       <div class="acc"><button aria-expanded="false" aria-controls="help-list"><span data-i18n="missingStrip">La tira no aparece en la lista</span> <span aria-hidden="true">›</span></button>
         <ol id="help-list" hidden><li data-i18n="closeLamp">Cierra la app LED LAMP. Solo se puede conectar un teléfono o una app a la vez.</li><li data-i18n="enableBluetooth">Activa Bluetooth. Si Android te pide un ajuste del sistema para encontrar dispositivos cercanos, revisa ese aviso.</li><li data-i18n="standNear">Acércate a la tira y toca Conectar.</li></ol></div>
@@ -138,17 +164,13 @@
         <ol id="help-dark" hidden><li data-i18n="checkPower">Revisa la fuente de alimentación y las conexiones de la tira.</li><li data-i18n="tryWhite">Enciéndela en Inicio, sube el brillo y prueba Blanco. La página no puede leer el estado real de la tira.</li></ol></div>
       <div class="acc"><button aria-expanded="false" aria-controls="help-scene"><span data-i18n="sceneStopped">La escena se detuvo al salir de la página</span> <span aria-hidden="true">›</span></button>
         <ol id="help-scene" hidden><li data-i18n="keepForeground">Mantén esta página abierta y en primer plano para reproducir sus escenas. Si sales, la tira conserva el último color.</li><li data-i18n="applyAgain">Vuelve a la escena y toca Aplicar para reiniciarla, o elige un efecto integrado.</li></ol></div>
-      <div class="glass pad stack">
-        <h2 class="h3" id="language-title"><span lang="es" data-i18n="languageEs">Idioma</span> / <span lang="en" data-i18n="languageEn">Language</span></h2>
-        <div class="seg" role="group" aria-labelledby="language-title">
-          <button data-language="es" lang="es" aria-pressed="true" data-i18n="spanish">Español</button>
-          <button data-language="en" lang="en" aria-pressed="false" data-i18n="english">English</button>
-        </div>
       </div>
-      <div class="glass pad stack">
-        <h2 class="h3" data-i18n="privacyTitle">Privacidad y permisos</h2>
-        <p class="small muted" data-i18n="privacyText">Cuando tocas Conectar, tú eliges la tira en Chrome. Puedes desconectarla cuando quieras desde Inicio o tocando el estado de conexión en Color, Escenas o Ayuda. Después de cargar, la app no envía datos por internet ni usa el micrófono del teléfono, la ubicación ni cuentas. Tus escenas y colores solo se guardan en este navegador.</p>
+      </div>
+      <div class="acc"><button aria-expanded="false" aria-controls="settings-privacy"><span data-i18n="privacyTitle">Privacidad y permisos</span><span aria-hidden="true">›</span></button>
+      <div id="settings-privacy" class="pad stack" hidden>
+        <p class="small muted" data-i18n="privacyText">Cuando tocas Conectar, tú eliges la tira en Chrome. Puedes desconectarla cuando quieras desde Inicio o tocando el estado de conexión en Color, Escenas o Ajustes. Después de cargar, la app no envía datos por internet ni usa el micrófono del teléfono, la ubicación ni cuentas. Tus escenas y colores solo se guardan en este navegador.</p>
         <p class="small muted" data-i18n="privacyTimer">Mientras corre el temporizador, la app intenta mantener la pantalla encendida. Los modos de música usan el micrófono de la tira, no el de tu teléfono.</p>
+      </div>
       </div>
       <footer class="small muted" data-i18n="browserSupport">Funciona en Chrome para Android. Los navegadores de iPhone no admiten Web Bluetooth.</footer>
     </section>
@@ -160,7 +182,7 @@
     <a href="#home" aria-current="page"><svg aria-hidden="true"><use href="#i-home"/></svg><span data-i18n="home">Inicio</span></a>
     <a href="#color"><svg aria-hidden="true"><use href="#i-color"/></svg><span data-i18n="color">Color</span></a>
     <a href="#scenes"><svg aria-hidden="true"><use href="#i-scenes"/></svg><span data-i18n="scenes">Escenas</span></a>
-    <a href="#help"><svg aria-hidden="true"><use href="#i-help"/></svg><span data-i18n="help">Ayuda</span></a>
+    <a href="#settings"><svg aria-hidden="true"><use href="#i-settings"/></svg><span data-i18n="settings">Ajustes</span></a>
   </nav>
 </div>
 <dialog class="sheet" id="sheet" aria-modal="true" aria-labelledby="sheet-title">

@@ -34,6 +34,15 @@ export function voiceMode(mode) {
   return framed(0x0b, integer(mode, 1, 4, 'Voice mode'), 0, 255, 255);
 }
 
+export const CHIP_ORDERS = Object.freeze(['RGB', 'RBG', 'GRB', 'GBR', 'BRG', 'BGR', 'RGBW', 'RBGW', 'GRBW', 'GBRW', 'BRGW', 'BGRW']);
+
+export function chipConfig(order, pixels) {
+  const code = CHIP_ORDERS.indexOf(order) + 1;
+  if (!code) throw new RangeError('Unknown chip color order');
+  integer(pixels, 1, 1024, 'Pixel count');
+  return framed(5, 4, pixels >> 8, pixels & 0xff, code);
+}
+
 export const hex = bytes => Array.from(bytes, byte => byte.toString(16).padStart(2, '0').toUpperCase()).join(' ');
 
 function parseBytes(text) {

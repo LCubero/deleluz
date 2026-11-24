@@ -155,8 +155,12 @@ label.slider-head:has(.toggle){min-height:44px}
 .toggle:checked::before{transform:translateX(20px)}
 .acc{border-radius:var(--r-md);border:1px solid var(--line);background:var(--glass)}
 .acc > button{width:100%;min-height:56px;display:flex;gap:8px;align-items:center;justify-content:space-between;padding:0 16px;font-weight:600;text-align:left}
-.acc button[aria-expanded="true"] span[aria-hidden="true"]{transform:rotate(90deg)}
+.acc > button[aria-expanded="true"] span[aria-hidden="true"]{transform:rotate(90deg)}
 .acc ol{margin:0;padding:0 16px 14px 34px;color:var(--muted);font-size:0.875rem;display:flex;flex-direction:column;gap:6px}
+
+#strip-settings .slider-head{gap:8px}
+#strip-settings :is(input,select){width:7rem;min-width:0;min-height:44px;padding:0 8px;border:1px solid var(--line);border-radius:12px;background:var(--glass-2);color:inherit;font:inherit;color-scheme:dark}
+#strip-error{color:#fecaca}
 
 .timer-custom{grid-column:1/-1}
 #timer-minutes{width:7ch}
