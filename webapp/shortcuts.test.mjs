@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SHORTCUTS_KEY, MAX_SHORTCUTS, DEFAULT_SHORTCUTS, loadShortcuts, saveShortcuts,
-  addShortcut, replaceShortcut, removeShortcut, moveShortcut, gridColumns,
+  addShortcut, replaceShortcut, removeShortcut, moveShortcut, gridColumns, filterShortcuts,
 } from './shortcuts.js';
 
 const presets = ['police', 'rasta'];
@@ -30,6 +30,16 @@ test('loading keeps valid items, drops invalid ones, caps at six and keeps an em
   assert.deepEqual(loadShortcuts(store(JSON.stringify(list)), presets), [red, police]);
   assert.equal(loadShortcuts(store(JSON.stringify(Array(9).fill(red))), presets).length, 6);
   assert.deepEqual(loadShortcuts(store('[]'), presets), []);
+});
+
+test('sequence shortcuts round-trip only while their saved scene exists', () => {
+  const sequence = { kind: 'sequence', id: '1' };
+  const stale = { kind: 'sequence', id: '2' };
+  const s = store();
+  assert.equal(saveShortcuts(s, [stale, police, sequence, { ...sequence, id: 1 }]), true);
+  assert.deepEqual(loadShortcuts(s, presets, ['1']), [police, sequence]);
+  assert.deepEqual(loadShortcuts(s, presets), [police]);
+  assert.deepEqual(filterShortcuts([police, sequence], presets, []), [police]);
 });
 
 test('saving round-trips and reports a storage failure without throwing', () => {

@@ -1,4 +1,4 @@
-// Home quick scenes chosen by the user: colors or included page scenes, at most six.
+// Home quick scenes chosen by the user: colors, included page scenes or saved sequences, at most six.
 // Stored in this browser only; storage failures fall back to the defaults or memory.
 export const SHORTCUTS_KEY = 'deleluz.webapp.shortcuts';
 export const MAX_SHORTCUTS = 6;
@@ -13,25 +13,29 @@ export const DEFAULT_SHORTCUTS = Object.freeze([
 
 const isByte = value => Number.isInteger(value) && value >= 0 && value <= 255;
 
-function valid(item, presetIds) {
+function valid(item, presetIds, sequenceIds) {
   if (item?.kind === 'color') return Array.isArray(item.rgb) && item.rgb.length === 3 && item.rgb.every(isByte)
     && (item.name === undefined || typeof item.name === 'string');
+  if (item?.kind === 'sequence') return typeof item.id === 'string' && sequenceIds.includes(item.id);
   return item?.kind === 'scene' && presetIds.includes(item.preset);
 }
 
 const copy = item => item.kind === 'color'
   ? { kind: 'color', ...(item.name ? { name: item.name } : {}), rgb: [...item.rgb] }
-  : { kind: 'scene', preset: item.preset };
+  : item.kind === 'sequence' ? { kind: 'sequence', id: item.id } : { kind: 'scene', preset: item.preset };
 
 const defaults = () => DEFAULT_SHORTCUTS.map(copy);
 
-export function loadShortcuts(storage, presetIds) {
+export const filterShortcuts = (list, presetIds, sequenceIds) =>
+  list.filter(item => valid(item, presetIds, sequenceIds)).slice(0, MAX_SHORTCUTS);
+
+export function loadShortcuts(storage, presetIds, sequenceIds = []) {
   try {
     const raw = storage.getItem(SHORTCUTS_KEY);
     if (raw === null) return defaults();
     const list = JSON.parse(raw);
     if (!Array.isArray(list)) return defaults();
-    return list.filter(item => valid(item, presetIds)).slice(0, MAX_SHORTCUTS).map(copy);
+    return filterShortcuts(list, presetIds, sequenceIds).map(copy);
   } catch {
     return defaults();
   }

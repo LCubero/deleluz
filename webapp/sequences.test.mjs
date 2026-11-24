@@ -2,11 +2,23 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SEQUENCES_KEY, loadSequences, saveSequences, createSequence, updateSequence,
-  removeSequence, setColor, addColor, removeColor,
+  removeSequence, setColor, addColor, removeColor, speedPercent, intervalFromSpeed,
 } from './sequences.js';
 
 const defaults = [[255, 0, 0], [0, 255, 0], [0, 0, 255]];
 const storage = value => ({ getItem: key => key === SEQUENCES_KEY ? value : null });
+
+test('speed is linear from 0% slowest to 100% fastest', () => {
+  for (const [percent, interval] of [[0, 2000], [50, 1075], [100, 150]]) {
+    assert.equal(intervalFromSpeed(percent), interval);
+    assert.equal(speedPercent(interval), percent);
+  }
+  for (let percent = 0; percent <= 100; percent++) {
+    assert.ok(Math.abs(speedPercent(intervalFromSpeed(percent)) - percent) <= 1);
+  }
+  assert.equal(intervalFromSpeed(-1), 2000);
+  assert.equal(speedPercent(149), 100);
+});
 
 test('creates independent defaults, with first free name and at most 12 sequences', () => {
   assert.equal(SEQUENCES_KEY, 'deleluz.webapp.sequences');

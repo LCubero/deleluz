@@ -9,6 +9,9 @@ const valid = item => item && validText(item.id) && validText(item.name)
   && Array.isArray(item.colors) && inRange(item.colors.length, 1, MAX_COLORS) && [...item.colors].every(validRgb)
   && inRange(item.interval, 150, 2000) && inRange(item.bri, 1, 100);
 
+export const speedPercent = interval => Math.round(Math.min(100, Math.max(0, (2000 - interval) * 100 / 1850)));
+export const intervalFromSpeed = percent => Math.round(2000 - Math.min(100, Math.max(0, percent)) * 1850 / 100);
+
 export function loadSequences(storage) {
   try {
     const items = JSON.parse(storage.getItem(SEQUENCES_KEY));

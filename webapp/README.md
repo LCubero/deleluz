@@ -17,9 +17,9 @@ Spanish is the default; choose English in Help (Ayuda).
 
 ## What it does
 
-- **Home**: power, brightness, White / Warm white, quick scenes, off timer (clock icon). Quick scenes are yours: up to 6 colors or included scenes (default warm white, cool white, blue, green, yellow, red); tap to apply, press and hold for options (change, move, remove), hold and drag to reorder, + to add. Saved in this browser only.
+- **Home**: power, brightness, quick scenes, off timer (clock icon). Keep up to six shortcuts to colors, included page scenes, or saved My scenes. Tap to play or apply; press and hold to change, move, or remove; hold and drag to reorder. Tap + to add a shortcut. The chooser has collapsible Scenes and Colors sections; you can re-add any of the six default colors (warm white, cool white, blue, green, yellow, red). Shortcuts are saved in this browser only; deleting a saved scene removes its shortcuts.
 - **Color**: hue wheel and quick colors; built-in controller effects 1–210 with their vendor names, or Auto cycle, with speed; four Music modes that react to sound through the strip’s own microphone.
-- **Scenes**: preview included page scenes and built-in effects before applying. In **Mis escenas** (My scenes), create up to 12 sequences with 1–8 color squares each, then set the speed and intensity. Sequences are saved in this browser only. Playback shows one color at a time across the whole strip and requires this page to stay open and in front. Stopping leaves the last color on the strip.
+- **Scenes**: preview included page scenes and built-in effects before applying. In **Mis escenas** (My scenes), tap + to draft a scene with 1–8 color squares, speed (0% slowest, 100% fastest), and intensity. Tap a saved scene to play it; press and hold to edit it or use the trash icon and confirm deletion. Play and Stop in the editor preview the draft on the connected strip. Tap Save to keep your changes (up to 12 scenes, stored in this browser only); closing without saving discards the draft. Playback shows one color at a time across the whole strip and requires the page to stay open and in the foreground.
 - **Help**: connection state, Reconnect, and fixes by symptom.
 
 ## Limits

@@ -6,9 +6,10 @@ import { runStartup } from './startup.js';
 import { createPlayer } from './player.js';
 import { smoothSteps } from './smooth.js';
 import { persistState } from './state.js';
-import { MAX_SHORTCUTS, loadShortcuts, saveShortcuts, addShortcut, replaceShortcut, removeShortcut, moveShortcut, gridColumns } from './shortcuts.js';
+import { DEFAULT_SHORTCUTS, MAX_SHORTCUTS, loadShortcuts, saveShortcuts, addShortcut, replaceShortcut,
+  removeShortcut, moveShortcut, gridColumns, filterShortcuts } from './shortcuts.js';
 import { MAX_SEQUENCES, MAX_COLORS, loadSequences, saveSequences, createSequence, updateSequence,
-  removeSequence, setColor as setFrameColor, addColor, removeColor } from './sequences.js';
+  removeSequence, setColor as setFrameColor, addColor, removeColor, speedPercent, intervalFromSpeed } from './sequences.js';
 import { formatRemaining, fadeBrightness, parseTimerDuration } from './timer.js';
 import { createLink } from './ble.js';
 import { hueToRgb, hueFromPoint, rgbCss } from './color.js';
@@ -44,13 +45,14 @@ const sender = createSender({ write: bytes => link.write(bytes), interval: SEND_
 const player = createPlayer({ send: async bytes => {
   if (document.hidden) return;
   const run = playback;
-  if (await send(bytes, 'color') === 'sent' && run === playback && activeSequence) {
+  if (await send(bytes, 'color') === 'sent' && run === playback && activeSequence && activeSequence !== draftPlayback) {
     state.rgb = Array.from(bytes.subarray(3, 6));
     renderStrip();
   }
 } });
 let playback = 0;
 let activeSequence = null;
+const draftPlayback = Symbol('draft playback');
 function stopPlayback() {
   playback++;
   player.stop();
@@ -59,17 +61,17 @@ function stopPlayback() {
   renderSequencePlayback();
 }
 
-async function startMode(mode) {
+async function startMode(mode, { sequence = state.scene, bri = state.bri } = {}) {
   stopPlayback();
   const run = playback;
   if (mode.colors) {
-    activeSequence = state.scene;
+    activeSequence = sequence;
     renderSequencePlayback();
   }
   try {
     const ready = await runStartup(send, [
       { bytes: power(true), key: 'power' },
-      { bytes: brightness(targetBrightness()), key: 'brightness' },
+      { bytes: brightness(targetBrightness(bri)), key: 'brightness' },
     ], () => run === playback);
     if (!ready) return;
     if (mode.preset) {
@@ -83,7 +85,7 @@ async function startMode(mode) {
   } catch {
     if (run === playback && dialog.open) {
       if (selected) text('preview-error', t('sceneFailed'));
-      if (activeSequence === sequenceKey(editingSequence)) text('sequence-error', t('sceneFailed'));
+      if (activeSequence === draftPlayback) text('sequence-error', t('sceneFailed'));
     }
   } finally {
     if (run === playback && mode.colors) {
@@ -164,27 +166,40 @@ function playPreset(id, interval = PRESETS.find(p => p.id === id).interval, labe
 
 // ---- quick scenes (user shortcuts) ----
 const presetIds = PRESETS.map(p => p.id);
-let shortcuts = loadShortcuts(localStorage, presetIds);
+const localStore = {
+  getItem: key => localStorage.getItem(key),
+  setItem: (key, value) => localStorage.setItem(key, value),
+};
+let sequences = loadSequences(localStore);
+const sequenceKey = id => `sequence:${id}`;
+let shortcuts = loadShortcuts(localStore, presetIds, sequences.map(item => item.id));
 const hex = rgb => `#${rgb.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
-const shortcutName = item => item.kind === 'scene' ? t(item.preset) : item.name ? t(item.name) : t('colorHex', { hex: hex(item.rgb) });
+function shortcutName(item) {
+  if (item.kind === 'sequence') return sequences.find(scene => scene.id === item.id).name;
+  if (item.kind === 'scene') return t(item.preset);
+  return item.name ? t(item.name) : t('colorHex', { hex: hex(item.rgb) });
+}
 const shortcutId = item => item.kind === 'scene' ? item.preset : `color:${item.rgb.join(',')}`;
 
 function storeShortcuts(next) {
   shortcuts = next;
-  saveShortcuts(localStorage, shortcuts);
+  saveShortcuts(localStore, shortcuts);
   renderQuick();
   render();
 }
 
 function applyShortcut(item) {
-  if (item.kind === 'scene') playPreset(item.preset);
+  if (item.kind === 'sequence') {
+    const scene = sequences.find(scene => scene.id === item.id);
+    if (scene) playSequence(scene);
+  } else if (item.kind === 'scene') playPreset(item.preset);
   else setColor(item.rgb, item.name ? [item.name] : ['colorHex', { hex: hex(item.rgb) }], shortcutId(item));
 }
 
 const HOLD_MS = 450;
 const SLOP = 8;
-// Tap applies; press and hold opens the options; hold and drag reorders.
-function attachPress(button, index, item) {
+// Tap applies; press and hold opens the editor/options; shortcuts can also drag to reorder.
+function attachPress(button, { tap, hold, drop }) {
   let timer;
   let start = null;
   let lifted = false;
@@ -199,7 +214,8 @@ function attachPress(button, index, item) {
     lifted = false;
   };
   button.addEventListener('pointerdown', event => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || !event.isPrimary) return;
+    suppress = false;
     start = { x: event.clientX, y: event.clientY, id: event.pointerId };
     moved = false;
     timer = setTimeout(() => {
@@ -210,7 +226,7 @@ function attachPress(button, index, item) {
     }, HOLD_MS);
   });
   button.addEventListener('pointermove', event => {
-    if (!start) return;
+    if (!start || event.pointerId !== start.id) return;
     const dx = event.clientX - start.x;
     const dy = event.clientY - start.y;
     if (!lifted) {
@@ -218,47 +234,68 @@ function attachPress(button, index, item) {
       return;
     }
     if (Math.hypot(dx, dy) > SLOP) moved = true;
-    if (moved) {
+    if (moved && drop) {
       button.style.pointerEvents = 'none';
       button.style.transform = `translate(${dx}px,${dy}px)`;
     }
   });
   button.addEventListener('touchmove', event => { if (lifted) event.preventDefault(); }, { passive: false });
   button.addEventListener('pointerup', event => {
+    if (!start || event.pointerId !== start.id) return;
     if (!lifted) { reset(); return; }
     suppress = true;
-    const target = moved ? document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-index]') : null;
     const wasMoved = moved;
+    const target = wasMoved && drop ? document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-index]') : null;
     reset();
-    if (wasMoved) {
-      const to = target ? Number(target.dataset.index) : index;
-      if (to !== index) storeShortcuts(moveShortcut(shortcuts, index, to));
-    } else openShortcutMenu(index, button);
+    if (wasMoved) drop?.(target);
+    else hold();
   });
   button.addEventListener('pointercancel', reset);
+  button.addEventListener('pointerleave', () => { if (!lifted) reset(); });
   button.addEventListener('click', event => {
-    if (suppress) { suppress = false; event.preventDefault(); return; }
-    applyShortcut(item);
+    if (suppress && event.detail > 0) { suppress = false; event.preventDefault(); return; }
+    tap();
   });
   button.addEventListener('contextmenu', event => {
     event.preventDefault();
     if (start || lifted) return; // a touch long-press is handled by the hold timer
-    openShortcutMenu(index, button);
+    hold();
   });
+}
+
+function shortcutTile(item) {
+  const button = document.createElement('button');
+  button.className = 'tile';
+  const sw = document.createElement('span');
+  sw.className = 'sw';
+  if (item.kind === 'sequence') {
+    const { colors } = sequences.find(scene => scene.id === item.id);
+    sw.style.background = colors.length === 1 ? rgbCss(colors[0]) : `linear-gradient(90deg,${colors.map((rgb, i) =>
+      `${rgbCss(rgb)} ${100 * i / colors.length}% ${100 * (i + 1) / colors.length}%`).join(',')})`;
+  } else sw.style.background = item.kind === 'scene' ? presetSwatch(item.preset) : rgbCss(item.rgb);
+  button.append(sw, shortcutName(item));
+  return button;
 }
 
 function renderQuick() {
   const grid = bind('quick')[0];
+  const validShortcuts = filterShortcuts(shortcuts, presetIds, sequences.map(item => item.id));
+  if (validShortcuts.length !== shortcuts.length) {
+    shortcuts = validShortcuts;
+    saveShortcuts(localStore, shortcuts);
+  }
   const tiles = shortcuts.map((item, index) => {
-    const button = document.createElement('button');
-    button.className = 'tile';
+    const button = shortcutTile(item);
     button.dataset.index = String(index);
-    button.dataset.scene = shortcutId(item);
-    const sw = document.createElement('span');
-    sw.className = 'sw';
-    sw.style.background = item.kind === 'scene' ? presetSwatch(item.preset) : rgbCss(item.rgb);
-    button.append(sw, shortcutName(item));
-    attachPress(button, index, item);
+    button.dataset.scene = item.kind === 'sequence' ? sequenceKey(item.id) : shortcutId(item);
+    attachPress(button, {
+      tap: () => applyShortcut(item),
+      hold: () => openShortcutMenu(index, button),
+      drop: target => {
+        const to = target ? Number(target.dataset.index) : index;
+        if (to !== index) storeShortcuts(moveShortcut(shortcuts, index, to));
+      },
+    });
     return button;
   });
   if (shortcuts.length < MAX_SHORTCUTS) {
@@ -283,24 +320,23 @@ function openShortcutMenu(index, trigger) {
 
 function openShortcutChooser(index, trigger) {
   shortcutIndex = index;
-  bind('shortcut-colors')[0].replaceChildren(...SWATCHES.map(([name, rgb]) => {
-    const button = document.createElement('button');
-    button.className = 'swatch';
-    button.style.background = rgbCss(rgb);
-    button.setAttribute('aria-label', t(name));
-    button.addEventListener('click', () => chooseShortcut({ kind: 'color', name, rgb: [...rgb] }));
+  const choice = item => {
+    const button = shortcutTile(item);
+    button.addEventListener('click', () => chooseShortcut(item));
     return button;
-  }));
-  bind('shortcut-scenes')[0].replaceChildren(...PRESETS.map(({ id }) => {
-    const button = document.createElement('button');
-    button.className = 'tile';
-    const sw = document.createElement('span');
-    sw.className = 'sw';
-    sw.style.background = presetSwatch(id);
-    button.append(sw, t(id));
-    button.addEventListener('click', () => chooseShortcut({ kind: 'scene', preset: id }));
-    return button;
-  }));
+  };
+  const defaultColors = new Set(DEFAULT_SHORTCUTS.map(item => hex(item.rgb)));
+  const colors = SWATCHES.filter(([, rgb]) => !defaultColors.has(hex(rgb)));
+  bind('shortcut-colors')[0].replaceChildren(
+    ...DEFAULT_SHORTCUTS.map(choice),
+    ...colors.map(([name, rgb]) => choice({ kind: 'color', name, rgb })),
+  );
+  bind('shortcut-scenes')[0].replaceChildren(...PRESETS.map(({ id }) => choice({ kind: 'scene', preset: id })));
+  const savedChoices = bind('shortcut-sequences')[0];
+  savedChoices.replaceChildren(...sequences.map(({ id }) => choice({ kind: 'sequence', id })));
+  savedChoices.hidden = bind('shortcut-divider')[0].hidden = sequences.length === 0;
+  bind('shortcut-scene-section')[0].open = true;
+  bind('shortcut-color-section')[0].open = false;
   openSheet('shortcut-pick', t(index === null ? 'addShortcut' : 'changeShortcut'), trigger);
 }
 
@@ -464,7 +500,7 @@ function renderLink(s) {
   renderLinkText(s);
   if (s.status === 'lost') {
     trying = false;
-    if (activeSequence && activeSequence === sequenceKey(editingSequence)) text('sequence-error', t('previewLost'));
+    if (activeSequence === draftPlayback) text('sequence-error', t('previewLost'));
     stopPlayback();
     if (selected) text('preview-error', t('previewLost'));
     toast('reconnectPrompt', true);
@@ -499,7 +535,7 @@ function render() {
   text('power-label', state.on ? t('onLabel', { label: currentLabel() }) : t('off'));
   const quickId = state.mode?.preset ?? state.scene;
   renderStrip();
-  $$('.tile').forEach(t => t.setAttribute('aria-pressed', String(state.on && t.dataset.scene === quickId)));
+  $$('.tile[data-scene]').forEach(t => t.setAttribute('aria-pressed', String(state.on && t.dataset.scene === quickId)));
   $$('.swatch[data-rgb]').forEach(s => s.setAttribute('aria-pressed', String(s.dataset.rgb === state.rgb.join(','))));
   wheel.style.setProperty('--c', rgbCss(state.rgb));
   bind('wheel-handle')[0].style.cssText = `left:${50 + 38 * Math.sin(hue * Math.PI / 180)}%;top:${50 - 38 * Math.cos(hue * Math.PI / 180)}%`;
@@ -527,20 +563,25 @@ function openSheet(panel, title, trigger, focus = $('#sheet-title')) {
   opener = trigger;
   text('preview-error', '');
   $('#sheet-title').textContent = title;
+  sequenceDelete.hidden = panel !== 'sequence' || isNewSequence;
+  showSequenceConfirmation(false);
   $$('[data-sheet]').forEach(section => { section.hidden = section.dataset.sheet !== panel; });
   dialog.showModal();
   focus.focus();
 }
 
-function closeSheet({ restoreTry = true } = {}) {
-  if (trying) {
-    trying = false;
-    stopPlayback();
-    if (restoreTry && link.ready) {
-      if (state.on) startMode(currentMode());
-      else fire(power(false), 'power');
-    }
+function stopTry(restore) {
+  if (!trying) return;
+  trying = false;
+  stopPlayback();
+  if (restore && link.ready) {
+    if (state.on) startMode(currentMode());
+    else fire(power(false), 'power');
   }
+}
+
+function closeSheet({ restoreTry = true } = {}) {
+  stopTry(restoreTry);
   clearInterval(previewClock);
   selected = null;
   editingSequence = null;
@@ -667,27 +708,33 @@ bind('shortcut-other')[0].addEventListener('change', event => {
 });
 
 // ---- saved color sequences ----
-const sequenceStorage = {
-  getItem: key => localStorage.getItem(key),
-  setItem: (key, value) => localStorage.setItem(key, value),
-};
-let sequences = loadSequences(sequenceStorage);
 let editingSequence = null;
+let isNewSequence = false;
 let selectedFrame = 0;
-const sequenceKey = id => `sequence:${id}`;
 const sequenceList = bind('sequence-list')[0];
 const frameList = bind('sequence-frames')[0];
 const sequenceOther = bind('sequence-other')[0];
 const sequenceSpeed = $('#sequence-speed');
 const sequenceBri = $('#sequence-bri');
 const sequenceStop = $('[data-action="sequence-stop"]');
-const editedSequence = () => sequences.find(item => item.id === editingSequence);
+const sequenceNew = $('[data-action="sequence-new"]');
+const sequenceDelete = $('[data-action="sequence-delete"]');
+const sequenceConfirm = $('#sequence-confirm');
+const sequenceDeleteCancel = $('[data-action="sequence-delete-cancel"]');
 const sequenceCard = id => [...sequenceList.children].find(button => button.dataset.id === sequenceKey(id));
 
 $$('[data-scene-tab]').forEach(button => button.addEventListener('click', () => {
   $$('[data-scene-tab]').forEach(b => b.setAttribute('aria-pressed', String(b === button)));
   $$('[data-scene-panel]').forEach(panel => { panel.hidden = panel.dataset.scenePanel !== button.dataset.sceneTab; });
+  sequenceNew.hidden = button.dataset.sceneTab !== 'mine';
 }));
+sequenceNew.addEventListener('click', () => {
+  if (sequences.length >= MAX_SEQUENCES) return;
+  const draft = createSequence(sequences, number => t('sequenceName', { number })).at(-1);
+  // A stale shortcut must not point to a new scene after an old one is deleted.
+  draft.id = crypto.getRandomValues(new Uint32Array(4)).join('-');
+  openSequence(draft, sequenceNew, true);
+});
 
 function sequenceSquares(colors) {
   const row = document.createElement('span');
@@ -711,30 +758,16 @@ function renderSequences() {
     name.className = 'meta';
     name.textContent = item.name;
     button.append(name, sequenceSquares(item.colors));
-    button.addEventListener('click', () => openSequence(item.id, button));
+    attachPress(button, { tap: () => playSequence(item), hold: () => openSequence(item, button) });
     return button;
   });
-  if (sequences.length < MAX_SEQUENCES) {
-    const add = document.createElement('button');
-    add.className = 'scene sequence-card sequence-new';
-    add.textContent = t('newSequence');
-    add.addEventListener('click', () => {
-      sequences = createSequence(sequences, number => t('sequenceName', { number }));
-      const { id } = sequences.at(-1);
-      const saved = saveSequences(sequenceStorage, sequences);
-      renderSequences();
-      openSequence(id, sequenceCard(id));
-      showSequenceSave(saved);
-    });
-    cards.push(add);
-  }
+  sequenceNew.disabled = sequences.length >= MAX_SEQUENCES;
   sequenceList.replaceChildren(...cards);
   renderSceneSelection();
 }
 
 function renderSequencePlayback() {
-  // Only the sequence in this editor can be stopped from here.
-  sequenceStop.disabled = !editingSequence || activeSequence !== sequenceKey(editingSequence);
+  sequenceStop.disabled = activeSequence !== draftPlayback;
 }
 
 function renderSequenceFrames(item, focusFrame = false) {
@@ -771,106 +804,131 @@ function renderSequencePalette(item) {
   sequenceOther.value = hex(rgb).toLowerCase();
 }
 
-// The slider moves toward faster playback as the value increases; the readout is the actual interval.
-const reverseInterval = value => Number(sequenceSpeed.min) + Number(sequenceSpeed.max) - Number(value);
 function renderSequenceSliders(item) {
-  sequenceSpeed.value = reverseInterval(item.interval);
+  sequenceSpeed.value = speedPercent(item.interval);
   sequenceBri.value = item.bri;
   for (const input of [sequenceSpeed, sequenceBri]) {
     input.style.setProperty('--p', `${100 * (input.value - input.min) / (input.max - input.min)}%`);
   }
-  text('sequence-speed-out', `${item.interval} ms`);
-  sequenceSpeed.setAttribute('aria-valuetext', `${item.interval} ms`);
+  text('sequence-speed-out', `${sequenceSpeed.value} %`);
+  sequenceSpeed.setAttribute('aria-valuetext', `${sequenceSpeed.value} %`);
   text('sequence-bri-out', `${item.bri}%`);
   sequenceBri.setAttribute('aria-valuetext', `${item.bri}%`);
 }
 
-function openSequence(id, trigger) {
-  editingSequence = id;
+function openSequence(item, trigger, isNew = false) {
+  editingSequence = { ...item, colors: item.colors.map(rgb => [...rgb]) };
+  isNewSequence = isNew;
   selectedFrame = 0;
-  const item = editedSequence();
   text('sequence-error', '');
   bind('sequence-swatches')[0].replaceChildren(...SWATCHES.map(([name, rgb]) => {
     const button = document.createElement('button');
     button.className = 'swatch';
     button.style.background = rgbCss(rgb);
     button.setAttribute('aria-label', t(name));
-    button.addEventListener('click', () => editSequence(setFrameColor(editedSequence(), selectedFrame, rgb), 'colors'));
+    button.addEventListener('click', () => editSequence(setFrameColor(editingSequence, selectedFrame, rgb), 'colors'));
     return button;
   }));
-  renderSequenceFrames(item);
-  renderSequenceSliders(item);
+  renderSequenceFrames(editingSequence);
+  renderSequenceSliders(editingSequence);
   renderSequencePlayback();
   openSheet('sequence', item.name, trigger);
 }
 
-function showSequenceSave(saved) {
-  text('sequence-error', saved ? '' : t('sequenceSaveFailed'));
+function editSequence(next, field, focusFrame = false) {
+  editingSequence = next;
+  if (field === 'colors') renderSequenceFrames(next, focusFrame);
+  else renderSequenceSliders(next);
+  if (activeSequence !== draftPlayback || !link.ready) return;
+  if (field === 'bri') fire(brightness(targetBrightness(next.bri)), 'brightness');
+  else previewSequence();
 }
 
-function editSequence(next, field, focusFrame = false) {
-  sequences = updateSequence(sequences, next.id, { [field]: next[field] });
-  showSequenceSave(saveSequences(sequenceStorage, sequences));
-  if (field === 'colors') {
-    renderSequenceFrames(next, focusFrame);
-    sequenceCard(next.id).lastElementChild.replaceWith(sequenceSquares(next.colors));
-  } else renderSequenceSliders(next);
-  if (activeSequence !== sequenceKey(next.id) || !link.ready) return;
-  if (field === 'bri') {
-    state.bri = next.bri;
-    persist();
-    renderBrightness();
-    fire(brightness(targetBrightness()), 'brightness');
-  } else {
-    state.mode = { colors: next.colors, interval: next.interval };
-    persist();
-    startMode(state.mode);
-  }
+function previewSequence() {
+  const { colors, interval, bri } = editingSequence;
+  text('sequence-error', '');
+  trying = true;
+  startMode({ colors, interval }, { sequence: draftPlayback, bri });
 }
 
 sequenceOther.addEventListener('change', () => {
   if (!editingSequence) return;
   const value = sequenceOther.value;
   const rgb = [1, 3, 5].map(i => parseInt(value.slice(i, i + 2), 16));
-  editSequence(setFrameColor(editedSequence(), selectedFrame, rgb), 'colors');
+  editSequence(setFrameColor(editingSequence, selectedFrame, rgb), 'colors');
 });
-sequenceSpeed.addEventListener('input', () => editSequence({ ...editedSequence(), interval: reverseInterval(sequenceSpeed.value) }, 'interval'));
-sequenceBri.addEventListener('input', () => editSequence({ ...editedSequence(), bri: Number(sequenceBri.value) }, 'bri'));
+sequenceSpeed.addEventListener('input', () => editSequence({ ...editingSequence, interval: intervalFromSpeed(sequenceSpeed.value) }, 'interval'));
+sequenceBri.addEventListener('input', () => editSequence({ ...editingSequence, bri: Number(sequenceBri.value) }, 'bri'));
 $('[data-action="sequence-remove-color"]').addEventListener('click', () => {
-  const next = removeColor(editedSequence(), selectedFrame);
+  const next = removeColor(editingSequence, selectedFrame);
   selectedFrame = Math.min(selectedFrame, next.colors.length - 1);
   editSequence(next, 'colors', true);
 });
 $('[data-action="sequence-play"]').addEventListener('click', () => {
   if (!link.ready) { closeSheet(); needsLink(); return; }
-  const { id, name, colors, interval, bri } = editedSequence();
+  previewSequence();
+});
+function playSequence({ id, name, colors, interval, bri }) {
+  if (needsLink()) return;
   const mode = { colors, interval };
   Object.assign(state, { bri, label: name, scene: sequenceKey(id), mode, on: true });
   persist();
   render();
   startMode(mode);
-});
+}
 function clearSequenceMode() {
   Object.assign(state, { label: ['colorHex', { hex: hex(state.rgb) }], scene: null, mode: null });
   persist();
   render();
 }
 sequenceStop.addEventListener('click', () => {
-  if (activeSequence !== sequenceKey(editingSequence)) return;
-  stopPlayback();
-  clearSequenceMode();
+  if (activeSequence !== draftPlayback) return;
+  stopTry(true);
   $('[data-action="sequence-play"]').focus();
 });
-$('[data-action="sequence-delete"]').addEventListener('click', () => {
-  const key = sequenceKey(editingSequence);
+$('[data-action="sequence-save"]').addEventListener('click', () => {
+  const { id } = editingSequence;
+  const next = isNewSequence ? [...sequences, editingSequence] : updateSequence(sequences, id, editingSequence);
+  if (!saveSequences(localStore, next)) {
+    text('sequence-error', t('sequenceSaveFailed'));
+    return;
+  }
+  sequences = next;
+  renderSequences();
+  renderQuick();
+  render();
+  opener = sequenceCard(id);
+  closeSheet();
+});
+
+function showSequenceConfirmation(show) {
+  sequenceConfirm.hidden = !show;
+  sequenceDelete.setAttribute('aria-expanded', String(show));
+}
+sequenceDelete.addEventListener('click', () => {
+  showSequenceConfirmation(true);
+  sequenceDeleteCancel.focus();
+});
+sequenceDeleteCancel.addEventListener('click', () => {
+  showSequenceConfirmation(false);
+  sequenceDelete.focus();
+});
+$('[data-action="sequence-delete-confirm"]').addEventListener('click', () => {
+  const { id } = editingSequence;
+  const next = removeSequence(sequences, id);
+  if (!saveSequences(localStore, next)) {
+    text('sequence-error', t('sequenceSaveFailed'));
+    return;
+  }
+  sequences = next;
+  const key = sequenceKey(id);
   if (activeSequence === key) stopPlayback();
   if (state.scene === key) clearSequenceMode();
-  sequences = removeSequence(sequences, editingSequence);
-  const saved = saveSequences(sequenceStorage, sequences);
   renderSequences();
-  opener = sequenceList.querySelector('.sequence-new');
+  renderQuick();
+  render();
+  opener = sequenceNew;
   closeSheet();
-  if (!saved) toast('sequenceSaveFailed', true);
 });
 
 // ---- foreground off timer ----
@@ -920,9 +978,9 @@ function stopTimer() {
   return hadFade;
 }
 
-function targetBrightness() {
-  if (!timer) return state.bri;
-  return fadeBrightness(state.bri, (timer.end - performance.now()) / 1000, timer.fade) ?? state.bri;
+function targetBrightness(bri = state.bri) {
+  if (!timer) return bri;
+  return fadeBrightness(bri, (timer.end - performance.now()) / 1000, timer.fade) ?? bri;
 }
 
 function updateTimer() {

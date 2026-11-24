@@ -21,6 +21,7 @@
     <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
     <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></symbol>
     <symbol id="i-timer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5m4-5v5"/></symbol>
   </defs>
 </svg>
 
@@ -111,13 +112,13 @@
     </section>
 
     <section id="scenes" class="screen" aria-labelledby="scenes-title" hidden>
-      <div class="top"><h1 id="scenes-title" data-i18n="scenes">Escenas</h1></div>
+      <div class="top"><h1 id="scenes-title" data-i18n="scenes">Escenas</h1><button class="icon-btn" data-action="sequence-new" aria-label="Nueva escena" data-i18n-aria="newSequence" hidden>+</button></div>
       <div class="seg" role="group" aria-label="Escenas" data-i18n-aria="scenes">
         <button aria-pressed="true" data-scene-tab="included" data-i18n="includedScenes">Incluidas</button><button aria-pressed="false" data-scene-tab="mine" data-i18n="myScenes">Mis escenas</button>
       </div>
       <div class="stack" data-bind="scene-list" data-scene-panel="included"></div>
       <div class="stack" data-scene-panel="mine" hidden>
-        <p class="small muted" data-bind="sequences-empty" data-i18n="sequencesEmpty">Todavía no tienes secuencias. Crea una para empezar.</p>
+        <p class="small muted" data-bind="sequences-empty" data-i18n="sequencesEmpty">Aún no tienes escenas. Toca + para crear una.</p>
         <div class="sequence-grid" data-bind="sequence-list"></div>
       </div>
     </section>
@@ -159,7 +160,7 @@
 </div>
 <dialog class="sheet" id="sheet" aria-modal="true" aria-labelledby="sheet-title">
   <div class="grabber" aria-hidden="true"></div>
-  <div class="top"><h2 id="sheet-title" tabindex="-1"></h2><button class="icon-btn" data-action="close-sheet" aria-label="Cerrar" data-i18n-aria="close">×</button></div>
+  <div class="top"><h2 id="sheet-title" tabindex="-1"></h2><div class="header-actions"><button class="icon-btn" data-action="sequence-delete" aria-label="Eliminar escena" data-i18n-aria="deleteSequence" aria-controls="sequence-confirm" aria-expanded="false" hidden><svg aria-hidden="true"><use href="#i-trash"/></svg></button><button class="icon-btn" data-action="close-sheet" aria-label="Cerrar" data-i18n-aria="close">×</button></div></div>
   <section class="stack" data-sheet="preview" hidden>
     <div class="strip" data-bind="preview-strip" role="img" aria-label="Vista previa de la tira en pantalla" data-i18n-aria="screenPreview"></div>
     <div data-bind="page-controls">
@@ -177,13 +178,27 @@
     <p class="small muted" data-i18n="shortcutHint">Mantén presionada una escena rápida y arrástrala para moverla.</p>
   </section>
   <section class="stack" data-sheet="shortcut-pick" hidden>
-    <h3 class="h3" data-i18n="colors">Colores</h3>
-    <div class="swatches" role="group" aria-label="Colores rápidos" data-i18n-aria="quickColors" data-bind="shortcut-colors"></div>
-    <label class="btn ghost seq-pick"><span data-i18n="otherColor">Otro color</span><input type="color" value="#ff0000" data-bind="shortcut-other"></label>
-    <h3 class="h3" data-i18n="scenes">Escenas</h3>
-    <div class="grid3 pick-scenes" data-bind="shortcut-scenes"></div>
+    <details class="glass shortcut-section" data-bind="shortcut-scene-section" open>
+      <summary><span data-i18n="scenes">Escenas</span><svg aria-hidden="true"><use href="#i-chev"/></svg></summary>
+      <div class="stack shortcut-section-body">
+        <div class="grid3" data-bind="shortcut-scenes"></div>
+        <hr class="shortcut-divider" data-bind="shortcut-divider" hidden>
+        <div class="grid3" role="group" aria-label="Mis escenas" data-i18n-aria="myScenes" data-bind="shortcut-sequences" hidden></div>
+      </div>
+    </details>
+    <details class="glass shortcut-section" data-bind="shortcut-color-section">
+      <summary><span data-i18n="colors">Colores</span><svg aria-hidden="true"><use href="#i-chev"/></svg></summary>
+      <div class="stack shortcut-section-body">
+        <div class="grid3" data-bind="shortcut-colors"></div>
+        <label class="btn ghost seq-pick"><span data-i18n="otherColor">Otro color</span><input type="color" value="#ff0000" data-bind="shortcut-other"></label>
+      </div>
+    </details>
   </section>
   <section class="stack" data-sheet="sequence" hidden>
+    <div class="glass pad stack" id="sequence-confirm" role="group" aria-labelledby="sequence-confirm-title" hidden>
+      <p id="sequence-confirm-title" data-i18n="confirmDeleteSequence">¿Eliminar esta escena?</p>
+      <div class="quick sequence-actions"><button class="btn ghost grow" data-action="sequence-delete-confirm" data-i18n="deleteScene">Eliminar</button><button class="btn ghost grow" data-action="sequence-delete-cancel" data-i18n="cancelDelete">Cancelar</button></div>
+    </div>
     <p class="small muted" data-i18n="sequenceEditHint">Toca un cuadro para cambiar su color.</p>
     <div class="sequence-frames" role="group" aria-label="Cuadros de color" data-i18n-aria="sequenceFrames" data-bind="sequence-frames"></div>
     <button class="btn ghost" data-action="sequence-remove-color" data-i18n="removeFrame">Quitar cuadro</button>
@@ -191,7 +206,7 @@
     <label class="btn ghost seq-pick"><span data-i18n="otherColor">Otro color</span><input type="color" data-bind="sequence-other"></label>
     <div>
       <label class="slider-head" for="sequence-speed"><span data-i18n="speed">Velocidad</span> <output data-bind="sequence-speed-out"></output></label>
-      <input class="range" id="sequence-speed" type="range" min="150" max="2000">
+      <input class="range" id="sequence-speed" type="range" min="0" max="100" step="1">
     </div>
     <div>
       <label class="slider-head" for="sequence-bri"><span data-i18n="intensity">Intensidad</span> <output data-bind="sequence-bri-out"></output></label>
@@ -199,8 +214,8 @@
     </div>
     <p class="small muted" data-i18n="sequencePlaybackHint">Toda la tira muestra un color a la vez. Mantén la página abierta para que la secuencia siga reproduciéndose.</p>
     <p class="small error" data-bind="sequence-error" role="status"></p>
-    <div class="quick sequence-actions"><button class="btn primary grow" data-action="sequence-play" data-i18n="playSequence">Reproducir</button><button class="btn ghost grow" data-action="sequence-stop" data-i18n="stopSequence">Detener</button></div>
-    <button class="btn ghost" data-action="sequence-delete" data-i18n="deleteSequence">Eliminar secuencia</button>
+    <div class="quick sequence-actions"><button class="btn ghost grow" data-action="sequence-play" data-i18n="playSequence">Reproducir</button><button class="btn ghost grow" data-action="sequence-stop" data-i18n="stopSequence">Detener</button></div>
+    <button class="btn primary" data-action="sequence-save" data-i18n="saveSequence">Guardar</button>
   </section>
   <section class="stack" data-sheet="timer" hidden>
     <div class="opts" role="group" aria-label="Duración" data-i18n-aria="duration">
