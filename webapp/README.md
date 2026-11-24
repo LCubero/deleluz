@@ -23,7 +23,7 @@ Open `http://localhost:8000/webapp/` in Chrome on Android. Close the LED LAMP ap
 ## Limits
 
 - The controller reports nothing back: the app shows what it last sent, not the strip's real state.
-- Page scenes and the off timer run in this page; keep it open and in front. The strip keeps its last color otherwise.
+- Page scenes and the off timer run only while this page is open and in front; the strip has no timer of its own. If the page closes, the strip stays on with its last color.
 - Commands are spaced 50 ms apart (the strip follows changes down to ~35 ms, see `docs/CAPABILITIES.md`); the scene step interval starts at 150 ms, and fade scenes send intermediate colors about every 50 ms.
 - No per-LED control is known for this controller.
 

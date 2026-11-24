@@ -516,6 +516,7 @@ async function requestWakeLock() {
 function renderTimer(remaining) {
   const chip = bind('timer-chip')[0];
   chip.hidden = !timer;
+  bind('timer-note')[0].hidden = !timer;
   if (timer) chip.textContent = `Off in ${formatRemaining(remaining)}`;
   $('[data-action="cancel-timer"]').hidden = !timer;
   $('[data-action="start-timer"]').textContent = timer ? 'Restart timer' : 'Start timer';

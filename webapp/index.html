@@ -46,6 +46,7 @@
         <button class="power" data-action="power" aria-pressed="false" aria-label="Power"><svg aria-hidden="true"><use href="#i-power"/></svg></button>
         <div class="power-label" data-bind="power-label">Off</div>
         <div class="small muted" data-bind="last-sent">No command sent yet</div>
+        <div class="small timer-note" data-bind="timer-note" hidden>Off timer runs only while this app is open.</div>
       </div>
 
       <section aria-labelledby="qs">
@@ -169,7 +170,7 @@
     </div>
     <p class="small error" id="timer-error" role="status"></p>
     <label class="slider-head">Fade out <input class="toggle" type="checkbox" id="timer-fade"></label>
-    <p class="note">The controller cannot store timers. Keep this page open with the screen on until it finishes.</p>
+    <p class="note"><b>Only works while this app is open.</b> The strip has no timer of its own: keep this page open and the screen on until it finishes. If you close it, the strip stays on.</p>
     <button class="btn primary" data-action="start-timer">Start timer</button>
     <button class="btn ghost" data-action="cancel-timer" hidden>Cancel timer</button>
   </section>

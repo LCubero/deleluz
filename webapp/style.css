@@ -149,3 +149,4 @@ label.slider-head:has(.toggle){min-height:44px}
 .power[aria-disabled="true"]{opacity:.5}
 #timer-custom label{min-width:0;gap:6px}
 #timer-custom .num{width:100%}
+.timer-note{color:#fde68a;text-align:center}
