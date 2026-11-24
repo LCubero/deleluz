@@ -17,7 +17,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 
 ## Tasks
 
-- T1 — S9, S7, S8 — Flutter project `app/` (package `com.deleluz.deleluz`, Flutter default from `--org com.deleluz`), Dart protocol port with the `protocol.test.mjs` vectors — inline — done (6 tests, analyze clean)
+- T1 — S9, S7, S8 — Flutter project `app/` (package `com.deleluz.deleluz`, Flutter default from `--org com.deleluz`), Dart protocol port with the `protocol.test.mjs` vectors — inline — done 93add08 (6 tests, analyze clean)
 - T2 — S2, S5, S9 — BLE layer: scan by name, connect/discover, bounded retries, remember/switch/forget, 50 ms coalescing sender, Android 12+ permissions — inline — pending
 - T3 — S1, S4 — State, local persistence and es/en strings — inline — pending
 - T4 — S1, S3, S5 — Inicio: device card, power (disabled when disconnected), brightness, quick scenes, off timer, shortcuts — inline — pending
