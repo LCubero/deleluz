@@ -424,6 +424,7 @@ function renderLinkText(s = link.state) {
   connect.hidden = !['idle', 'lost', 'connecting'].includes(s.status);
   connect.disabled = s.status === 'connecting';
   connect.querySelector('span').textContent = t(s.status === 'lost' ? 'reconnect' : s.status === 'connecting' ? 'connecting' : 'connect');
+  $('[data-action="disconnect"]').hidden = s.status !== 'connected';
   const helpConnect = $('[data-action="help-connect"]');
   helpConnect.hidden = connect.hidden;
   helpConnect.disabled = connect.disabled;
@@ -442,6 +443,11 @@ function renderLink(s) {
     toast('reconnectPrompt', true);
   }
 }
+
+$('[data-action="disconnect"]').addEventListener('click', () => {
+  stopPlayback();
+  link.disconnect();
+});
 
 // ---- render ----
 function renderBrightness() {

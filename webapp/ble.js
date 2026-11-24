@@ -66,6 +66,15 @@ export function createLink({ onChange, simulate = false }) {
     state,
     connect: () => connect({ choose: true }),
     reconnect: () => connect({ choose: false }),
+    // Release the strip on purpose (not a lost link), so another phone or app can connect.
+    disconnect() {
+      if (state.status !== 'connected') return;
+      device?.removeEventListener('gattserverdisconnected', lost);
+      if (device?.gatt.connected) device.gatt.disconnect();
+      writer = undefined;
+      set({ status: 'idle', lostAt: null, error: null });
+      device?.addEventListener('gattserverdisconnected', lost);
+    },
     get ready() { return state.status === 'connected' || state.status === 'simulated'; },
     async write(bytes) {
       if (state.status === 'simulated') {

@@ -5,6 +5,7 @@ const strings = {
   idle: ["Sin conexión", "Not connected"],
   stripPreview: ["Vista previa de la tira", "Strip preview"],
   connect: ["Conectar", "Connect"],
+  disconnect: ["Desconectar", "Disconnect"],
   power: ["Encendido", "Power"],
   off: ["Apagado", "Off"],
   noCommand: ["Aún no se han enviado comandos", "No command sent yet"],
