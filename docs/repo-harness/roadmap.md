@@ -23,7 +23,7 @@ This roadmap is the canonical lifecycle owner. Track only non-trivial work with 
 - Bench tests that need the user at the strip (Android Chrome lab): range, preset modes, native effect catalog (210 IDs).
 - Capture remaining vendor frames: timer (`10`), 10 m strip, mic sensitivity (`0C`, untested). Voice modes `0B` 1-4 are confirmed (L53-L54).
 - App platform: webapp `webapp/` on `main` (Android Chrome only, verified on the strip). Flutter 3.50.1 + Android toolchain ready in `_tools/flutter` for a native Android/iPhone app (remember strips, several strips, robust Bluetooth: `odd/tasks/deleluz-webapp.md` L21-L22); iPhone builds need a Mac.
-- Scene sequence editor (whole-strip colors/effects with timing, "use current" / "new"): `odd/tasks/deleluz-webapp.md` L14.
+- Scene sequence editor: rejected by the user after trying it (`odd/tasks/deleluz-webapp.md` L33).
 - Phone-mic music modes (host-driven color/brightness from the phone microphone): deferred by the user until the firmware path advances (L31).
 - Phone design: v3 skins in `design/deleluz-mobile-v3/` and Stitch project "DeleLuz v3"; resume after device knowledge.
 - Private GitHub repository, when the user asks (local commits exist).
