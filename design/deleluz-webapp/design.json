@@ -1,0 +1,9 @@
+{
+  "title": "DeleLuz webapp V1",
+  "brief": "End-user phone webapp for the LEDDMX-03 strip: Thumb First base with scene preview before apply, page-only off timer, symptom help with Reconnect; neon/glass style; honest about device limits.",
+  "feature": "odd/tasks/deleluz-webapp.md",
+  "artboards": [
+    { "file": "01-glow-glass.html", "title": "Glow Glass", "tradeoff": "Frosted violet-magenta glass, closest to the references; separate power button and bottom brightness card. Glass blur costs some performance on older phones.", "width": 2240, "height": 1000 },
+    { "file": "02-neon-line.html", "title": "Neon Line", "tradeoff": "Black with thin cyan-magenta outlines, more distinctive and cheaper to render; one tall power+brightness bar for the thumb, fewer quick scenes per row.", "width": 2240, "height": 1000 }
+  ]
+}

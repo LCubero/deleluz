@@ -6,6 +6,7 @@ This file records meaningful completed changes in chronological order, newest fi
 
 ## 2026-11-24
 
+- Added the phone webapp `webapp/` (Glow Glass design `design/deleluz-webapp/`): connect/reconnect, power, brightness, colors, built-in effects, smooth page scenes with preview, saved scenes, off timer (minutes and seconds) and help; commands every 50 ms; verified on the real strip from Android Chrome (`odd/tasks/deleluz-webapp.md`).
 - Confirmed the onboard-mic voice modes 1-4 over BLE from Android Chrome without the vendor app (`docs/PROTOCOL.md`, `odd/tasks/led-lab.md` L53-L54).
 - Installed Flutter 3.50.1 and the Android command-line tools as local tooling for a possible native app (`_tools/`, not committed).
 

@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0918">
+<title>DeleLuz</title>
+<link rel="stylesheet" href="style.css">
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#a855f7"/><stop offset="1" stop-color="#ec4899"/></linearGradient>
+    <symbol id="i-power" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.3 7.3a8 8 0 1 0 11.4 0"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
+    <symbol id="i-color" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-scenes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14"/><path d="M12 17.5h.01"/></symbol>
+    <symbol id="i-bt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10-5 4V3l5 4L7 17"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="i-timer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <main>
+    <!-- HOME -->
+    <section id="home" class="screen" aria-labelledby="home-title">
+      <div class="top">
+        <h1 id="home-title" class="brand"><svg viewBox="0 0 30 18" aria-hidden="true"><path d="M2 14c4-12 8-12 13-5s9 7 13-5" fill="none" stroke="url(#g)" stroke-width="4" stroke-linecap="round"/></svg>DeleLuz</h1>
+        <div class="header-actions"><span class="chip" data-bind="timer-chip" hidden></span><button class="icon-btn" data-action="timer" aria-label="Off timer"><svg aria-hidden="true"><use href="#i-timer"/></svg></button></div>
+      </div>
+
+      <section class="glass device" aria-label="Device">
+        <div class="device-row">
+          <div><b data-bind="name">LEDDMX</b><div class="small muted" data-bind="device-sub">Not connected</div></div>
+          <span class="chip" data-bind="chip"><span class="dot" aria-hidden="true"></span><span data-bind="chip-text">Not connected</span></span>
+        </div>
+        <div class="strip" data-bind="strip" role="img" aria-label="Strip preview"></div>
+        <button class="btn primary" data-action="connect" hidden><svg width="20" height="20" aria-hidden="true"><use href="#i-bt"/></svg><span>Connect</span></button>
+      </section>
+
+      <div class="power-wrap">
+        <button class="power" data-action="power" aria-pressed="false" aria-label="Power"><svg aria-hidden="true"><use href="#i-power"/></svg></button>
+        <div class="power-label" data-bind="power-label">Off</div>
+        <div class="small muted" data-bind="last-sent">No command sent yet</div>
+      </div>
+
+      <section aria-labelledby="qs">
+        <div class="top section-head"><h2 id="qs" class="h3">Quick scenes</h2><a class="small link" href="#scenes">All scenes</a></div>
+        <div class="grid3" data-bind="quick"></div>
+      </section>
+
+      <section class="glass thumb" aria-label="Brightness and white">
+        <label class="slider-head" for="bri-home"><span class="with-icon"><svg width="20" height="20" aria-hidden="true"><use href="#i-sun"/></svg>Brightness</span><output data-bind="bri-out">80%</output></label>
+        <input id="bri-home" class="range" type="range" min="1" max="100" value="80" data-bind="bri">
+        <div class="quick"><button class="btn white grow" data-action="white">White</button><button class="btn ghost grow" data-action="warm">Warm white</button></div>
+      </section>
+    </section>
+
+    <!-- COLOR -->
+    <section id="color" class="screen" aria-labelledby="color-title" hidden>
+      <div class="top"><h1 id="color-title">Color</h1><span class="chip"><span class="dot" aria-hidden="true"></span><span data-bind="chip-text">Not connected</span></span></div>
+      <div class="seg" role="group" aria-label="Mode">
+        <button aria-pressed="true" data-mode="solid">Solid</button><button aria-pressed="false" data-mode="effects">Built-in effects</button>
+      </div>
+
+      <div data-panel="solid" class="stack">
+        <div class="wheel" data-bind="wheel" role="slider" tabindex="0" aria-label="Hue" aria-valuemin="0" aria-valuemax="359" aria-valuenow="0">
+          <div class="cur" data-bind="wheel-cur"></div><div class="handle" data-bind="wheel-handle"></div>
+        </div>
+        <div class="swatches" role="group" aria-label="Quick colors" data-bind="swatches"></div>
+      </div>
+
+      <div data-panel="effects" class="stack" hidden>
+        <div class="glass pad stack">
+          <div class="slider-head"><span>Effect</span><output data-bind="fx-out">1</output></div>
+          <div class="quick">
+            <button class="btn ghost" data-action="fx-prev" aria-label="Previous effect">‹</button>
+            <input class="num grow" type="number" min="1" max="210" value="1" inputmode="numeric" aria-label="Effect number, 1 to 210" data-bind="fx">
+            <button class="btn ghost" data-action="fx-next" aria-label="Next effect">›</button>
+          </div>
+          <div class="quick"><button class="btn primary grow" data-action="fx-play">Play effect</button><button class="btn ghost grow" data-action="fx-auto">Auto cycle</button></div>
+          <p class="small muted">Effects are built into the controller and are numbered 1–210; their names are not known yet.</p>
+        </div>
+        <div class="glass pad">
+          <label class="slider-head" for="speed"><span>Speed</span><output data-bind="speed-out">50</output></label>
+          <input id="speed" class="range" type="range" min="1" max="100" value="50" data-bind="speed">
+        </div>
+      </div>
+
+      <section class="glass thumb" aria-label="Brightness">
+        <label class="slider-head" for="bri-color"><span>Brightness</span><output data-bind="bri-out">80%</output></label>
+        <input id="bri-color" class="range" type="range" min="1" max="100" value="80" data-bind="bri">
+        <div class="small muted">Changes are sent as you drag, at most every 50 ms.</div>
+      </section>
+    </section>
+
+    <section id="scenes" class="screen" aria-labelledby="scenes-title" hidden>
+      <div class="top"><h1 id="scenes-title">Scenes</h1><button class="icon-btn" data-action="new-scene" aria-label="New scene">+</button></div>
+      <div class="seg" role="group" aria-label="Scene collection">
+        <button data-collection="included" aria-pressed="true">Included</button><button data-collection="mine" aria-pressed="false" data-bind="mine-count">Mine (0)</button>
+      </div>
+      <div class="stack" data-bind="scene-list"></div>
+      <div class="glass pad stack" data-bind="scene-empty" hidden>
+        <p class="muted">No saved scenes yet. Save your current color or page mode to get started.</p>
+        <button class="btn primary" data-action="new-scene">New scene</button>
+      </div>
+    </section>
+
+    <section id="help" class="screen" aria-labelledby="help-title" hidden>
+      <div class="top"><h1 id="help-title">Help</h1></div>
+      <div class="banner" data-bind="help-link" hidden>
+        <div class="meta"><b data-bind="help-status"></b><p class="small muted" data-bind="help-detail"></p></div>
+        <button class="btn primary" data-action="help-connect">Reconnect</button>
+      </div>
+      <h2 class="h3">Fix a problem</h2>
+      <div class="acc"><button aria-expanded="true" aria-controls="help-list">The strip is not in the list <span aria-hidden="true">›</span></button>
+        <ol id="help-list"><li>Close the LED LAMP app. Only one phone or app can connect at a time.</li><li>Turn on Bluetooth and Location.</li><li>Stand within a few meters of the strip and tap Connect.</li></ol></div>
+      <div class="acc"><button aria-expanded="false" aria-controls="help-drop">It disconnects often <span aria-hidden="true">›</span></button>
+        <ol id="help-drop" hidden><li>Move closer and check that the controller has steady power.</li><li>Close other apps that control the strip, then tap Reconnect.</li></ol></div>
+      <div class="acc"><button aria-expanded="false" aria-controls="help-dark">Connected, but lights don't respond <span aria-hidden="true">›</span></button>
+        <ol id="help-dark" hidden><li>Check the strip's power supply and plugs.</li><li>Turn it on in Home, raise brightness, and try White. The page can't read the strip's actual state.</li></ol></div>
+      <div class="acc"><button aria-expanded="false" aria-controls="help-scene">Scene stopped when I left the page <span aria-hidden="true">›</span></button>
+        <ol id="help-scene" hidden><li>Keep this page open and in front for page scenes. The strip stays on its last color if you leave.</li><li>Return to the scene and tap Apply to start it again, or choose a built-in effect.</li></ol></div>
+      <footer class="small muted">Works in Chrome on Android. iPhone browsers don't support Web Bluetooth.</footer>
+    </section>
+  </main>
+
+  <p class="toast" role="status" aria-live="polite" data-bind="toast"></p>
+
+  <nav class="tabs" aria-label="Main">
+    <a href="#home" aria-current="page"><svg aria-hidden="true"><use href="#i-home"/></svg>Home</a>
+    <a href="#color"><svg aria-hidden="true"><use href="#i-color"/></svg>Color</a>
+    <a href="#scenes"><svg aria-hidden="true"><use href="#i-scenes"/></svg>Scenes</a>
+    <a href="#help"><svg aria-hidden="true"><use href="#i-help"/></svg>Help</a>
+  </nav>
+</div>
+<dialog class="sheet" id="sheet" aria-modal="true" aria-labelledby="sheet-title">
+  <div class="grabber" aria-hidden="true"></div>
+  <div class="top"><h2 id="sheet-title" tabindex="-1"></h2><button class="icon-btn" data-action="close-sheet" aria-label="Close">×</button></div>
+  <section class="stack" data-sheet="preview" hidden>
+    <div class="strip" data-bind="preview-strip" role="img" aria-label="On-screen strip preview"></div>
+    <div data-bind="page-controls">
+      <label class="slider-head" for="step-interval">Step interval <output data-bind="interval-out"></output></label>
+      <input id="step-interval" class="range" type="range" min="150" max="2000" step="10">
+      <p class="note">This scene is played by this page. Keep it open and in front; the strip stays on its last color if you leave.</p>
+    </div>
+    <p class="small error" data-bind="preview-error" role="status"></p>
+    <div class="quick"><button class="btn ghost grow" data-action="try-scene">Try on strip</button><button class="btn primary grow" data-action="apply-scene">Apply</button></div>
+    <button class="btn ghost" data-action="delete-scene" hidden>Delete scene</button>
+  </section>
+  <form class="stack" data-sheet="new" hidden>
+    <p class="muted" data-bind="save-current"></p>
+    <label for="scene-name">Scene name</label><input class="num" id="scene-name" type="text" autocomplete="off">
+    <p class="small error" data-bind="save-error" role="status"></p>
+    <button class="btn primary" type="submit">Save scene</button>
+  </form>
+  <section class="stack" data-sheet="timer" hidden>
+    <div class="opts" role="group" aria-label="Duration">
+      <button class="opt" data-minutes="15" aria-pressed="true">15 min</button><button class="opt" data-minutes="30" aria-pressed="false">30 min</button><button class="opt" data-minutes="60" aria-pressed="false">1 h</button><button class="opt" data-minutes="120" aria-pressed="false">2 h</button>
+      <button class="opt timer-custom" data-minutes="custom" aria-pressed="false">Custom</button>
+    </div>
+    <div class="quick" id="timer-custom" hidden>
+      <label class="stack grow small">Minutes <input class="num" id="timer-minutes" type="number" min="0" max="720" step="1" inputmode="numeric" placeholder="0" aria-describedby="timer-error"></label>
+      <label class="stack grow small">Seconds <input class="num" id="timer-seconds" type="number" min="0" max="59" step="1" inputmode="numeric" placeholder="0" aria-describedby="timer-error"></label>
+    </div>
+    <p class="small error" id="timer-error" role="status"></p>
+    <label class="slider-head">Fade out <input class="toggle" type="checkbox" id="timer-fade"></label>
+    <p class="note">The controller cannot store timers. Keep this page open with the screen on until it finishes.</p>
+    <button class="btn primary" data-action="start-timer">Start timer</button>
+    <button class="btn ghost" data-action="cancel-timer" hidden>Cancel timer</button>
+  </section>
+</dialog>
+</body>
+</html>
