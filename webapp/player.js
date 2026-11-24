@@ -27,8 +27,16 @@ export function createPlayer({
           // ahead of it (power, brightness) does not shorten the following steps.
           if (i > 0) {
             const due = start + i * interval;
-            if (due > now()) await sleep(due - now());
+            const wait = due - now();
+            if (wait > 0) await sleep(wait);
             if (mine !== run) break;
+            const woke = now();
+            const missed = Math.floor((woke - due) / interval);
+            if (missed > 0) {
+              // Jump to the current frame, then give it a full interval instead of catching up.
+              i += missed;
+              start = woke - i * interval;
+            }
           }
           await send(steps[i % steps.length]);
           if (i === 0) start = now();

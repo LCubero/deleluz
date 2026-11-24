@@ -42,6 +42,26 @@ test('a slow first send does not shorten the following steps', async () => {
   assert.deepEqual(sent.slice(1).map((at, i) => at - sent[i]), [200, 200, 200]);
 });
 
+test('a late wake skips overdue frames and resumes at the current step', async () => {
+  let t = 0;
+  const sent = [];
+  const player = createPlayer({
+    now: () => t,
+    sleep: async ms => { t += ms + (sent.length === 1 ? 525 : 0); },
+    send: async bytes => {
+      sent.push({ at: t, byte: bytes[0] });
+      if (sent.length === 4) player.stop();
+    },
+  });
+  await player.play([1, 2, 3, 4].map(byte => Uint8Array.of(byte)), 100);
+  assert.deepEqual(sent, [
+    { at: 0, byte: 1 },
+    { at: 625, byte: 3 }, // elapsed step 6 wraps to index 2
+    { at: 725, byte: 4 },
+    { at: 825, byte: 1 },
+  ]);
+});
+
 test('rejects an interval below the 50 ms floor and sends nothing', async () => {
   const { player, sent } = harness(1);
   await assert.rejects(player.play([Uint8Array.of(1)], 49), /50/);
