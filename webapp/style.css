@@ -258,3 +258,4 @@ html,body{overscroll-behavior-x:none}
 .voice-strip-3{--strip:linear-gradient(90deg,#22c55e,#facc15)}
 .voice-strip-4{--strip:linear-gradient(90deg,#f97316,#ef4444)}
 .voice-modes .sequence-card[aria-pressed="true"]{border-color:#d8a2f5}
+#strip-pixels[readonly] { background: transparent; border-color: transparent; box-shadow: none; }

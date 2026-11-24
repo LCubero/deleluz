@@ -55,6 +55,7 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - S51 — "si se deconecta estando encendido, en inicio queda la barra led con color y no deberia si está desconectado no debería verse encendido"
 - S52 — "si dale, no sé si transformamos ayuda en setings o more y metemos a settings y ayuda dentro de more o ayuda dentro de settings" — user chose: Ayuda becomes "Ajustes" (4 tabs kept), with collapsible sections Tira (color order + LED count), Idioma, Ayuda and Privacidad inside.
 - S53 — "funciona y cambia en la tira. deberia poderse ponber por cantidad de leds tmb, directamente si quiero poner 150 leds"
+- S54 — "primero estaba en 150. segundo ya lo probé bien, pero xq si uso directamente el numero de leds me sigue saliendo 30 por metro y 5 metros.  deberian quitarse los valors cuando es por solo total de ldes, o es total de leds o es leds por metro y cuantos metros"
 - S12 — "frontend debes revisar con tus herramientas, alineamientos, saltos raros en la pagina, orden, margenes, espacios, nada encima o pegado de otra cosa, simetrico y alineado, agradable a la vista, que se lea y se vea bien, contraste, letra, que funcione en cualquier pantalla y sobre todo que revises." Also: "Nada de rutas ni datos personales en archivos o commits: usa placeholders." "Español neutro con \"tú\" en la interfaz."
 
 ## Tasks
@@ -180,3 +181,4 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - L73 — Parent review after the user's standing rules (S12): help and privacy text told users to tap the status chip, which is status-only (S50); now they point to Conectar/Desconectar on Inicio (d0fd42d). Re-checked Ajustes with all sections open at 320 and 412 px: no overflow, no console errors, 82/82 tests. Personal-data scan of origin/main..HEAD: none.
 - L74 — User after sending 20 × 5 = 100 from the real webapp: "funciona y cambia en la tira. deberia poderse ponber por cantidad de leds tmb, directamente si quiero poner 150 leds" (S53, T48). The strip is now configured to 100 px until it is sent back to 150.
 - L75 — T48 done (0bc9839): RED validPixels missing → GREEN 83/83 `node --test webapp/ lab/web/`. Headless Chrome ?sim 320/412 px: typed 100 → valid; 1025 and 150.5 → error + send disabled; LEDs/m 60 → total 300; back to 30 → 150; no overflow, no console errors.
+- T49 — S54,S12,S7 — Tira: segmented control "Total de LEDs | Por metro"; Total shows only the total field; Por metro shows LEDs por metro + Metros and the computed total as read-only text; mode remembered — inline — see L76

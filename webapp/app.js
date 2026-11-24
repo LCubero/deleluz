@@ -1390,40 +1390,58 @@ const readStripPixels = () => validPixels(stripTotal.valueAsNumber);
 
 stripOrder.replaceChildren(...CHIP_ORDERS.map(order => new Option(order, order)));
 stripOrder.value = 'GRB';
+let stripMode = 'total';
 try {
   const saved = JSON.parse(localStore.getItem(STRIP_SETTINGS_KEY));
-  if (CHIP_ORDERS.includes(saved?.order) && validPixels(saved.pixels ?? stripPixels(saved.density, saved.meters)) !== null) {
+  const pixels = validPixels(saved?.pixels ?? stripPixels(saved?.density, saved?.meters));
+  if (CHIP_ORDERS.includes(saved?.order) && pixels !== null) {
     stripOrder.value = saved.order;
-    stripDensity.value = saved.density;
-    stripMeters.value = saved.meters;
-    stripTotal.value = saved.pixels ?? stripPixels(saved.density, saved.meters);
+    stripTotal.value = pixels;
+    if (saved.mode === 'meter' && stripPixels(saved.density, saved.meters) !== null) {
+      stripMode = 'meter';
+      stripDensity.value = saved.density;
+      stripMeters.value = saved.meters;
+    }
   }
 } catch { /* Keep defaults if saved strip settings are unavailable. */ }
 
+// Per meter: the total is computed and read-only; Total: only the total is used.
+function syncStripTotal() {
+  if (stripMode !== 'meter') return;
+  stripTotal.value = stripPixels(stripDensity.valueAsNumber, stripMeters.valueAsNumber) ?? '';
+}
+
 function renderStripSettings() {
+  $('#strip-by-meter').hidden = stripMode !== 'meter';
+  stripTotal.readOnly = stripMode === 'meter';
+  $$('[data-strip-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.stripMode === stripMode)));
   const invalid = readStripPixels() === null;
   stripError.hidden = !invalid;
   stripSend.disabled = stripConfirmSend.disabled = invalid;
 }
 
-for (const field of [stripDensity, stripMeters]) {
-  field.addEventListener('input', () => {
-    const pixels = stripPixels(stripDensity.valueAsNumber, stripMeters.valueAsNumber);
-    if (pixels !== null) stripTotal.value = pixels;
-  });
+function saveStripSettings() {
+  if (readStripPixels() === null) return;
+  const meter = stripMode === 'meter';
+  try {
+    localStore.setItem(STRIP_SETTINGS_KEY, JSON.stringify({
+      order: stripOrder.value, mode: stripMode, pixels: readStripPixels(),
+      ...(meter && { density: stripDensity.valueAsNumber, meters: stripMeters.valueAsNumber }),
+    }));
+  } catch { toast('storageFailed', true); }
 }
 
+$$('[data-strip-mode]').forEach(button => button.addEventListener('click', () => {
+  stripMode = button.dataset.stripMode;
+  showStripConfirmation(false);
+  syncStripTotal();
+  renderStripSettings();
+  saveStripSettings();
+}));
+
 for (const field of [stripOrder, stripDensity, stripMeters, stripTotal]) {
-  field.addEventListener('input', renderStripSettings);
-  field.addEventListener('change', () => {
-    if (readStripPixels() === null) return;
-    try {
-      localStore.setItem(STRIP_SETTINGS_KEY, JSON.stringify({
-        order: stripOrder.value, density: stripDensity.valueAsNumber, meters: stripMeters.valueAsNumber,
-        pixels: readStripPixels(),
-      }));
-    } catch { toast('storageFailed', true); }
-  });
+  field.addEventListener('input', () => { syncStripTotal(); renderStripSettings(); });
+  field.addEventListener('change', saveStripSettings);
 }
 
 function showStripConfirmation(show) {
