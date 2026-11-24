@@ -6,22 +6,23 @@
 
 <!-- doc-role:verified-state -->
 
-The minimal repository AI harness exists. This file is only the concise projection of active lifecycle records, blockers, recently completed IDs, and the next actionable condition. The canonical lifecycle owner is [roadmap.md](roadmap.md).
+DeleLuz controls the stock LEDDMX-03 from Android Chrome. See [the protocol](../PROTOCOL.md), [the capability table](../CAPABILITIES.md), and the [lab log](../../odd/tasks/led-lab.md) for verified controls and limitations. Linux BlueZ can connect directly to the strip, while the Windows Bluetooth stack fails during characteristic discovery. This does not block building an Android app on Windows: the phone handles BLE.
 
 ## Recent Completed Work
 
 <!-- doc-role:recent-work -->
 
-- Created the minimal repository AI harness and its visible continuity documentation.
+- Added onboard-mic sensitivity to the webapp, verified on the strip by the user (`335d91c`; lab L59).
+- Recorded Linux BLE connection behavior, power-source observations, and GATT discovery (lab L55–L60).
 
 ## Pending Work
 
 <!-- doc-role:pending-work -->
 
-- Track every non-trivial pending item in [roadmap.md](roadmap.md); never maintain a second backlog here.
+See the [roadmap](roadmap.md). Firmware readback and a strip-side timer remain unconfirmed and do not block the Android app.
 
 ## Next Step
 
 <!-- doc-role:next-step -->
 
-As of 2026-11-24 (America/Costa_Rica): LED lab works from Android Chrome (`lab/`, via `adb reverse tcp:8000 tcp:8000`); device facts and limits are in [../CAPABILITIES.md](../CAPABILITIES.md) and [../PROTOCOL.md](../PROTOCOL.md); evidence log in `odd/tasks/led-lab.md` (L1-L54). Confirmed controls: power, color, brightness, effects 1-210 + AUTO, speed, and onboard-mic voice modes 1-4 (L53-L54). Windows cannot control the strip through its Bluetooth stack (lab L48). Chip: Bluetrum `BLUEMATE`, boot code read; flash and ROM not readable (L49-L52, paused). The phone webapp `webapp/` (Android Chrome, Glow Glass design) is on `main` with quick scenes, Mis escenas color sequences, a shared favorites palette, Música cards, swipe navigation and privacy notes (`odd/tasks/deleluz-webapp.md` L1-L64). The last round was verified with headless Chrome at 320-412 px; a full session with the real strip passed on 2026-11-24 (user-reported, no failures). Flutter 3.50.1 is installed in `_tools/flutter` for a possible native app (Web Bluetooth does not exist on iOS). Linux workstation (same repository folder, mounted differently; verified 2026-11-24): `adb` reaches the phone (`adb reverse tcp:8000 tcp:8000` works), BlueZ and Python `bleak` in `_tools/.venv-linux` find and connect to the strip read-only; `_tools/.venv` and `_tools/flutter` are Windows-only builds, so the native app needs a Linux Flutter and Android SDK. Public repository: https://github.com/LCubero/deleluz (MIT). Chip-config frame decoded on 2026-11-24: pixel count and color-order byte (see the frames table in [../PROTOCOL.md](../PROTOCOL.md)); the webapp's Ajustes tab now sets color order and LED count (verified on the strip at 100 and 150 LEDs). The stock DMX03 ignores the known per-pixel frames; segment colors need a custom controller (ESP32), to be explored on Linux together with the FTDI chip read. Phone screenshot checkpoint of the webapp in `docs/webapp-screens/` (2026-11-24). Resume with: the tests the user chooses on Linux, then a native app for Android (shared as an APK) and iPhone (shared as an IPA, no app stores; an iOS build needs macOS or a cloud Mac, and installing it needs either a free Apple account, limited to 7 days and 3 apps per phone, or the paid Apple Developer Program with Ad Hoc distribution to up to 100 registered iPhones per year).
+Verify the local Windows Flutter/Android toolchain, then start the native Android APK with the known BLE frames and bounded connection retries. An iOS build needs macOS.

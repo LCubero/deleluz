@@ -21,16 +21,16 @@ This roadmap is the canonical lifecycle owner. Track only non-trivial work with 
 - Firmware: the unpopulated header hole B is the Bluetrum one-wire download port; the ROM bootloader answers with chip ID `BLUEMATE` (L44-L46). Flash read is blocked: the public bluetrum-tools blob does not run on MATE (L45). ROM `MEM_READ` works (L49-L51): the 3 KB plaintext boot code was read and CRC-verified. Open (L51): a full flash read needs a custom RAM blob and code analysis with no guarantee; continue or pause is the user's choice. Use the gold or blue adapter; red is dead (L50). Every risky step needs user approval (`odd/tasks/led-lab.md` S4); never run write/erase.
 - Windows BLE: UB500 Plus test done (lab L48); Windows cannot discover the controller's characteristics through its Bluetooth stack. Open option (untested, needs user decision): bypass the Windows stack with a dedicated USB dongle (for example Bumble over WinUSB).
 - Bench tests that need the user at the strip (Android Chrome lab): range, preset modes, native effect catalog (210 IDs).
-- Capture remaining vendor frames: timer (`10`), 10 m strip, mic sensitivity (`0C`, untested). Voice modes `0B` 1-4 are confirmed (L53-L54).
+- Capture remaining vendor behavior: stock-strip scheduling is unconfirmed (`0x10` is an APK candidate, not a verified schedule frame); 10 m strip behavior remains unverified. Neither blocks the Android app.
 - App platform: webapp `webapp/` on `main` (Android Chrome only, verified on the strip). Flutter 3.50.1 + Android toolchain ready in `_tools/flutter` for a native Android/iPhone app (remember strips, several strips, robust Bluetooth: `odd/tasks/deleluz-webapp.md` L21-L22); iPhone builds need a Mac.
 - Scene sequence editor: the step editor was rejected (L33); replaced by simple color-square sequences "Mis escenas" (L37-L62).
 - Webapp strip test session: quick scenes, Mis escenas, favorites, Música, effects + AUTO with speed 10 %/90 %, disconnect and link loss on the real strip (`odd/tasks/deleluz-webapp.md` L64).
-- Strip configuration (RGB order + pixel count): capture the vendor app's chip-config frame while changing 150 → 100 → 150 LEDs, then add it to the webapp (T23).
 - Phone-mic music modes (host-driven color/brightness from the phone microphone): deferred by the user until the firmware path advances (L31).
-- Native app: when it starts, move the still-useful parts of the archived original brief (`_archive/DeleLuz-LEDDMX0303C1-LLM-FIRST.md`: native app MVP, connection states, phone-mic music idea) into a new repo doc; deferred by the user.
+- Native Android app: next work on Windows; verify the Flutter/Android toolchain before starting the APK. Use confirmed BLE controls and bounded retries. Do not depend on a strip-side timer. The archived brief is optional input; iOS is separate.
 - Phone design: the webapp uses the approved Glow Glass design (`design/deleluz-webapp/`); earlier phone directions are archived locally in `_archive/` (still in Git history).
 
 ## Resolved Records
 <!-- doc-role:resolved-records -->
 
-No project-specific records have been resolved.
+- Strip configuration (RGB order + pixel count, T23): delivered in the webapp Ajustes tab (`odd/tasks/deleluz-webapp.md` T46-T49), verified on the strip at 100 and 150 LEDs.
+- Onboard-mic sensitivity (`0x0C`): verified on the strip (lab L59), implemented in the webapp and tested by the user (`335d91c`).

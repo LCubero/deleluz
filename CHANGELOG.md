@@ -6,6 +6,7 @@ This file records meaningful completed changes in chronological order, newest fi
 
 ## 2026-11-24
 
+- Added a microphone sensitivity slider for the strip’s onboard mic and verified it on the real strip from Android.
 - Set up the Linux workstation for the LED lab: `adb` (phone authorized, `adb reverse` works), `tshark`, and a Linux Python environment `_tools/.venv-linux` (bleak, pyserial, crcmod, tqdm, capstone); verified a read-only BLE scan and connect to the strip from Linux (`_tools/`, not committed).
 - Retook the webapp screenshot checkpoint on an Android phone (fresh install, one saved scene) and fixed the visual defects it showed: consistent percent spacing, a sheet header that keeps Close reachable while scrolling, and an unclipped title focus outline (`docs/webapp-screens/`, `odd/tasks/deleluz-webapp.md` T50, L78-L79)
 - Added the Ajustes tab to the webapp (replaces Ayuda; sections Tira, Idioma, Ayuda, Privacidad): strip color order and LED count, typed as a total or calculated per meter, sent as the chip-config frame after a confirmation; verified on the real strip at 100 and 150 LEDs (`odd/tasks/deleluz-webapp.md` T46-T49, L70-L77)
