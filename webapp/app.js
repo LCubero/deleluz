@@ -13,7 +13,7 @@ import { MAX_SEQUENCES, MAX_COLORS, loadSequences, saveSequences, createSequence
 import { formatRemaining, fadeBrightness, parseTimerDuration } from './timer.js';
 import { createLink } from './ble.js';
 import { hueToRgb, hueFromPoint, rgbCss, rgbFromHex } from './color.js';
-import { PALETTE_KEY, PALETTE_LIMIT, loadPalette, addPaletteColor, replacePaletteColor, colorName } from './colors.js';
+import { DEFAULT_PALETTE, PALETTE_KEY, PALETTE_LIMIT, loadPalette, addPaletteColor, replacePaletteColor, colorName } from './colors.js';
 
 import { LANGUAGE_KEY, loadLanguage, translate } from './i18n.js';
 
@@ -337,8 +337,10 @@ function choice(item) {
   return button;
 }
 
+// Quick scenes offer only the named default colors (plus "Otro color" with the wheel),
+// not the colors saved in the palette.
 function renderShortcutColors() {
-  bind('shortcut-colors')[0].replaceChildren(...paletteColors.map(value => {
+  bind('shortcut-colors')[0].replaceChildren(...DEFAULT_PALETTE.map(value => {
     const button = choice({ kind: 'color', rgb: rgbFromHex(value) });
     button.setAttribute('aria-label', paletteColorLabel(value));
     return button;
@@ -799,7 +801,7 @@ $('[data-action="shortcut-add-wheel"]').addEventListener('click', () => chooseSh
 
 // Shared palette: tap any circle to apply it and select its replacement slot.
 let paletteColors = loadPalette(localStore);
-const palettes = [{ render: renderShortcutColors }];
+const palettes = [];
 function paletteColorLabel(value) {
   const name = colorName(value);
   return name === 'solid' ? t('paletteColorHex', { hex: value.toUpperCase() }) : t(name);
