@@ -1,0 +1,10 @@
+{
+  "title": "DeleLuz · Mis Escenas",
+  "brief": "Tres propuestas Glow Glass para crear secuencias de colores sin salir de Mis Escenas. Cada cuadro representa un color de toda la tira; solo se ajustan velocidad e intensidad. La página debe permanecer abierta durante la reproducción.",
+  "feature": "odd/tasks/deleluz-webapp.md",
+  "artboards": [
+    {"file":"01-tira-de-cuadritos.html","title":"Tira de cuadritos","tradeoff":"Editas en la propia tarjeta; la tarjeta abierta ocupa más espacio en la lista.","width":390,"height":844},
+    {"file":"02-lienzo.html","title":"Lienzo","tradeoff":"Siempre sabes qué escena estás editando; el guardado queda en segundo plano visual frente al editor.","width":390,"height":844},
+    {"file":"03-galeria-hoja.html","title":"Galería + hoja","tradeoff":"Comparas escenas en una cuadrícula; abrir el editor requiere un toque más.","width":390,"height":844}
+  ]
+}
