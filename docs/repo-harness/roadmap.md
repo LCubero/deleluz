@@ -22,7 +22,10 @@ This roadmap is the canonical lifecycle owner. Track only non-trivial work with 
 - Windows BLE: UB500 Plus test done (lab L48); Windows cannot discover the controller's characteristics through its Bluetooth stack. Open option (untested, needs user decision): bypass the Windows stack with a dedicated USB dongle (for example Bumble over WinUSB).
 - Bench tests that need the user at the strip (Android Chrome lab): range, preset modes, native effect catalog (210 IDs).
 - Capture remaining vendor frames: timer (`10`), 10 m strip, mic sensitivity (`0C`, untested). Voice modes `0B` 1-4 are confirmed (L53-L54).
-- App platform: webapp on `feat/app` (Android Chrome only). Flutter 3.50.1 + Android toolchain ready in `_tools/flutter` for a native Android/iPhone app if needed; iPhone builds need a Mac. Decide after merging `feat/app`.
+- App platform: webapp `webapp/` on `main` (Android Chrome only, verified on the strip). Flutter 3.50.1 + Android toolchain ready in `_tools/flutter` for a native Android/iPhone app (remember strips, several strips, robust Bluetooth: `odd/tasks/deleluz-webapp.md` L21-L22); iPhone builds need a Mac.
+- Webapp next (small): show effect names (vendor catalog `dmx03_model`, 210 IDs) instead of "Sus nombres aún no se conocen".
+- Scene sequence editor (whole-strip colors/effects with timing, "use current" / "new"): `odd/tasks/deleluz-webapp.md` L14.
+- Phone-mic music modes (host-driven color/brightness from the phone microphone): deferred by the user until the firmware path advances (L31).
 - Phone design: v3 skins in `design/deleluz-mobile-v3/` and Stitch project "DeleLuz v3"; resume after device knowledge.
 - Private GitHub repository, when the user asks (local commits exist).
 
