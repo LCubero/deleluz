@@ -39,6 +39,7 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - S35 — "el ciruculo de + en los colores de las secuencias, deberia tomar el color seleccionado en el circulo, no abrir un ventada de colores.  y falta agregar lo del circulo en otro color, en escensa rapidas al agregar en otro color"
 - S36 — "le podemos agregar unos 3 colores agregagados más en mis escenas  y que mas bien el quino del más si todo un color ya guardado y lo cambio en el circulo al dar en el + se cambie ese selecionado, mejor eso en lugar de que el ultimo se sobreescriba / y en escenas rapidas al agregar un color custom que solo diga color fijo y ya, no el hex del color. / y en la seccion color, en pestaña color fijo, tamb hau que agregar ese sistema de agregar o cambiar colores anteriormente dicho"
 - S37 — "colo fijo deberia poder agregar o cambiar los favoritos sin conexion"
+- S38 — "ahora que lo pienso los colores deberian poderse cambiar cualquiera de los que salen y ser los mismos en todos los sitios que se use eso"
 - S12 — "frontend debes revisar con tus herramientas, alineamientos, saltos raros en la pagina, orden, margenes, espacios, nada encima o pegado de otra cosa, simetrico y alineado, agradable a la vista, que se lea y se vea bien, contraste, letra, que funcione en cualquier pantalla y sobre todo que revises." Also: "Nada de rutas ni datos personales en archivos o commits: usa placeholders." "Español neutro con \"tú\" en la interfaz."
 
 ## Tasks
@@ -72,6 +73,7 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - T32 — S35,S12 — Dashed + saves the wheel color of the selected square; quick-scene chooser Otro color uses the hue wheel — inline — done (L48)
 - T33 — S36,S12 — 7 saved colors shared by Color fijo and the scene editor; + replaces the tapped saved circle, otherwise adds; quick-scene custom colors named "Color fijo" — inline — done (L49)
 - T34 — S37 — Color fijo wheel and circles choose a color without a strip so favorites can be added/changed offline; nothing is sent until connected — inline — done (L50)
+- T35 — S38,S36,S37,S12,S7 — One editable color palette (defaults + added, max 15) used by Color fijo, the scene editor and the quick-scene chooser; any circle can be replaced — worker — pending
 
 ## Log
 
