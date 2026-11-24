@@ -16,3 +16,6 @@ __pycache__/
 
 # Local third-party tools and their venv (Bluetooth, chip). Never commit.
 _tools/
+
+# Pi runtime copies of the harness skills (local only).
+.pi/
