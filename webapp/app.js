@@ -386,8 +386,8 @@ setQuickOpen((() => {
   try {
     const value = localStore.getItem(QUICK_OPEN_KEY);
     if (value !== null && value !== '0' && value !== '1') localStore.invalid();
-    return value !== '0';
-  } catch { return true; }
+    return value === '1';
+  } catch { return false; }
 })(), false);
 
 // ---- power and brightness ----
@@ -1289,6 +1289,30 @@ addEventListener('scroll', scheduleMore, { passive: true });
 addEventListener('resize', scheduleMore);
 dialog.addEventListener('scroll', scheduleMore, { passive: true });
 new MutationObserver(scheduleMore).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'open'] });
+
+// ---- swipe left/right between sections ----
+// A clear horizontal swipe on the page (not on sliders, the color wheel, a lifted tile or an open sheet)
+// moves to the next or previous tab, in the bottom-nav order.
+const TAB_ORDER = ['home', 'color', 'scenes', 'help'];
+let swipe = null;
+const NO_SWIPE = 'input, .wheel, .lifted, [data-bind="sequence-frames"], .swatches, nav.tabs, dialog';
+addEventListener('touchstart', event => {
+  if (dialog.open || event.touches.length !== 1 || event.target.closest(NO_SWIPE)) { swipe = null; return; }
+  const touch = event.touches[0];
+  swipe = { x: touch.clientX, y: touch.clientY, at: Date.now() };
+}, { passive: true });
+addEventListener('touchend', event => {
+  if (!swipe || dialog.open || document.querySelector('.lifted')) { swipe = null; return; }
+  const touch = event.changedTouches[0];
+  const dx = touch.clientX - swipe.x;
+  const dy = touch.clientY - swipe.y;
+  const fast = Date.now() - swipe.at < 600;
+  swipe = null;
+  if (!fast || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+  const current = TAB_ORDER.indexOf((location.hash || '#home').slice(1));
+  const next = TAB_ORDER[Math.max(0, current) + (dx < 0 ? 1 : -1)];
+  if (next) location.hash = `#${next}`;
+}, { passive: true });
 
 // ---- tabs (hash routing) ----
 function route() {

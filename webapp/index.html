@@ -52,7 +52,7 @@
       </div>
 
       <section aria-labelledby="qs">
-        <div class="top section-head"><h2 id="qs" class="h3"><button class="section-toggle" data-action="toggle-quick" aria-expanded="true" aria-controls="quick-grid"><span data-i18n="quickScenes">Escenas rápidas</span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></h2><a class="small link" href="#scenes" data-i18n="allScenes">Todas las escenas</a></div>
+        <div class="top section-head"><h2 id="qs" class="h3"><button class="section-toggle" data-action="toggle-quick" aria-expanded="false" aria-controls="quick-grid"><span data-i18n="quickScenes">Escenas rápidas</span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></h2><a class="small link" href="#scenes" data-i18n="allScenes">Todas las escenas</a></div>
         <div class="grid3" id="quick-grid" data-bind="quick"></div>
       </section>
 
@@ -135,8 +135,8 @@
         <button class="btn primary" data-action="help-connect" data-i18n="reconnect">Reconectar</button>
       </div>
       <h2 class="h3" data-i18n="troubleshoot">Solución de problemas</h2>
-      <div class="acc"><button aria-expanded="true" aria-controls="help-list"><span data-i18n="missingStrip">La tira no aparece en la lista</span> <span aria-hidden="true">›</span></button>
-        <ol id="help-list"><li data-i18n="closeLamp">Cierra la app LED LAMP. Solo se puede conectar un teléfono o una app a la vez.</li><li data-i18n="enableBluetooth">Activa Bluetooth. Si Android te pide un ajuste del sistema para encontrar dispositivos cercanos, revisa ese aviso.</li><li data-i18n="standNear">Acércate a la tira y toca Conectar.</li></ol></div>
+      <div class="acc"><button aria-expanded="false" aria-controls="help-list"><span data-i18n="missingStrip">La tira no aparece en la lista</span> <span aria-hidden="true">›</span></button>
+        <ol id="help-list" hidden><li data-i18n="closeLamp">Cierra la app LED LAMP. Solo se puede conectar un teléfono o una app a la vez.</li><li data-i18n="enableBluetooth">Activa Bluetooth. Si Android te pide un ajuste del sistema para encontrar dispositivos cercanos, revisa ese aviso.</li><li data-i18n="standNear">Acércate a la tira y toca Conectar.</li></ol></div>
       <div class="acc"><button aria-expanded="false" aria-controls="help-drop"><span data-i18n="frequentDrops">Se desconecta a menudo</span> <span aria-hidden="true">›</span></button>
         <ol id="help-drop" hidden><li data-i18n="steadyPower">Acércate y comprueba que el controlador recibe alimentación estable.</li><li data-i18n="closeOtherApps">Cierra las otras apps que controlan la tira y toca Reconectar.</li></ol></div>
       <div class="acc"><button aria-expanded="false" aria-controls="help-dark"><span data-i18n="noResponse">Hay conexión, pero las luces no responden</span> <span aria-hidden="true">›</span></button>
