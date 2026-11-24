@@ -79,7 +79,7 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - T16 — S13,S12 — Effect names 1-210 in Color → Efectos integrados and in the scenes list; Home keeps the short 'Efecto N' — inline — done (L32)
 - T21 — S15 — Scene Try/Apply while disconnected closes the sheet and shows the same top toast as other actions — inline — done (L35)
 - T22 — S17,S12,S7 — Customizable quick scenes (max 6, defaults, add/change/remove, drag to reorder, long-press menu, layout by count) — inline (worker failed: provider_unavailable) — done (L36)
-- T23 — S16 — Strip configuration (LEDs per meter × meters = pixel count) — unblocked by the 2026-11-24 dedicated test (L70); delivered by T46 — pending
+- T23 — S16 — Strip configuration (LEDs per meter × meters = pixel count) — unblocked by the 2026-11-24 dedicated test (L70); delivered by T46 — done (T46-T47)
 - T46 — S16,S52,S12,S7 — Ayuda tab → Ajustes: sections Tira (color order, LEDs per meter × meters, confirm before sending the chip-config frame), Idioma, Ayuda, Privacidad; `chipConfig` builder + tests; README/PROTOCOL docs — worker — done f28d484 (L72)
 - T47 — S16 — Real-strip check with the user watching: pixel count 100 then back to 150, one more color order, restore GRB/150 — inline + user — done: 100 px works (L74), back to 150 with the typed total (L77)
 - T48 — S53,S12,S7 — Ajustes → Tira: editable "Total de LEDs" (1–1024, whole number) that LEDs por metro × Metros fill in; the total is what is sent — inline — done 0bc9839 (L75)
