@@ -828,8 +828,24 @@ function storePalette(next) {
   try { localStore.setItem(PALETTE_KEY, JSON.stringify(paletteColors)); } catch { toast('storageFailed', true); }
   palettes.forEach(palette => palette.render());
 }
+// Favorites can be collapsed; the choice is shared by every palette and remembered.
+const FAVORITES_OPEN_KEY = 'deleluz.webapp.favoritesOpen';
+let favoritesOpen = (() => { try { return localStorage.getItem(FAVORITES_OPEN_KEY) !== '0'; } catch { return true; } })();
+function setFavoritesOpen(open) {
+  favoritesOpen = open;
+  try { localStorage.setItem(FAVORITES_OPEN_KEY, open ? '1' : '0'); } catch { /* keep it for this session */ }
+  palettes.forEach(palette => palette.showOpen?.());
+}
 function createPalette({ container, mark, current, apply }) {
   let slot = null;
+  const grid = container.closest('.swatches') ?? container;
+  const toggle = document.createElement('button');
+  toggle.className = 'section-toggle favorites-toggle';
+  toggle.setAttribute('aria-expanded', 'true');
+  toggle.innerHTML = '<span data-i18n="favorites"></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  toggle.querySelector('span').textContent = t('favorites');
+  toggle.addEventListener('click', () => setFavoritesOpen(!favoritesOpen));
+  grid.before(toggle);
   const plus = document.createElement('button');
   plus.className = 'swatch palette-plus';
   plus.textContent = '+';
@@ -838,7 +854,12 @@ function createPalette({ container, mark, current, apply }) {
   hint.className = 'small muted palette-hint';
   hint.dataset.i18n = 'paletteHint';
   hint.textContent = t('paletteHint');
-  (container.closest('.swatches') ?? container).after(hint);
+  grid.after(hint);
+  const showOpen = () => {
+    toggle.setAttribute('aria-expanded', String(favoritesOpen));
+    grid.hidden = hint.hidden = !favoritesOpen;
+  };
+  showOpen();
   // While a saved color is lifted, the "+" turns into a trash can: drop it there to delete it.
   const showTrash = on => {
     plus.classList.toggle('trash', on);
@@ -849,8 +870,10 @@ function createPalette({ container, mark, current, apply }) {
   plus.addEventListener('click', () => {
     const value = hex(current());
     if (slot !== null) storePalette(replacePaletteColor(paletteColors, slot, value));
-    else if (paletteColors.length >= PALETTE_LIMIT) toast('paletteFull', true);
+    else if (paletteColors.length >= PALETTE_LIMIT) { toast('paletteFull', true); return; }
     else storePalette(addPaletteColor(paletteColors, value));
+    slot = null;
+    render();
   });
   function render() {
     plus.setAttribute('aria-label', t(slot === null ? 'saveSelectedColor' : 'replaceSavedColor'));
@@ -888,7 +911,7 @@ function createPalette({ container, mark, current, apply }) {
       plus,
     );
   }
-  const palette = { render, clearSlot() { slot = null; render(); } };
+  const palette = { render, showOpen, clearSlot() { slot = null; render(); } };
   palettes.push(palette);
   return palette;
 }

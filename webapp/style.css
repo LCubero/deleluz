@@ -239,3 +239,4 @@ body:has(#sheet[open]) .more-below{opacity:0}
 #sheet.has-more .sheet-more{opacity:1}
 @media (prefers-reduced-motion:reduce){.more-below,.sheet-more{transition:none}}
 @media (max-width:340px){.swatches{grid-template-columns:repeat(5,44px);column-gap:clamp(4px,calc((100% - 220px) / 4),16px)}}
+.favorites-toggle{align-self:flex-start;font-weight:600}

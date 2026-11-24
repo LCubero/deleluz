@@ -26,7 +26,6 @@ const strings = {
   night: ["Noche", "Night"],
   favorites: ["Favoritos", "Favorites"],
   namedColors: ["Colores con nombre", "Named colors"],
-  shortcutPickHint: ["Toca un favorito o mueve la rueda, y agrégalo.", "Tap a favorite or move the wheel, then add it."],
   dropToDelete: ["Suelta aquí para borrar", "Drop here to delete"],
   paletteHint: ["Mantén presionado un color para moverlo o arrástralo al basurero para borrarlo.", "Press and hold a color to move it, or drag it to the trash to delete it."],
   saveSelectedColor: ["Guardar este color", "Save this color"],
