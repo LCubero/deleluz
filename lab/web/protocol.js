@@ -30,6 +30,10 @@ export function speed(pct) {
   return framed(2, integer(pct, 1, 100, 'Speed'), 255, 0, 255);
 }
 
+export function voiceMode(mode) {
+  return framed(0x0b, integer(mode, 1, 4, 'Voice mode'), 0, 255, 255);
+}
+
 export const hex = bytes => Array.from(bytes, byte => byte.toString(16).padStart(2, '0').toUpperCase()).join(' ');
 
 function parseBytes(text) {

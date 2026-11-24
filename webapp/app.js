@@ -1,4 +1,4 @@
-import { power, color, brightness, effect, speed } from '../lab/web/protocol.js';
+import { power, color, brightness, effect, speed, voiceMode } from '../lab/web/protocol.js';
 import { PRESETS, presetFrames } from '../lab/web/presets.js';
 import { createSender } from './sender.js';
 import { runStartup } from './startup.js';
@@ -60,6 +60,7 @@ async function startMode(mode) {
       const frames = smoothSteps(mode.preset, steps);
       await player.play(frames.map(frame => frame.bytes), frames[0].interval);
     } else if (mode.rgb) await send(color(...mode.rgb), 'color');
+    else if (mode.voice) await send(voiceMode(mode.voice), 'effect');
     else await send(effect(mode.effect), 'effect');
   } catch {
     if (run === playback && dialog.open && selected) text('preview-error', t('sceneFailed'));
@@ -233,6 +234,17 @@ $('[data-action="fx-prev"]').addEventListener('click', () => playEffect(clampFx(
 $('[data-action="fx-next"]').addEventListener('click', () => playEffect(clampFx(state.fx + 1)));
 $('[data-action="fx-play"]').addEventListener('click', () => playEffect(clampFx(Number(fxInput.value))));
 $('[data-action="fx-auto"]').addEventListener('click', () => playEffect('AUTO'));
+const voiceButtons = $$('[data-voice]');
+voiceButtons.forEach(button => button.addEventListener('click', () => {
+  if (needsLink()) return;
+  const id = Number(button.dataset.voice);
+  const mode = { voice: id };
+  Object.assign(state, { label: ['musicMode', { id }], scene: `voice:${id}`, mode, on: true });
+  persist();
+  render();
+  startMode(mode);
+}));
+
 // Every slider paints its filled part from its own min/max while it is dragged.
 document.addEventListener('input', event => {
   const input = event.target;
@@ -324,6 +336,7 @@ function render() {
   wheel.style.setProperty('--c', rgbCss(state.rgb));
   bind('wheel-handle')[0].style.cssText = `left:${50 + 38 * Math.sin(hue * Math.PI / 180)}%;top:${50 - 38 * Math.cos(hue * Math.PI / 180)}%`;
   wheel.setAttribute('aria-valuenow', String(hue));
+  voiceButtons.forEach(button => button.setAttribute('aria-pressed', String(state.on && state.mode?.voice === Number(button.dataset.voice))));
   fxInput.value = state.fx;
   text('fx-out', String(state.fx));
   bind('speed')[0].value = state.speed;
@@ -497,13 +510,14 @@ $$('[data-action="new-scene"]').forEach(button => button.addEventListener('click
   modeToSave = currentMode();
   saveForm.reset();
   text('save-error', '');
-  text('save-current', modeToSave.effect ? t('chooseMode') : t('saveCurrent', { label: currentLabel() }));
-  saveForm.querySelector('[type="submit"]').disabled = Boolean(modeToSave.effect);
+  const canSave = Boolean(modeToSave.rgb || modeToSave.preset);
+  text('save-current', canSave ? t('saveCurrent', { label: currentLabel() }) : t('chooseMode'));
+  saveForm.querySelector('[type="submit"]').disabled = !canSave;
   openSheet('new', t('newScene'), button, nameInput);
 }));
 saveForm.addEventListener('submit', event => {
   event.preventDefault();
-  if (modeToSave.effect) return;
+  if (!modeToSave.rgb && !modeToSave.preset) return;
   try { saveScene(localStorage, nameInput.value, modeToSave); }
   catch (error) { text('save-error', t(error.code === 'invalidSceneName' || error.code === 'duplicateSceneName' ? error.code : 'saveFailed')); return; }
   collection = 'mine';

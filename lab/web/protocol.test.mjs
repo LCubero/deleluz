@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { power, color, brightness, effect, speed, hex, parseRaw, experimentalFrame } from './protocol.js';
+import { power, color, brightness, effect, speed, voiceMode, hex, parseRaw, experimentalFrame } from './protocol.js';
 
 function frame(actual, expected) {
   assert.ok(actual instanceof Uint8Array);
@@ -35,6 +35,12 @@ test('effect and speed include boundaries and AUTO', () => {
   frame(speed(100), '02 64 FF 00 FF');
   for (const invalid of [0, 211, 254, '95', 1.5]) assert.throws(() => effect(invalid));
   for (const invalid of [0, 101, '50', 1.5]) assert.throws(() => speed(invalid));
+});
+
+test('voice mode matches the captured frame and rejects invalid modes', () => {
+  frame(voiceMode(1), '0B 01 00 FF FF');
+  frame(voiceMode(4), '0B 04 00 FF FF');
+  for (const invalid of [0, 5, 1.5, '1', NaN]) assert.throws(() => voiceMode(invalid), RangeError);
 });
 
 test('raw parser checks framing and length', () => {

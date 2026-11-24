@@ -90,6 +90,16 @@
           <label class="slider-head" for="speed"><span data-i18n="speed">Velocidad</span><output data-bind="speed-out">50</output></label>
           <input id="speed" class="range" type="range" min="1" max="100" value="50" data-bind="speed">
         </div>
+        <section class="glass pad stack" aria-labelledby="music-title">
+          <h2 id="music-title" class="slider-head" data-i18n="musicTitle">Música (micrófono de la tira)</h2>
+          <div class="seg voice-modes" role="group" aria-labelledby="music-title">
+            <button data-voice="1" aria-pressed="false">1</button>
+            <button data-voice="2" aria-pressed="false">2</button>
+            <button data-voice="3" aria-pressed="false">3</button>
+            <button data-voice="4" aria-pressed="false">4</button>
+          </div>
+          <p class="small muted" data-i18n="musicHint">La tira reacciona al sonido con su propio micrófono.</p>
+        </section>
       </div>
 
       <section class="glass thumb" aria-label="Brillo" data-i18n-aria="brightness">
