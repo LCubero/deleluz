@@ -12,6 +12,11 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - S5 — Order: "Mockup primero, luego código".
 - S7 — Language: "y hay que agregar idioma español y por defecto en español."
 - S6 — Truthful to device limits (docs/CAPABILITIES.md): no state read-back, no per-pixel, page-sequenced modes and timer only run while the page is open; no music sync, no groups in V1.
+- S8 — "R4-003: si falla guardar en localStorage, no debería impedir apagar la tira."
+- S9 — "R3-004: los pasos atrasados de una escena salen cada 50 ms si el teléfono despierta tarde."
+- S10 — "En pantallas bajas (360x640, 390x700) el control de brillo de Inicio queda bajo la barra de navegación (L19)."
+- S11 — "Main tiene hallazgos nuevos que la webapp no usa todavía: modos de voz por micrófono 1-4 confirmados por BLE (docs/PROTOCOL.md, odd/tasks/led-lab.md L53-L54)."
+- S12 — "frontend debes revisar con tus herramientas, alineamientos, saltos raros en la pagina, orden, margenes, espacios, nada encima o pegado de otra cosa, simetrico y alineado, agradable a la vista, que se lea y se vea bien, contraste, letra, que funcione en cualquier pantalla y sobre todo que revises." Also: "Nada de rutas ni datos personales en archivos o commits: usa placeholders." "Español neutro con \"tú\" en la interfaz."
 
 ## Tasks
 
@@ -27,6 +32,10 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - T10 — S5 — Dev server without browser caching (`webapp/serve.py`), README updated — worker — done (L18)
 
 - T11 — S7 — Spanish UI, Spanish by default, English selectable — worker — done (L26)
+- T12 — S8 — Saving state to localStorage never blocks sending power-off (or any strip command) — worker — pending
+- T13 — S9 — Scene player: after a late wake-up, resume at the current step instead of bursting overdue steps — worker — pending
+- T14 — S11,S12 — Voice modes 1-4 (onboard mic): `voiceMode` builder in `lab/web/protocol.js` + test; small Color-tab section with 4 buttons, link guard, es/en strings, README limits — worker — pending
+- T15 — S10,S12 — Home Brightness reachable above the nav on short screens (320x568, 360x640, 390x700) without breaking 411x778/412x915; visual audit 320-412 px — worker + parent check — pending
 
 ## Log
 
@@ -57,3 +66,4 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - L25 — User: "y hay que agregar idioma español y por defecto en español." → S7, T11.
 - L26 — T11: Spanish by default, with instant switching to English in Help and localStorage persistence. Static and dynamic UI, accessibility labels, included scenes, effects, and timer text are localized; saved scene names and lab presets are unchanged. RED: `node --test webapp/ lab/web/` 41 passed, 1 failed (missing i18n module). GREEN: 46/46; `node --check webapp/app.js` passed. Grep audit found no unintended English UI copy; bilingual selector, technical names, and units are intentional. Browser visual and interaction checks are pending parent verification.
 - L27 — Parent browser check (CDP, sim): Spanish default, lang=es; 320x568 and 411x778, all four tabs: no overflow, no clipped text, no target < 44 px, no overlapping buttons; switching to English keeps a running timer (Se apaga en 15:00 → Off in 14:59) and survives reload (lang=en); no JS errors; screenshots reviewed (neutral tú Spanish). 46/46.
+- L28 — User (2026-11-24, after the merge into `main`): asked to verify state and propose next steps; then delegated the choice ("Tu eres quien puede leer todo ... revisa") with the S12 frontend rules. Agent chose T12-T15 (small webapp polish) on branch `feat/webapp-polish`. Worktree/branch `feat/app` deletion stays pending the user's explicit confirmation. Verified before starting: `main` at db67239, clean, 46/46 tests, `feat/app` webapp identical to squash f0b5c19, no personal paths in tracked files.
