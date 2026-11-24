@@ -8,7 +8,8 @@ import { smoothSteps } from './smooth.js';
 import { loadState, persistState, solidSelection } from './state.js';
 import { MAX_SHORTCUTS, loadShortcuts, saveShortcuts, addShortcut, replaceShortcut,
   removeShortcut, moveShortcut, gridColumns, filterShortcuts } from './shortcuts.js';
-import { MAX_SEQUENCES, MAX_COLORS, loadSequences, saveSequences, createSequence, updateSequence,
+import { MAX_SEQUENCES, MAX_COLORS, MAX_SEQUENCE_NAME, loadSequences, saveSequences, createSequence, updateSequence,
+  renameSequence, sequenceNameError,
   removeSequence, setColor as setFrameColor, addColor, removeColor, moveColor, speedPercent, intervalFromSpeed } from './sequences.js';
 import { formatRemaining, fadeBrightness, parseTimerDuration } from './timer.js';
 import { createLink } from './ble.js';
@@ -294,7 +295,10 @@ function shortcutTile(item) {
     sw.style.background = colors.length === 1 ? rgbCss(colors[0]) : `linear-gradient(90deg,${colors.map((rgb, i) =>
       `${rgbCss(rgb)} ${100 * i / colors.length}% ${100 * (i + 1) / colors.length}%`).join(',')})`;
   } else sw.style.background = item.kind === 'scene' ? presetSwatch(item.preset) : rgbCss(item.rgb);
-  button.append(sw, shortcutName(item));
+  const name = document.createElement('span');
+  name.className = 'tile-name';
+  name.textContent = shortcutName(item);
+  button.append(sw, name);
   return button;
 }
 
@@ -557,16 +561,18 @@ bind('speed').forEach(input => input.addEventListener('input', () => {
 }));
 
 // ---- connection ----
-$$('[data-action="connect"], [data-action="help-connect"]').forEach(button => button.addEventListener('click', () => {
-  const action = link.state.status === 'lost' ? link.reconnect() : link.connect();
+function connectStrip({ reconnect = false } = {}) {
+  const action = reconnect ? link.reconnect() : link.connect();
   action.catch(error => toast(error.code === 'controllerUnsupported' ? error.code : 'connectFailed', true));
-}));
-
-function renderLostDetail() {
-  const { name, lostAt, status } = link.state;
-  const elapsed = Math.max(0, Math.floor((Date.now() - lostAt) / 1000));
-  text('help-detail', status === 'lost' ? t('lostDetail', { name: name ?? 'LEDDMX', seconds: elapsed }) : '');
 }
+
+$('[data-action="connect"]').addEventListener('click', () => connectStrip({ reconnect: link.state.status === 'lost' }));
+const linkChips = $$('[data-action="link-toggle"]');
+linkChips.forEach(button => button.addEventListener('click', () => {
+  const { status } = link.state;
+  if (status === 'connected') disconnectStrip();
+  else if (status === 'idle' || status === 'lost') connectStrip();
+}));
 
 $$('.acc button').forEach(button => button.addEventListener('click', () => {
   const open = button.getAttribute('aria-expanded') === 'true';
@@ -587,13 +593,10 @@ function renderLinkText(s = link.state) {
   connect.disabled = s.status === 'connecting';
   connect.querySelector('span').textContent = t(s.status === 'lost' ? 'reconnect' : s.status === 'connecting' ? 'connecting' : 'connect');
   $('[data-action="disconnect"]').hidden = s.status !== 'connected';
-  const helpConnect = $('[data-action="help-connect"]');
-  helpConnect.hidden = connect.hidden;
-  helpConnect.disabled = connect.disabled;
-  helpConnect.textContent = connect.querySelector('span').textContent;
-  bind('help-link')[0].hidden = s.status === 'simulated';
-  text('help-status', t(s.status));
-  renderLostDetail();
+  for (const chip of linkChips) {
+    chip.disabled = s.status === 'simulated' || s.status === 'connecting';
+    chip.setAttribute('aria-label', t(chip.disabled ? s.status : s.status === 'connected' ? 'disconnect' : 'connect'));
+  }
 }
 
 function renderLink(s) {
@@ -606,10 +609,11 @@ function renderLink(s) {
   }
 }
 
-$('[data-action="disconnect"]').addEventListener('click', () => {
+function disconnectStrip() {
   stopPlayback();
   try { link.disconnect(); } catch { toast('disconnectFailed', true); }
-});
+}
+$('[data-action="disconnect"]').addEventListener('click', disconnectStrip);
 
 // ---- render ----
 function renderBrightness() {
@@ -656,6 +660,10 @@ function openSheet(panel, title, trigger, focus = $('#sheet-title')) {
   opener = trigger;
   text('preview-error', '');
   $('#sheet-title').textContent = title;
+  sequenceNameInput.hidden = true;
+  $('#sheet-title').classList.remove('editing-name');
+  sequenceRename.hidden = panel !== 'sequence';
+  setSequenceNameError(null);
   sequenceDelete.hidden = panel !== 'sequence' || isNewSequence;
   showSequenceConfirmation(false);
   $$('[data-sheet]').forEach(section => { section.hidden = section.dataset.sheet !== panel; });
@@ -937,6 +945,29 @@ const sequenceBri = $('#sequence-bri');
 const sequenceStop = $('[data-action="sequence-stop"]');
 const sequenceNew = $('[data-action="sequence-new"]');
 const sequenceDelete = $('[data-action="sequence-delete"]');
+const sequenceRename = $('[data-action="sequence-rename"]');
+const sequenceNameInput = $('#sequence-name');
+sequenceNameInput.maxLength = MAX_SEQUENCE_NAME;
+
+function setSequenceNameError(error) {
+  sequenceNameInput.setAttribute('aria-invalid', String(Boolean(error)));
+  text('sequence-name-error', error ? t(error, { max: MAX_SEQUENCE_NAME }) : '');
+}
+
+sequenceRename.addEventListener('click', () => {
+  if (sequenceNameInput.hidden) {
+    sequenceNameInput.value = editingSequence.name;
+    sequenceNameInput.hidden = false;
+    $('#sheet-title').classList.add('editing-name');
+    sequenceRename.hidden = true;
+  }
+  sequenceNameInput.focus();
+  sequenceNameInput.select();
+});
+sequenceNameInput.addEventListener('input', () => {
+  editingSequence = { ...editingSequence, name: sequenceNameInput.value };
+  setSequenceNameError(null);
+});
 const sequenceConfirm = $('#sequence-confirm');
 const sequenceDeleteCancel = $('[data-action="sequence-delete-cancel"]');
 const sequenceCard = id => [...sequenceList.children].find(button => button.dataset.id === sequenceKey(id));
@@ -948,7 +979,9 @@ $$('[data-scene-tab]').forEach(button => button.addEventListener('click', () => 
 }));
 sequenceNew.addEventListener('click', () => {
   if (sequences.length >= MAX_SEQUENCES) return;
-  const draft = createSequence(sequences, number => t('sequenceName', { number })).at(-1);
+  const next = createSequence(sequences, number => t('sequenceName', { number }));
+  if (next === sequences) return;
+  const draft = next.at(-1);
   // A stale shortcut must not point to a new scene after an old one is deleted.
   draft.id = crypto.getRandomValues(new Uint32Array(4)).join('-');
   openSequence(draft, sequenceNew, true);
@@ -1123,13 +1156,24 @@ sequenceStop.addEventListener('click', () => {
   $('[data-action="sequence-play"]').focus();
 });
 $('[data-action="sequence-save"]').addEventListener('click', () => {
-  const { id } = editingSequence;
-  const next = isNewSequence ? [...sequences, editingSequence] : updateSequence(sequences, id, editingSequence);
+  const { id, name, colors, interval, bri } = editingSequence;
+  const renaming = !sequenceNameInput.hidden;
+  if (isNewSequence || renaming) {
+    const error = sequenceNameError(sequences, id, name);
+    setSequenceNameError(error);
+    if (error) { sequenceNameInput.focus(); return; }
+  }
+  const next = isNewSequence ? [...sequences, { ...editingSequence, name: name.trim() }]
+    : updateSequence(renaming ? renameSequence(sequences, id, name) : sequences, id, { colors, interval, bri });
   if (!saveSequences(localStore, next)) {
     toast('sequenceSaveFailed', true);
     return;
   }
   sequences = next;
+  if (renaming && state.scene === sequenceKey(id)) {
+    state.label = name.trim();
+    persist();
+  }
   renderSequences();
   renderQuick();
   render();
@@ -1358,4 +1402,4 @@ renderLanguage();
 route();
 if (storageReadFailed) toast('storageReadFailed', true);
 else if (storageInvalid) toast('storageInvalid', true);
-setInterval(() => { renderLastSent(); renderLostDetail(); updateTimer(); }, 1000);
+setInterval(() => { renderLastSent(); updateTimer(); }, 1000);

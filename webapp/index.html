@@ -69,7 +69,7 @@
 
     <!-- COLOR -->
     <section id="color" class="screen" aria-labelledby="color-title" hidden>
-      <div class="top"><h1 id="color-title" data-i18n="color">Color</h1><span class="chip"><span class="dot" aria-hidden="true"></span><span data-bind="chip-text" data-i18n="idle">Sin conexión</span></span></div>
+      <div class="top"><h1 id="color-title" data-i18n="color">Color</h1><button type="button" class="chip" data-action="link-toggle" aria-label="Conectar"><span class="dot" aria-hidden="true"></span><span data-bind="chip-text" data-i18n="idle">Sin conexión</span></button></div>
       <div class="seg" role="group" aria-label="Modo" data-i18n-aria="mode">
         <button aria-pressed="true" data-mode="solid" data-i18n="solid">Color fijo</button><button aria-pressed="false" data-mode="effects" data-i18n="builtIn">Efectos integrados</button>
       </div>
@@ -107,7 +107,7 @@
     </section>
 
     <section id="scenes" class="screen" aria-labelledby="scenes-title" hidden>
-      <div class="top"><h1 id="scenes-title" data-i18n="scenes">Escenas</h1><button class="icon-btn" data-action="sequence-new" aria-label="Nueva escena" data-i18n-aria="newSequence" hidden>+</button></div>
+      <div class="top"><h1 id="scenes-title" data-i18n="scenes">Escenas</h1><div class="header-actions"><button class="icon-btn" data-action="sequence-new" aria-label="Nueva escena" data-i18n-aria="newSequence" hidden>+</button><button type="button" class="chip" data-action="link-toggle" aria-label="Conectar"><span class="dot" aria-hidden="true"></span><span data-bind="chip-text" data-i18n="idle">Sin conexión</span></button></div></div>
       <div class="seg scene-tabs" role="group" aria-label="Escenas" data-i18n-aria="scenes">
         <button aria-pressed="true" data-scene-tab="included" data-i18n="includedScenes">Incluidas</button><button aria-pressed="false" data-scene-tab="mine" data-i18n="myScenes">Mis escenas</button><button aria-pressed="false" data-scene-tab="music" data-i18n="music">Música</button>
       </div>
@@ -129,16 +129,12 @@
     </section>
 
     <section id="help" class="screen" aria-labelledby="help-title" hidden>
-      <div class="top"><h1 id="help-title" data-i18n="help">Ayuda</h1></div>
-      <div class="banner" data-bind="help-link" hidden>
-        <div class="meta"><b data-bind="help-status"></b><p class="small muted" data-bind="help-detail"></p></div>
-        <button class="btn primary" data-action="help-connect" data-i18n="reconnect">Reconectar</button>
-      </div>
+      <div class="top"><h1 id="help-title" data-i18n="help">Ayuda</h1><button type="button" class="chip" data-action="link-toggle" aria-label="Conectar"><span class="dot" aria-hidden="true"></span><span data-bind="chip-text" data-i18n="idle">Sin conexión</span></button></div>
       <h2 class="h3" data-i18n="troubleshoot">Solución de problemas</h2>
       <div class="acc"><button aria-expanded="false" aria-controls="help-list"><span data-i18n="missingStrip">La tira no aparece en la lista</span> <span aria-hidden="true">›</span></button>
         <ol id="help-list" hidden><li data-i18n="closeLamp">Cierra la app LED LAMP. Solo se puede conectar un teléfono o una app a la vez.</li><li data-i18n="enableBluetooth">Activa Bluetooth. Si Android te pide un ajuste del sistema para encontrar dispositivos cercanos, revisa ese aviso.</li><li data-i18n="standNear">Acércate a la tira y toca Conectar.</li></ol></div>
       <div class="acc"><button aria-expanded="false" aria-controls="help-drop"><span data-i18n="frequentDrops">Se desconecta a menudo</span> <span aria-hidden="true">›</span></button>
-        <ol id="help-drop" hidden><li data-i18n="steadyPower">Acércate y comprueba que el controlador recibe alimentación estable.</li><li data-i18n="closeOtherApps">Cierra las otras apps que controlan la tira y toca Reconectar.</li></ol></div>
+        <ol id="help-drop" hidden><li data-i18n="steadyPower">Acércate y comprueba que el controlador recibe alimentación estable.</li><li data-i18n="closeOtherApps">Cierra las otras apps que controlan la tira y toca el estado de conexión arriba para volver a conectarte.</li></ol></div>
       <div class="acc"><button aria-expanded="false" aria-controls="help-dark"><span data-i18n="noResponse">Hay conexión, pero las luces no responden</span> <span aria-hidden="true">›</span></button>
         <ol id="help-dark" hidden><li data-i18n="checkPower">Revisa la fuente de alimentación y las conexiones de la tira.</li><li data-i18n="tryWhite">Enciéndela en Inicio, sube el brillo y prueba Blanco. La página no puede leer el estado real de la tira.</li></ol></div>
       <div class="acc"><button aria-expanded="false" aria-controls="help-scene"><span data-i18n="sceneStopped">La escena se detuvo al salir de la página</span> <span aria-hidden="true">›</span></button>
@@ -152,7 +148,7 @@
       </div>
       <div class="glass pad stack">
         <h2 class="h3" data-i18n="privacyTitle">Privacidad y permisos</h2>
-        <p class="small muted" data-i18n="privacyText">Cuando tocas Conectar, tú eliges la tira en Chrome. Puedes desconectarla desde Inicio cuando quieras. Después de cargar, la app no envía datos por internet ni usa el micrófono del teléfono, la ubicación ni cuentas. Tus escenas y colores solo se guardan en este navegador.</p>
+        <p class="small muted" data-i18n="privacyText">Cuando tocas Conectar, tú eliges la tira en Chrome. Puedes desconectarla cuando quieras desde Inicio o tocando el estado de conexión en Color, Escenas o Ayuda. Después de cargar, la app no envía datos por internet ni usa el micrófono del teléfono, la ubicación ni cuentas. Tus escenas y colores solo se guardan en este navegador.</p>
         <p class="small muted" data-i18n="privacyTimer">Mientras corre el temporizador, la app intenta mantener la pantalla encendida. Los modos de música usan el micrófono de la tira, no el de tu teléfono.</p>
       </div>
       <footer class="small muted" data-i18n="browserSupport">Funciona en Chrome para Android. Los navegadores de iPhone no admiten Web Bluetooth.</footer>
@@ -170,7 +166,8 @@
 </div>
 <dialog class="sheet" id="sheet" aria-modal="true" aria-labelledby="sheet-title">
   <div class="grabber" aria-hidden="true"></div>
-  <div class="top"><h2 id="sheet-title" tabindex="-1"></h2><div class="header-actions"><button class="icon-btn" data-action="sequence-delete" aria-label="Eliminar escena" data-i18n-aria="deleteSequence" aria-controls="sequence-confirm" aria-expanded="false" hidden><svg aria-hidden="true"><use href="#i-trash"/></svg></button><button class="icon-btn" data-action="close-sheet" aria-label="Cerrar" data-i18n-aria="close">×</button></div></div>
+  <div class="top"><div class="sheet-heading"><h2 id="sheet-title" tabindex="-1"></h2><input id="sequence-name" type="text" aria-label="Nombre de la escena" data-i18n-aria="sequenceNameLabel" aria-describedby="sequence-name-error" hidden><button type="button" class="icon-btn" data-action="sequence-rename" aria-label="Cambiar nombre" data-i18n-aria="renameSequence" hidden><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6 4 4M4 20l4.5-1 11-11a2.8 2.8 0 0 0-4-4l-11 11L4 20Z"/></svg></button></div><div class="header-actions"><button class="icon-btn" data-action="sequence-delete" aria-label="Eliminar escena" data-i18n-aria="deleteSequence" aria-controls="sequence-confirm" aria-expanded="false" hidden><svg aria-hidden="true"><use href="#i-trash"/></svg></button><button class="icon-btn" data-action="close-sheet" aria-label="Cerrar" data-i18n-aria="close">×</button></div></div>
+  <p id="sequence-name-error" class="small error" data-bind="sequence-name-error" role="status"></p>
   <section class="stack" data-sheet="preview" hidden>
     <div class="strip" data-bind="preview-strip" role="img" aria-label="Vista previa de la tira en pantalla" data-i18n-aria="screenPreview"></div>
     <div data-bind="page-controls">

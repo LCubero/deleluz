@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  SEQUENCES_KEY, loadSequences, saveSequences, createSequence, updateSequence,
+  SEQUENCES_KEY, loadSequences, saveSequences, createSequence, updateSequence, renameSequence,
   removeSequence, setColor, addColor, removeColor, moveColor, speedPercent, intervalFromSpeed,
 } from './sequences.js';
 
@@ -34,6 +34,31 @@ test('creates independent defaults, with first free name and at most 12 sequence
   assert.equal(items.length, 12);
 });
 
+test('rename trims the name and accepts exactly 24 characters', () => {
+  const items = createSequence(createSequence([]));
+  const name = 'x'.repeat(24);
+  const next = renameSequence(items, items[0].id, ` ${name} `);
+  assert.equal(next[0].name, name);
+  assert.equal(next[1], items[1]);
+  assert.equal(items[0].name, 'Secuencia 1');
+  assert.equal(renameSequence(items, items[0].id, ' SECUENCIA 1 ')[0].name, 'SECUENCIA 1');
+  assert.equal(renameSequence(items, 'missing', name), items);
+});
+
+for (const [label, name] of [['an empty', '  '], ['an oversized', 'x'.repeat(25)], ['a duplicate', ' sECUENCIA 2 ']]) {
+  test(`rename rejects ${label} name`, () => {
+    const items = createSequence(createSequence([]));
+    assert.equal(renameSequence(items, items[0].id, name), items);
+  });
+}
+
+test('create rejects oversized and blank names and skips case-insensitive matches', () => {
+  const items = createSequence([]);
+  assert.equal(createSequence(items, () => 'x'.repeat(25)), items);
+  assert.equal(createSequence(items, () => '  '), items);
+  assert.equal(createSequence(items, n => ` secuencia ${n} `).at(-1).name, 'secuencia 2');
+});
+
 test('load rejects corrupt and invalid entries and caps the validated list', () => {
   const [valid] = createSequence([]);
   const invalid = [null, { ...valid, id: '' }, { ...valid, name: ' ' }, { ...valid, colors: [] },
@@ -64,6 +89,7 @@ test('updates only the matching sequence and rejects invalid settings', () => {
   assert.equal(next[1], items[1]);
   assert.equal(items[0].interval, 500);
   assert.deepEqual(updateSequence(next, id, { bri: 1.5 }), next);
+  assert.equal(updateSequence(next, id, { name: ' SECUENCIA 2 ' })[0], next[0]);
   assert.deepEqual(updateSequence(next, 'missing', { interval: 2000 }), next);
   assert.deepEqual(removeSequence(next, id), [items[1]]);
 });

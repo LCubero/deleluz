@@ -29,6 +29,13 @@ test('translation interpolates variables', () => {
   assert.equal(translate('en', 'sequenceFrame', { number: 3, hex: '#00FF00' }), 'Square 3: #00FF00');
 });
 
+test('the rename action and length error are localized', () => {
+  assert.equal(translate('es', 'renameSequence'), 'Cambiar nombre');
+  assert.equal(translate('en', 'renameSequence'), 'Rename');
+  assert.equal(translate('es', 'sequenceNameTooLong', { max: 24 }), 'Usa un nombre de hasta 24 caracteres.');
+  assert.equal(translate('en', 'sequenceNameTooLong', { max: 24 }), 'Use a name with up to 24 characters.');
+});
+
 test('palette capacity notices and unnamed color labels are localized', () => {
   assert.equal(translate('es', 'paletteFull'), 'Ya tienes 15 colores. Toca uno para cambiarlo.');
   assert.equal(translate('en', 'paletteFull'), 'You already have 15 colors. Tap one to replace it.');

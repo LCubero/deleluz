@@ -3,6 +3,7 @@ import { readStoredJson } from './state.js';
 export const SEQUENCES_KEY = 'deleluz.webapp.sequences';
 export const MAX_SEQUENCES = 12;
 export const MAX_COLORS = 8;
+export const MAX_SEQUENCE_NAME = 24;
 const DEFAULT_COLORS = [[0, 255, 0], [255, 200, 0], [255, 0, 0]];
 const inRange = (n, min, max) => Number.isInteger(n) && n >= min && n <= max;
 const validRgb = rgb => Array.isArray(rgb) && rgb.length === 3 && [...rgb].every(n => inRange(n, 0, 255));
@@ -38,18 +39,39 @@ export function saveSequences(storage, items) {
 
 export function createSequence(items, nameFor = n => `Secuencia ${n}`) {
   if (items.length >= MAX_SEQUENCES) return items;
-  let n = 1;
-  while (items.some(item => item.name === nameFor(n))) n++;
   let id = 1;
   while (items.some(item => item.id === String(id))) id++;
-  return [...items, { id: String(id), name: nameFor(n), colors: DEFAULT_COLORS.map(rgb => [...rgb]), interval: 500, bri: 80 }];
+  for (let n = 1; n <= MAX_SEQUENCES; n++) {
+    const name = nameFor(n);
+    const error = sequenceNameError(items, null, name);
+    if (error === 'sequenceNameDuplicate') continue;
+    if (error) return items;
+    return [...items, { id: String(id), name: name.trim(), colors: DEFAULT_COLORS.map(rgb => [...rgb]), interval: 500, bri: 80 }];
+  }
+  return items;
+}
+
+export function sequenceNameError(items, id, name) {
+  if (!validText(name)) return 'sequenceNameEmpty';
+  const trimmed = name.trim();
+  if (trimmed.length > MAX_SEQUENCE_NAME) return 'sequenceNameTooLong';
+  if (items.some(item => item.id !== id && item.name.trim().toLowerCase() === trimmed.toLowerCase())) {
+    return 'sequenceNameDuplicate';
+  }
+  return null;
+}
+
+export function renameSequence(items, id, name) {
+  if (!items.some(item => item.id === id) || sequenceNameError(items, id, name)) return items;
+  return updateSequence(items, id, { name });
 }
 
 export function updateSequence(items, id, changes) {
   return items.map(item => {
     if (item.id !== id) return item;
     const { name, colors, interval, bri } = { ...item, ...changes };
-    const next = { id, name, colors, interval, bri };
+    if (name !== item.name && sequenceNameError(items, id, name)) return item;
+    const next = { id, name: name === item.name ? name : name.trim(), colors, interval, bri };
     return valid(next) ? next : item;
   });
 }
