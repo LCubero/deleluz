@@ -567,12 +567,6 @@ function connectStrip({ reconnect = false } = {}) {
 }
 
 $('[data-action="connect"]').addEventListener('click', () => connectStrip({ reconnect: link.state.status === 'lost' }));
-const linkChips = $$('[data-action="link-toggle"]');
-linkChips.forEach(button => button.addEventListener('click', () => {
-  const { status } = link.state;
-  if (status === 'connected') disconnectStrip();
-  else if (status === 'idle' || status === 'lost') connectStrip();
-}));
 
 $$('.acc button').forEach(button => button.addEventListener('click', () => {
   const open = button.getAttribute('aria-expanded') === 'true';
@@ -593,10 +587,6 @@ function renderLinkText(s = link.state) {
   connect.disabled = s.status === 'connecting';
   connect.querySelector('span').textContent = t(s.status === 'lost' ? 'reconnect' : s.status === 'connecting' ? 'connecting' : 'connect');
   $('[data-action="disconnect"]').hidden = s.status !== 'connected';
-  for (const chip of linkChips) {
-    chip.disabled = s.status === 'simulated' || s.status === 'connecting';
-    chip.setAttribute('aria-label', t(chip.disabled ? s.status : s.status === 'connected' ? 'disconnect' : 'connect'));
-  }
 }
 
 function renderLink(s) {
