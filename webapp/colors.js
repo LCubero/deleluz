@@ -8,7 +8,8 @@ const names = new Map([
   ['#ff6e00', 'orange'], ['#ffc800', 'yellow'], ['#00ff00', 'green'],
   ['#00ffff', 'cyan'], ['#0000ff', 'blue'], ['#ff0078', 'pink'],
 ]);
-export const DEFAULT_PALETTE = Object.freeze([...names.keys()]);
+// Favorites start with green, yellow and red; every color can be changed or deleted.
+export const DEFAULT_PALETTE = Object.freeze(['#00ff00', '#ffc800', '#ff0000']);
 const normalize = value => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : null;
 
 export const colorName = value => names.get(normalize(value)) ?? 'solid';

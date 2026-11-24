@@ -830,7 +830,8 @@ function storePalette(next) {
 }
 // Favorites can be collapsed; the choice is shared by every palette and remembered.
 const FAVORITES_OPEN_KEY = 'deleluz.webapp.favoritesOpen';
-let favoritesOpen = (() => { try { return localStorage.getItem(FAVORITES_OPEN_KEY) !== '0'; } catch { return true; } })();
+// Collapsed by default; opening it is remembered.
+let favoritesOpen = (() => { try { return localStorage.getItem(FAVORITES_OPEN_KEY) === '1'; } catch { return false; } })();
 function setFavoritesOpen(open) {
   favoritesOpen = open;
   try { localStorage.setItem(FAVORITES_OPEN_KEY, open ? '1' : '0'); } catch { /* keep it for this session */ }
