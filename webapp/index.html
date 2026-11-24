@@ -125,6 +125,10 @@
           <button class="scene sequence-card" data-voice="3" aria-pressed="false"><b class="meta"><span data-i18n="voiceModeWord">Modo</span> 3</b><span class="strip voice-strip-3" aria-hidden="true"></span></button>
           <button class="scene sequence-card" data-voice="4" aria-pressed="false"><b class="meta"><span data-i18n="voiceModeWord">Modo</span> 4</b><span class="strip voice-strip-4" aria-hidden="true"></span></button>
         </div>
+        <div class="glass pad">
+          <label class="slider-head" for="mic-sens"><span data-i18n="micSensitivity">Sensibilidad del micrófono</span><output data-bind="mic-sens-out">50&nbsp;%</output></label>
+          <input id="mic-sens" class="range" type="range" min="0" max="100" value="50" data-bind="mic-sens">
+        </div>
       </section>
     </section>
 

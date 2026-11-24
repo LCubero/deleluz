@@ -27,6 +27,7 @@ export function loadState(key, defaults, sequenceKeys, getStorage = () => localS
   if (typeof saved.on === 'boolean') accepted.on = saved.on;
   if (integer(saved.bri, 0, 100)) accepted.bri = saved.bri;
   if (integer(saved.speed, 0, 100)) accepted.speed = saved.speed;
+  if (integer(saved.micSens, 0, 100)) accepted.micSens = saved.micSens;
   if (saved.fx === 'AUTO' || integer(saved.fx, 1, 210)) accepted.fx = saved.fx;
   if (isRgb(saved.rgb)) accepted.rgb = saved.rgb;
   const label = saved.label;

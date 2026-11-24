@@ -34,6 +34,11 @@ export function voiceMode(mode) {
   return framed(0x0b, integer(mode, 1, 4, 'Voice mode'), 0, 255, 255);
 }
 
+// Higher value = more sensitive (lab L59).
+export function micSensitivity(pct) {
+  return framed(0x0c, integer(pct, 0, 100, 'Mic sensitivity'), 0, 255, 255);
+}
+
 export const CHIP_ORDERS = Object.freeze(['RGB', 'RBG', 'GRB', 'GBR', 'BRG', 'BGR', 'RGBW', 'RBGW', 'GRBW', 'GBRW', 'BRGW', 'BGRW']);
 
 export function chipConfig(order, pixels) {

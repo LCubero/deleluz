@@ -30,3 +30,14 @@ test('state persistence writes the snapshot when storage is available', () => {
   persistState('state', { on: true }, () => ({ setItem: (...args) => writes.push(args) }));
   assert.deepEqual(writes, [['state', '{"on":true}']]);
 });
+
+test('saved mic sensitivity is kept only as an integer from 0 to 100', () => {
+  const defaults = { micSens: 50 };
+  let invalid = 0;
+  const read = value => loadState('state', defaults, [], () => ({ getItem: () => value, invalid: () => invalid++ }));
+  assert.deepEqual(read('{"micSens":0}'), { micSens: 0 });
+  assert.deepEqual(read('{"micSens":100}'), { micSens: 100 });
+  assert.equal(invalid, 0);
+  for (const bad of ['-1', '101', '1.5', '"50"']) assert.deepEqual(read(`{"micSens":${bad}}`), defaults);
+  assert.equal(invalid, 4);
+});

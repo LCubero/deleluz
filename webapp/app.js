@@ -1,4 +1,4 @@
-import { power, color, brightness, effect, speed, voiceMode, CHIP_ORDERS, chipConfig } from '../lab/web/protocol.js';
+import { power, color, brightness, effect, speed, voiceMode, micSensitivity, CHIP_ORDERS, chipConfig } from '../lab/web/protocol.js';
 import { stripPixels, validPixels } from './strip-settings.js';
 import { effectName } from './effects.js';
 import { PRESETS, presetFrames } from '../lab/web/presets.js';
@@ -43,12 +43,12 @@ const WARM = [255, 200, 128];
 const presetIds = PRESETS.map(p => p.id);
 let sequences = loadSequences(localStore);
 const sequenceKey = id => `sequence:${id}`;
-const state = loadState(STORE, { on: false, bri: 80, rgb: WARM, label: ['warmWhite'], scene: 'warm', fx: 1, speed: 50, lastSentAt: null },
+const state = loadState(STORE, { on: false, bri: 80, rgb: WARM, label: ['warmWhite'], scene: 'warm', fx: 1, speed: 50, micSens: 50, lastSentAt: null },
   sequences.map(item => sequenceKey(item.id)), () => localStore, presetIds);
 let lastPlayedRgb;
 const persist = () => {
-  const { on, bri, rgb, label, scene, mode, fx, speed: sp } = state;
-  if (!persistState(STORE, { on, bri, rgb, label, scene, mode, fx, speed: sp })) toast('storageFailed', true);
+  const { on, bri, rgb, label, scene, mode, fx, speed: sp, micSens } = state;
+  if (!persistState(STORE, { on, bri, rgb, label, scene, mode, fx, speed: sp, micSens })) toast('storageFailed', true);
 };
 
 // ---- link, sender, player ----
@@ -100,7 +100,10 @@ async function startMode(mode, { sequence = state.scene, bri = state.bri } = {})
       await player.play(frames.map(frame => frame.bytes), frames[0].interval);
     } else if (mode.colors) await player.play(mode.colors.map(c => color(...c)), mode.interval);
     else if (mode.rgb) await send(color(...mode.rgb), 'color');
-    else if (mode.voice) await send(voiceMode(mode.voice), 'effect');
+    else if (mode.voice) {
+      await send(voiceMode(mode.voice), 'effect');
+      await send(micSensitivity(state.micSens), 'micSens');
+    }
     else await send(effect(mode.effect), 'effect');
   } catch (error) {
     if (run === playback && !(error instanceof SendFailure)) toast('sceneFailed', true);
@@ -561,6 +564,20 @@ bind('speed').forEach(input => input.addEventListener('input', () => {
   fire(speed(state.speed), 'speed');
 }));
 
+function renderMicSens() {
+  const input = bind('mic-sens')[0];
+  input.value = state.micSens;
+  input.style.setProperty('--p', `${state.micSens}%`);
+  text('mic-sens-out', t('percent', { value: state.micSens }));
+}
+bind('mic-sens')[0].addEventListener('input', event => {
+  state.micSens = Number(event.target.value);
+  persist();
+  renderMicSens();
+  // Sensitivity only applies while a voice mode runs; the next voice mode sends the saved value.
+  if (state.on && state.mode?.voice) fire(micSensitivity(state.micSens), 'micSens');
+});
+
 // ---- connection ----
 function connectStrip({ reconnect = false } = {}) {
   const action = reconnect ? link.reconnect() : link.connect();
@@ -642,6 +659,7 @@ function render() {
   voiceButtons.forEach(button => button.setAttribute('aria-pressed', String(state.on && state.mode?.voice === Number(button.dataset.voice))));
   renderEffect();
   renderSpeed();
+  renderMicSens();
   renderBrightness();
   renderLastSent();
   renderSceneSelection();
