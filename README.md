@@ -11,3 +11,7 @@ This repository uses a generated documentation and continuity harness. Start wit
 
 The content between the `repo-harness-builder` markers is the builder-managed section. Content outside the markers belongs to the repository's maintainers.
 <!-- repo-harness-builder:end -->
+
+## License
+
+MIT, see [LICENSE](LICENSE). DeleLuz is an independent project and is not affiliated with the makers of the LEDDMX-03 controller or the LED LAMP app; protocol notes come from observing the hardware.
