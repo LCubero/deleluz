@@ -18,7 +18,7 @@ Spanish is the default; choose English in Help (Ayuda).
 ## What it does
 
 - **Home**: power, brightness, White / Warm white, quick scenes, off timer (clock icon).
-- **Color**: hue wheel and quick colors; built-in controller effects 1–210 or Auto cycle, with speed; four Music modes that react to sound through the strip’s own microphone.
+- **Color**: hue wheel and quick colors; built-in controller effects 1–210 with their vendor names, or Auto cycle, with speed; four Music modes that react to sound through the strip’s own microphone.
 - **Scenes**: included page scenes and built-in effects with a preview before applying; **Mine** saves the current color or page scene (with its step interval) under a name in this browser only. Brightness, built-in effects, and Music modes are not saved as custom scenes.
 - **Help**: connection state, Reconnect, and fixes by symptom.
 

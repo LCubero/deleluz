@@ -1,4 +1,5 @@
 import { power, color, brightness, effect, speed, voiceMode } from '../lab/web/protocol.js';
+import { effectName } from './effects.js';
 import { PRESETS, presetFrames } from '../lab/web/presets.js';
 import { createSender } from './sender.js';
 import { runStartup } from './startup.js';
@@ -103,6 +104,7 @@ const fire = (bytes, key) => send(bytes, key).catch(() => {});
 
 // ---- quick scenes (Home) ----
 const effectLabel = id => id === 'AUTO' ? ['autoCycle'] : ['effectNumber', { id }];
+const effectTitle = id => id === 'AUTO' ? t('autoCycle') : t('effectNamed', { id, name: effectName(id) });
 const QUICK = [
   { id: 'warm', name: 'warm', label: ['warmWhite'], rgb: WARM },
   { id: 'christmas-moving', name: 'christmas', preset: 'christmas-moving', sw: 'linear-gradient(90deg,#ef4444,#22c55e,#fff7e6)' },
@@ -230,6 +232,7 @@ function playEffect(id) {
   startMode(mode);
 }
 const clampFx = n => Math.min(210, Math.max(1, Math.round(n) || 1));
+fxInput.addEventListener('input', () => text('fx-name', effectName(clampFx(Number(fxInput.value)))));
 $('[data-action="fx-prev"]').addEventListener('click', () => playEffect(clampFx(state.fx - 1)));
 $('[data-action="fx-next"]').addEventListener('click', () => playEffect(clampFx(state.fx + 1)));
 $('[data-action="fx-play"]').addEventListener('click', () => playEffect(clampFx(Number(fxInput.value))));
@@ -339,6 +342,7 @@ function render() {
   voiceButtons.forEach(button => button.setAttribute('aria-pressed', String(state.on && state.mode?.voice === Number(button.dataset.voice))));
   fxInput.value = state.fx;
   text('fx-out', String(state.fx));
+  text('fx-name', effectName(state.fx));
   bind('speed')[0].value = state.speed;
   bind('speed')[0].style.setProperty('--p', `${state.speed}%`);
   text('speed-out', String(state.speed));
@@ -394,7 +398,7 @@ const gallery = [
   ...PRESETS.map(({ id, interval }) => ({ id, interval, preset: id })),
   ...['AUTO', 1, 2].map(id => ({ id: `effect:${id}`, effect: id })),
 ];
-const sceneName = scene => scene.own ? scene.name : scene.preset ? t(scene.preset) : t(...effectLabel(scene.effect));
+const sceneName = scene => scene.own ? scene.name : scene.preset ? t(scene.preset) : effectTitle(scene.effect);
 let collection = 'included';
 const intervalInput = $('#step-interval');
 const uiMinInterval = Number(intervalInput.min);

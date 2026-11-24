@@ -167,6 +167,7 @@ label.slider-head:has(.toggle){min-height:44px}
   #home .device .chip{min-height:0;padding:2px 8px}
   #home .device .btn{min-height:44px;padding-inline:4px}
   #home .power-wrap{text-align:center}
+  #home .power-wrap,#home .tile{line-height:1.2}
 }
 
 @media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
@@ -177,3 +178,4 @@ label.slider-head:has(.toggle){min-height:44px}
 .timer-note{color:#fde68a;text-align:center}
 
 h2.slider-head{font-size:inherit;margin:0}
+.fx-name{margin:0;text-align:center;font-weight:600;overflow-wrap:anywhere}
