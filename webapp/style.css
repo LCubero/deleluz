@@ -130,7 +130,10 @@ nav.tabs a[aria-current="page"] svg{stroke:#f0abfc;filter:drop-shadow(0 0 8px va
 .sheet{position:fixed;inset:auto 0 0;margin:0 auto;width:min(100%,480px);max-width:none;max-height:90dvh;overflow:auto;
   padding:18px 18px calc(22px + env(safe-area-inset-bottom));border:0;border-radius:28px 28px 0 0;color:var(--ink);
   background:linear-gradient(180deg,#201840,#120e26);border-top:1px solid rgba(255,255,255,.22);box-shadow:0 -20px 60px rgba(0,0,0,.6)}
-.sheet[open]{display:flex;flex-direction:column;gap:14px}
+.sheet[open]{display:flex;flex-direction:column;gap:14px;scroll-padding-top:64px}
+/* Offset the sheet padding so scrolled content cannot peek above the header. */
+.sheet>.top{position:sticky;top:-18px;z-index:1;flex:none;
+  margin:-8px -18px;padding:8px 18px;background:#201840}
 .sheet::backdrop{background:rgba(5,4,14,.55)}
 .sheet h2{font-size:1.375rem;margin:0}
 .sheet-heading{display:flex;align-items:center;gap:8px;flex:1;min-width:0}

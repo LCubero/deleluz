@@ -1,6 +1,6 @@
 # Webapp screenshots (checkpoint 2026-11-24)
 
-Taken on an Android phone (Chrome) over USB DevTools, fresh install, no strip connected. No simulation or Bluetooth chooser. Measured viewport: **411 × 778 CSS px** (device pixel ratio **2.625**). Scrollable pages were captured at full height using the phone renderer at the same CSS width; bottom sheets show their native viewport, with separate top and bottom views of the editor. The 21 JPEGs total **2.09 MB**.
+Taken on an Android phone (Chrome) over USB DevTools, fresh install, no strip connected. No simulation or Bluetooth chooser. Measured viewport: **411 × 778 CSS px** (device pixel ratio **2.625**). Scrollable pages were captured at full height using the phone renderer at the same CSS width; bottom sheets show their native viewport, with separate top and bottom views of the editor. The 21 JPEGs total **2.10 MB**. The T50 refresh used the same phone and viewport without resetting storage.
 
 | File | Screen |
 |---|---|
@@ -28,6 +28,6 @@ Taken on an Android phone (Chrome) over USB DevTools, fresh install, no strip co
 
 **Skipped:** Tira encendida, Ciclo automático activo y envío o reproducción en la tira (sin conexión). El selector Bluetooth no se abrió. El teléfono quedó en Mis escenas; se comprobó después de recargar que solo está guardada Navidad.
 
-**Visual review (S12):** En `05-agregar-escena-rapida-colores.jpg`, el foco del título queda recortado en el borde superior y el botón Cerrar sale de vista al bajar; en `17-mis-escenas-editor-abajo.jpg` también hay que volver arriba para cerrar. `01-inicio.jpg`, `11-efectos-integrados.jpg`, `16-mis-escenas-editor.jpg` y `17-mis-escenas-editor-abajo.jpg` muestran espaciado inconsistente antes de `%` entre velocidad y brillo/intensidad. En el resto del conjunto no se observaron solapamientos inesperados ni datos personales. La revisión de alineación, márgenes, legibilidad y contraste fue visual, en un solo tamaño de teléfono.
+**Visual review (S12):** Se reprodujeron y corrigieron los tres problemas del checkpoint: Velocidad, Brillo e Intensidad muestran un espacio inseparable antes de `%` en español y ninguno en inglés; Cerrar permanece visible al bajar en `05` y `17`; y el contorno de foco del título se ve completo en `05`. Se revisaron las 13 capturas renovadas en Android por USB: alineación, márgenes, legibilidad, contraste y ausencia de datos personales. En `17` se ve parte de los botones que salen por debajo del encabezado al desplazar; se leen completos al subir. Chrome headless con `?sim` comprobó las etiquetas y el clic en Cerrar después de desplazar a 320, 360, 390 y 412 px. A 320 px, el título largo de la hoja usa puntos suspensivos; no se recorta su contorno de foco. Navidad sigue siendo la única escena guardada.
 
 S7: Español seleccionado por defecto (los nombres de efectos del fabricante se conservan). Las capturas también documentan S4, S13, S17–S21, S23–S24, S27–S28, S30–S31, S35–S36, S41–S50 y S52–S54 en los estados visibles, no como pruebas funcionales de cada requisito.

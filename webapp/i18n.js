@@ -53,6 +53,7 @@ const strings = {
   allEffects: ['Todos', 'All'],
   effectsNote: ["El controlador incluye los efectos del 1 al 210. Los nombres son los de la app del fabricante.", "Effects 1–210 are built into the controller. Names come from the vendor app."],
   speed: ["Velocidad", "Speed"],
+  percent: ['{value}\u00a0%', '{value}%'],
   dragNote: ["Los cambios se envían al deslizar, como máximo una vez cada 50 ms.", "Changes are sent as you drag, at most every 50 ms."],
   scenes: ["Escenas", "Scenes"],
   includedScenes: ['Incluidas', 'Included'],

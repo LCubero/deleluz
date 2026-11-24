@@ -552,7 +552,7 @@ function renderSpeed() {
     input.value = state.speed;
     input.style.setProperty('--p', `${100 * (state.speed - input.min) / (input.max - input.min)}%`);
   });
-  text('speed-out', `${state.speed} %`);
+  text('speed-out', t('percent', { value: state.speed }));
 }
 bind('speed').forEach(input => input.addEventListener('input', () => {
   state.speed = Number(input.value);
@@ -612,7 +612,7 @@ $('[data-action="disconnect"]').addEventListener('click', disconnectStrip);
 // ---- render ----
 function renderBrightness() {
   bind('bri').forEach(input => { input.value = state.bri; input.style.setProperty('--p', `${state.bri}%`); });
-  text('bri-out', `${state.bri}%`);
+  text('bri-out', t('percent', { value: state.bri }));
 }
 function renderLastSent() {
   if (!state.lastSentAt) { text('last-sent', t('noCommand')); return; }
@@ -1066,10 +1066,12 @@ function renderSequenceSliders(item) {
   for (const input of [sequenceSpeed, sequenceBri]) {
     input.style.setProperty('--p', `${100 * (input.value - input.min) / (input.max - input.min)}%`);
   }
-  text('sequence-speed-out', `${sequenceSpeed.value} %`);
-  sequenceSpeed.setAttribute('aria-valuetext', `${sequenceSpeed.value} %`);
-  text('sequence-bri-out', `${item.bri}%`);
-  sequenceBri.setAttribute('aria-valuetext', `${item.bri}%`);
+  const speedLabel = t('percent', { value: sequenceSpeed.value });
+  const intensityLabel = t('percent', { value: item.bri });
+  text('sequence-speed-out', speedLabel);
+  sequenceSpeed.setAttribute('aria-valuetext', speedLabel);
+  text('sequence-bri-out', intensityLabel);
+  sequenceBri.setAttribute('aria-valuetext', intensityLabel);
 }
 
 let sequencePalette;
