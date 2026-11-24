@@ -22,6 +22,8 @@ const strings = {
   moveRight: ['Mover a la derecha', 'Move right'],
   removeShortcut: ['Quitar', 'Remove'],
   shortcutHint: ['Mantén presionada una escena rápida y arrástrala para moverla.', 'Press and hold a quick scene, then drag it to move it.'],
+  addThisColor: ["Agregar este color", "Add this color"],
+  saveSelectedColor: ["Guardar el color seleccionado", "Save the selected color"],
   otherColor: ['Otro color', 'Other color'],
   colorHex: ['Color {hex}', 'Color {hex}'],
   colors: ['Colores', 'Colors'],

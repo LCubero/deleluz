@@ -783,11 +783,11 @@ $('[data-action="shortcut-remove"]').addEventListener('click', () => {
   storeShortcuts(removeShortcut(shortcuts, shortcutIndex));
   closeSheet();
 });
-bind('shortcut-other')[0].addEventListener('change', event => {
-  const rgb = rgbFromHex(event.target.value);
-  if (!rgb) { closeSheet(); toast('colorFailed', true); return; }
-  chooseShortcut({ kind: 'color', rgb });
-});
+// "Otro color" uses the same hue wheel as the Color tab; the button adds the picked color.
+let shortcutWheelRgb = [255, 0, 0];
+const renderShortcutWheel = createHueWheel(bind('shortcut-wheel')[0], rgb => { shortcutWheelRgb = rgb; renderShortcutWheel(rgb); });
+renderShortcutWheel(shortcutWheelRgb);
+$('[data-action="shortcut-add-wheel"]').addEventListener('click', () => chooseShortcut({ kind: 'color', rgb: [...shortcutWheelRgb] }));
 
 // ---- saved color sequences ----
 let editingSequence = null;
@@ -899,7 +899,6 @@ function renderSequencePalette(item) {
   [...sequenceSwatches.children].forEach(button => {
     button.setAttribute('aria-pressed', String(button.dataset.color === value));
   });
-  sequenceOther.value = value;
   renderSequenceWheel(rgb);
 }
 
@@ -961,12 +960,14 @@ function previewSequence() {
   startMode({ colors, interval }, { sequence: draftPlayback, bri });
 }
 
-sequenceOther.addEventListener('change', () => {
+// The dashed "+" saves the selected square's color (picked on the wheel) as a custom color.
+sequenceOther.addEventListener('click', () => {
   if (!editingSequence) return;
-  const value = sequenceOther.value;
-  const rgb = rgbFromHex(value);
-  if (!rgb) { toast('colorFailed', true); return; }
-  const next = addCustomColor(customColors, value);
+  const rgb = editingSequence.colors[selectedFrame];
+  const value = hex(rgb).toLowerCase();
+  // A color that is already one of the quick circles is not saved twice.
+  const quick = SWATCHES.some(([, c]) => hex(c).toLowerCase() === value);
+  const next = quick ? customColors : addCustomColor(customColors, value);
   if (next !== customColors) {
     customColors = next;
     try { localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(customColors)); } catch { toast('storageFailed', true); }
