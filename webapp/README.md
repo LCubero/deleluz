@@ -17,7 +17,7 @@ Spanish is the default; choose English in Help (Ayuda).
 
 ## What it does
 
-- **Home**: power, brightness, White / Warm white, quick scenes, off timer (clock icon).
+- **Home**: power, brightness, White / Warm white, quick scenes, off timer (clock icon). Quick scenes are yours: up to 6 colors or included scenes (default warm white, cool white, blue, green, yellow, red); tap to apply, press and hold for options (change, move, remove), hold and drag to reorder, + to add. Saved in this browser only.
 - **Color**: hue wheel and quick colors; built-in controller effects 1–210 with their vendor names, or Auto cycle, with speed; four Music modes that react to sound through the strip’s own microphone.
 - **Scenes**: included page scenes and built-in effects with a preview before applying.
 - **Help**: connection state, Reconnect, and fixes by symptom.

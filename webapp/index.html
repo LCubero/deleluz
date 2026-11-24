@@ -54,10 +54,9 @@
         <div class="grid3" data-bind="quick"></div>
       </section>
 
-      <section class="glass thumb" aria-label="Brillo y blanco" data-i18n-aria="brightnessWhite">
+      <section class="glass thumb" aria-label="Brillo" data-i18n-aria="brightness">
         <label class="slider-head" for="bri-home"><span class="with-icon"><svg width="20" height="20" aria-hidden="true"><use href="#i-sun"/></svg><span data-i18n="brightness">Brillo</span></span><output data-bind="bri-out">80%</output></label>
         <input id="bri-home" class="range" type="range" min="1" max="100" value="80" data-bind="bri">
-        <div class="quick"><button class="btn white grow" data-action="white" data-i18n="white">Blanco</button><button class="btn ghost grow" data-action="warm" data-i18n="warmWhite">Blanco cálido</button></div>
       </section>
     </section>
 
@@ -162,6 +161,19 @@
     </div>
     <p class="small error" data-bind="preview-error" role="status"></p>
     <div class="quick"><button class="btn ghost grow" data-action="try-scene" data-i18n="tryScene">Probar en la tira</button><button class="btn primary grow" data-action="apply-scene" data-i18n="apply">Aplicar</button></div>
+  </section>
+  <section class="stack" data-sheet="shortcut" hidden>
+    <button class="btn ghost" data-action="shortcut-change" data-i18n="changeShortcut">Cambiar</button>
+    <div class="quick"><button class="btn ghost grow" data-action="shortcut-left" data-i18n="moveLeft">Mover a la izquierda</button><button class="btn ghost grow" data-action="shortcut-right" data-i18n="moveRight">Mover a la derecha</button></div>
+    <button class="btn ghost" data-action="shortcut-remove" data-i18n="removeShortcut">Quitar</button>
+    <p class="small muted" data-i18n="shortcutHint">Mantén presionada una escena rápida y arrástrala para moverla.</p>
+  </section>
+  <section class="stack" data-sheet="shortcut-pick" hidden>
+    <h3 class="h3" data-i18n="colors">Colores</h3>
+    <div class="swatches" role="group" aria-label="Colores rápidos" data-i18n-aria="quickColors" data-bind="shortcut-colors"></div>
+    <label class="btn ghost seq-pick"><span data-i18n="otherColor">Otro color</span><input type="color" value="#ff0000" data-bind="shortcut-other"></label>
+    <h3 class="h3" data-i18n="scenes">Escenas</h3>
+    <div class="grid3 pick-scenes" data-bind="shortcut-scenes"></div>
   </section>
   <section class="stack" data-sheet="timer" hidden>
     <div class="opts" role="group" aria-label="Duración" data-i18n-aria="duration">

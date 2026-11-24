@@ -6,6 +6,7 @@ import { runStartup } from './startup.js';
 import { createPlayer } from './player.js';
 import { smoothSteps } from './smooth.js';
 import { persistState } from './state.js';
+import { MAX_SHORTCUTS, loadShortcuts, saveShortcuts, addShortcut, replaceShortcut, removeShortcut, moveShortcut, gridColumns } from './shortcuts.js';
 import { formatRemaining, fadeBrightness, parseTimerDuration } from './timer.js';
 import { createLink } from './ble.js';
 import { hueToRgb, hueFromPoint, rgbCss } from './color.js';
@@ -104,14 +105,14 @@ const fire = (bytes, key) => send(bytes, key).catch(() => {});
 // ---- quick scenes (Home) ----
 const effectLabel = id => id === 'AUTO' ? ['autoCycle'] : ['effectNumber', { id }];
 const effectTitle = id => id === 'AUTO' ? t('autoCycle') : t('effectNamed', { id, name: effectName(id) });
-const QUICK = [
-  { id: 'warm', name: 'warm', label: ['warmWhite'], rgb: WARM },
-  { id: 'christmas-moving', name: 'christmas', preset: 'christmas-moving', sw: 'linear-gradient(90deg,#ef4444,#22c55e,#fff7e6)' },
-  { id: 'police', name: 'police', preset: 'police', sw: 'linear-gradient(90deg,#ef4444,#3b82f6)' },
-  { id: 'rasta', name: 'rasta', preset: 'rasta', sw: 'linear-gradient(90deg,#22c55e,#facc15,#ef4444)' },
-  { id: 'movie', name: 'movie', label: ['movie'], rgb: [124, 58, 237] },
-  { id: 'flashing', name: 'flashing', preset: 'flashing', sw: '#fff' },
-];
+// Preset preview colors, unchanged from the previous quick scenes and scene list.
+const PRESET_SW = {
+  'christmas-moving': 'linear-gradient(90deg,#ef4444,#22c55e,#fff7e6)',
+  police: 'linear-gradient(90deg,#ef4444,#3b82f6)',
+  rasta: 'linear-gradient(90deg,#22c55e,#facc15,#ef4444)',
+  flashing: '#fff',
+};
+const presetSwatch = id => PRESET_SW[id] ?? 'linear-gradient(90deg,#ef4444,#4f46e5)';
 
 function setColor(rgb, label, scene = null) {
   if (needsLink()) return;
@@ -136,19 +137,151 @@ function playPreset(id, interval = PRESETS.find(p => p.id === id).interval, labe
   return startMode(mode);
 }
 
+// ---- quick scenes (user shortcuts) ----
+const presetIds = PRESETS.map(p => p.id);
+let shortcuts = loadShortcuts(localStorage, presetIds);
+const hex = rgb => `#${rgb.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+const shortcutName = item => item.kind === 'scene' ? t(item.preset) : item.name ? t(item.name) : t('colorHex', { hex: hex(item.rgb) });
+const shortcutId = item => item.kind === 'scene' ? item.preset : `color:${item.rgb.join(',')}`;
+
+function storeShortcuts(next) {
+  shortcuts = next;
+  saveShortcuts(localStorage, shortcuts);
+  renderQuick();
+  render();
+}
+
+function applyShortcut(item) {
+  if (item.kind === 'scene') playPreset(item.preset);
+  else setColor(item.rgb, item.name ? [item.name] : ['colorHex', { hex: hex(item.rgb) }], shortcutId(item));
+}
+
+const HOLD_MS = 450;
+const SLOP = 8;
+// Tap applies; press and hold opens the options; hold and drag reorders.
+function attachPress(button, index, item) {
+  let timer;
+  let start = null;
+  let lifted = false;
+  let moved = false;
+  let suppress = false;
+  const reset = () => {
+    clearTimeout(timer);
+    button.classList.remove('lifted');
+    button.style.transform = '';
+    button.style.pointerEvents = '';
+    start = null;
+    lifted = false;
+  };
+  button.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+    start = { x: event.clientX, y: event.clientY, id: event.pointerId };
+    moved = false;
+    timer = setTimeout(() => {
+      lifted = true;
+      button.classList.add('lifted');
+      try { button.setPointerCapture(start.id); } catch { /* the pointer may already be gone */ }
+      navigator.vibrate?.(15);
+    }, HOLD_MS);
+  });
+  button.addEventListener('pointermove', event => {
+    if (!start) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (!lifted) {
+      if (Math.hypot(dx, dy) > SLOP) { clearTimeout(timer); start = null; }
+      return;
+    }
+    if (Math.hypot(dx, dy) > SLOP) moved = true;
+    if (moved) {
+      button.style.pointerEvents = 'none';
+      button.style.transform = `translate(${dx}px,${dy}px)`;
+    }
+  });
+  button.addEventListener('touchmove', event => { if (lifted) event.preventDefault(); }, { passive: false });
+  button.addEventListener('pointerup', event => {
+    if (!lifted) { reset(); return; }
+    suppress = true;
+    const target = moved ? document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-index]') : null;
+    const wasMoved = moved;
+    reset();
+    if (wasMoved) {
+      const to = target ? Number(target.dataset.index) : index;
+      if (to !== index) storeShortcuts(moveShortcut(shortcuts, index, to));
+    } else openShortcutMenu(index, button);
+  });
+  button.addEventListener('pointercancel', reset);
+  button.addEventListener('click', event => {
+    if (suppress) { suppress = false; event.preventDefault(); return; }
+    applyShortcut(item);
+  });
+  button.addEventListener('contextmenu', event => {
+    event.preventDefault();
+    if (start || lifted) return; // a touch long-press is handled by the hold timer
+    openShortcutMenu(index, button);
+  });
+}
+
 function renderQuick() {
   const grid = bind('quick')[0];
-  grid.replaceChildren(...QUICK.map(q => {
-    const b = document.createElement('button');
-    b.className = 'tile';
-    b.dataset.scene = q.id;
+  const tiles = shortcuts.map((item, index) => {
+    const button = document.createElement('button');
+    button.className = 'tile';
+    button.dataset.index = String(index);
+    button.dataset.scene = shortcutId(item);
     const sw = document.createElement('span');
     sw.className = 'sw';
-    sw.style.background = q.sw ?? rgbCss(q.rgb);
-    b.append(sw, t(q.name));
-    b.addEventListener('click', () => (q.preset ? playPreset(q.preset) : setColor(q.rgb, q.label, q.id)));
-    return b;
+    sw.style.background = item.kind === 'scene' ? presetSwatch(item.preset) : rgbCss(item.rgb);
+    button.append(sw, shortcutName(item));
+    attachPress(button, index, item);
+    return button;
+  });
+  if (shortcuts.length < MAX_SHORTCUTS) {
+    const add = document.createElement('button');
+    add.className = 'tile add-tile';
+    add.setAttribute('aria-label', t('addShortcut'));
+    add.textContent = '+';
+    add.addEventListener('click', () => openShortcutChooser(null, add));
+    tiles.push(add);
+  }
+  grid.style.setProperty('--cols', String(gridColumns(tiles.length)));
+  grid.replaceChildren(...tiles);
+}
+
+let shortcutIndex = null;
+function openShortcutMenu(index, trigger) {
+  shortcutIndex = index;
+  $('[data-action="shortcut-left"]').disabled = index === 0;
+  $('[data-action="shortcut-right"]').disabled = index === shortcuts.length - 1;
+  openSheet('shortcut', shortcutName(shortcuts[index]), trigger);
+}
+
+function openShortcutChooser(index, trigger) {
+  shortcutIndex = index;
+  bind('shortcut-colors')[0].replaceChildren(...SWATCHES.map(([name, rgb]) => {
+    const button = document.createElement('button');
+    button.className = 'swatch';
+    button.style.background = rgbCss(rgb);
+    button.setAttribute('aria-label', t(name));
+    button.addEventListener('click', () => chooseShortcut({ kind: 'color', name, rgb: [...rgb] }));
+    return button;
   }));
+  bind('shortcut-scenes')[0].replaceChildren(...PRESETS.map(({ id }) => {
+    const button = document.createElement('button');
+    button.className = 'tile';
+    const sw = document.createElement('span');
+    sw.className = 'sw';
+    sw.style.background = presetSwatch(id);
+    button.append(sw, t(id));
+    button.addEventListener('click', () => chooseShortcut({ kind: 'scene', preset: id }));
+    return button;
+  }));
+  openSheet('shortcut-pick', t(index === null ? 'addShortcut' : 'changeShortcut'), trigger);
+}
+
+function chooseShortcut(item) {
+  storeShortcuts(shortcutIndex === null ? addShortcut(shortcuts, item) : replaceShortcut(shortcuts, shortcutIndex, item));
+  closeSheet();
 }
 
 // ---- power and brightness ----
@@ -167,8 +300,6 @@ bind('bri').forEach(input => input.addEventListener('input', () => {
   renderBrightness();
   fire(brightness(targetBrightness()), 'brightness');
 }));
-$('[data-action="white"]').addEventListener('click', () => setColor(WHITE, ['white'], 'white'));
-$('[data-action="warm"]').addEventListener('click', () => setColor(WARM, ['warmWhite'], 'warm'));
 
 // ---- color wheel and swatches ----
 const SWATCHES = [['red', [255, 0, 0]], ['orange', [255, 110, 0]], ['yellow', [255, 200, 0]], ['green', [0, 255, 0]],
@@ -328,9 +459,8 @@ function render() {
   pw.setAttribute('aria-label', t(state.on ? 'powerOn' : 'powerOff'));
   text('power-label', state.on ? t('onLabel', { label: currentLabel() }) : t('off'));
   const quickId = state.mode?.preset ?? state.scene;
-  const quick = QUICK.find(q => q.id === quickId);
   const strip = bind('strip')[0];
-  strip.style.setProperty('--strip', state.on ? (quick?.sw ?? rgbCss(state.rgb)) : '#2a2540');
+  strip.style.setProperty('--strip', state.on ? (state.mode?.preset ? presetSwatch(state.mode.preset) : rgbCss(state.rgb)) : '#2a2540');
   strip.style.setProperty('--glow', state.on ? rgbCss(state.rgb).replace(')', ' / .55)') : 'transparent');
   strip.setAttribute('aria-label', t('previewLabel', { label: state.on ? currentLabel() : t('off') }));
   $$('.tile').forEach(t => t.setAttribute('aria-pressed', String(state.on && t.dataset.scene === quickId)));
@@ -408,7 +538,7 @@ function currentMode() {
 
 function sceneSwatch(scene) {
   if (scene.rgb) return rgbCss(scene.rgb);
-  if (scene.preset) return QUICK.find(q => q.id === scene.preset)?.sw ?? 'linear-gradient(90deg,#ef4444,#4f46e5)';
+  if (scene.preset) return presetSwatch(scene.preset);
   return 'linear-gradient(90deg,#ec4899,#a855f7,#22d3ee)';
 }
 
@@ -485,6 +615,20 @@ function useScene(apply) {
 }
 $('[data-action="try-scene"]').addEventListener('click', () => useScene(false));
 $('[data-action="apply-scene"]').addEventListener('click', () => useScene(true));
+$('[data-action="shortcut-change"]').addEventListener('click', () => {
+  const index = shortcutIndex;
+  const trigger = opener;
+  closeSheet();
+  openShortcutChooser(index, trigger);
+});
+$('[data-action="shortcut-left"]').addEventListener('click', () => { storeShortcuts(moveShortcut(shortcuts, shortcutIndex, shortcutIndex - 1)); closeSheet(); });
+$('[data-action="shortcut-right"]').addEventListener('click', () => { storeShortcuts(moveShortcut(shortcuts, shortcutIndex, shortcutIndex + 1)); closeSheet(); });
+$('[data-action="shortcut-remove"]').addEventListener('click', () => { storeShortcuts(removeShortcut(shortcuts, shortcutIndex)); closeSheet(); });
+bind('shortcut-other')[0].addEventListener('change', event => {
+  const value = event.target.value.slice(1);
+  chooseShortcut({ kind: 'color', rgb: [0, 2, 4].map(i => parseInt(value.slice(i, i + 2), 16)) });
+});
+
 // ---- foreground off timer ----
 let timer;
 let wakeLock;
