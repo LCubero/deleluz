@@ -592,6 +592,7 @@ function renderLinkText(s = link.state) {
 function renderLink(s) {
   const wasConnected = document.body.dataset.status === 'connected';
   renderLinkText(s);
+  render();
   if (s.status === 'lost' && wasConnected) {
     trying = false;
     stopPlayback();
@@ -615,17 +616,21 @@ function renderLastSent() {
   const s = Math.round((Date.now() - state.lastSentAt) / 1000);
   text('last-sent', t('lastCommand', { time: s < 60 ? `${s} s` : `${Math.round(s / 60)} min` }));
 }
+// The Home preview and power show "on" only while a strip is connected (or simulated):
+// without a link the page cannot know or control what the strip shows.
+const shownOn = () => state.on && link.ready;
 function renderStrip() {
   const strip = bind('strip')[0];
-  strip.style.setProperty('--strip', state.on ? (state.mode?.preset ? presetSwatch(state.mode.preset) : rgbCss(state.rgb)) : '#2a2540');
-  strip.style.setProperty('--glow', state.on ? rgbCss(state.rgb).replace(')', ' / .55)') : 'transparent');
-  strip.setAttribute('aria-label', t('previewLabel', { label: state.on ? currentLabel() : t('off') }));
+  const on = shownOn();
+  strip.style.setProperty('--strip', on ? (state.mode?.preset ? presetSwatch(state.mode.preset) : rgbCss(state.rgb)) : '#2a2540');
+  strip.style.setProperty('--glow', on ? rgbCss(state.rgb).replace(')', ' / .55)') : 'transparent');
+  strip.setAttribute('aria-label', t('previewLabel', { label: on ? currentLabel() : t('off') }));
 }
 function render() {
   const pw = $('[data-action="power"]');
-  pw.setAttribute('aria-pressed', String(state.on));
-  pw.setAttribute('aria-label', t(state.on ? 'powerOn' : 'powerOff'));
-  text('power-label', state.on ? t('onLabel', { label: currentLabel() }) : t('off'));
+  pw.setAttribute('aria-pressed', String(shownOn()));
+  pw.setAttribute('aria-label', t(shownOn() ? 'powerOn' : 'powerOff'));
+  text('power-label', shownOn() ? t('onLabel', { label: currentLabel() }) : t('off'));
   const quickId = state.mode?.preset ?? state.scene;
   renderStrip();
   $$('.tile[data-scene]').forEach(t => t.setAttribute('aria-pressed', String(state.on && t.dataset.scene === quickId)));
