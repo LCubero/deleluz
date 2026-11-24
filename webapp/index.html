@@ -135,7 +135,7 @@
           <label class="slider-head"><span data-i18n="stripOrder">Orden de colores</span><select id="strip-order"></select></label>
           <label class="slider-head"><span data-i18n="stripDensity">LEDs por metro</span><input id="strip-density" type="number" step="any" value="30" aria-describedby="strip-error"></label>
           <label class="slider-head"><span data-i18n="stripMeters">Metros</span><input id="strip-meters" type="number" step="any" value="5" aria-describedby="strip-error"></label>
-          <output for="strip-density strip-meters" data-bind="strip-total"></output>
+          <label class="slider-head"><span data-i18n="stripTotal">Total de LEDs</span><input id="strip-pixels" type="number" step="1" min="1" max="1024" value="150" aria-describedby="strip-error"></label>
           <p id="strip-error" class="error small" role="status" data-i18n="stripError" hidden>Ingresa valores positivos que den un total de 1 a 1024 LEDs.</p>
           <button class="btn primary" id="strip-send" aria-expanded="false" aria-controls="strip-confirm" data-i18n="stripSend">Enviar a la tira</button>
           <div class="glass pad stack" id="strip-confirm" role="group" aria-labelledby="strip-confirm-title" hidden>

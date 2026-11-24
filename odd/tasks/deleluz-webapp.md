@@ -54,6 +54,7 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - S50 — "creo que mejor sin las opciones de conectar y desconectar, que solo sea estado, para la seccion Color, Escenas y ayuda"
 - S51 — "si se deconecta estando encendido, en inicio queda la barra led con color y no deberia si está desconectado no debería verse encendido"
 - S52 — "si dale, no sé si transformamos ayuda en setings o more y metemos a settings y ayuda dentro de more o ayuda dentro de settings" — user chose: Ayuda becomes "Ajustes" (4 tabs kept), with collapsible sections Tira (color order + LED count), Idioma, Ayuda and Privacidad inside.
+- S53 — "funciona y cambia en la tira. deberia poderse ponber por cantidad de leds tmb, directamente si quiero poner 150 leds"
 - S12 — "frontend debes revisar con tus herramientas, alineamientos, saltos raros en la pagina, orden, margenes, espacios, nada encima o pegado de otra cosa, simetrico y alineado, agradable a la vista, que se lea y se vea bien, contraste, letra, que funcione en cualquier pantalla y sobre todo que revises." Also: "Nada de rutas ni datos personales en archivos o commits: usa placeholders." "Español neutro con \"tú\" en la interfaz."
 
 ## Tasks
@@ -79,7 +80,8 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - T22 — S17,S12,S7 — Customizable quick scenes (max 6, defaults, add/change/remove, drag to reorder, long-press menu, layout by count) — inline (worker failed: provider_unavailable) — done (L36)
 - T23 — S16 — Strip configuration (LEDs per meter × meters = pixel count) — unblocked by the 2026-11-24 dedicated test (L70); delivered by T46 — pending
 - T46 — S16,S52,S12,S7 — Ayuda tab → Ajustes: sections Tira (color order, LEDs per meter × meters, confirm before sending the chip-config frame), Idioma, Ayuda, Privacidad; `chipConfig` builder + tests; README/PROTOCOL docs — worker — done f28d484 (L72)
-- T47 — S16 — Real-strip check with the user watching: pixel count 100 then back to 150, one more color order, restore GRB/150 — inline + user — pending
+- T47 — S16 — Real-strip check with the user watching: pixel count 100 then back to 150, one more color order, restore GRB/150 — inline + user — 100 px works (L74); back to 150 pending
+- T48 — S53,S12,S7 — Ajustes → Tira: editable "Total de LEDs" (1–1024, whole number) that LEDs por metro × Metros fill in; the total is what is sent — inline — pending
 - T24 — S18,S12,S7 — Design directions for a 'Mis Escenas' tab of color-square sequences, as gentle-design artboards in `design/deleluz-sequences/` matching Glow Glass — worker — done (L38); user choice pending
 - T25 — S18,S19,S12,S7,S6 — 'Mis escenas' (Galería + hoja) in the real webapp with the existing Glow Glass components and layout: Escenas tab gets the existing segmented control 'Incluidas | Mis escenas'; grid of sequence cards; bottom sheet editor with color squares, Velocidad, Intensidad, Reproducir/Detener — worker — done (L40)
 - T26 — S20-S25,S12,S7 — Mis escenas and quick-scene chooser refinements — worker — done (L41)
@@ -176,3 +178,4 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - L71 — User: "si dale, no sé si transformamos ayuda en setings o more y metemos a settings y ayuda dentro de more o ayuda dentro de settings". Options offered: Ayuda → Ajustes / "Más" with both / button on Inicio. User chose 1: Ayuda → Ajustes (S52). T46/T47 added.
 - L72 — T46 done (f28d484): 82/82 `node --test webapp/ lab/web/`; headless Chrome ?sim 320/360/390/412 px: Ajustes closed, Tira open + confirmation, no horizontal overflow, focus on Cancelar, no console errors; parent swapped the Ajustes tab icon to sliders. Not yet sent to the real strip (T47).
 - L73 — Parent review after the user's standing rules (S12): help and privacy text told users to tap the status chip, which is status-only (S50); now they point to Conectar/Desconectar on Inicio (d0fd42d). Re-checked Ajustes with all sections open at 320 and 412 px: no overflow, no console errors, 82/82 tests. Personal-data scan of origin/main..HEAD: none.
+- L74 — User after sending 20 × 5 = 100 from the real webapp: "funciona y cambia en la tira. deberia poderse ponber por cantidad de leds tmb, directamente si quiero poner 150 leds" (S53, T48). The strip is now configured to 100 px until it is sent back to 150.

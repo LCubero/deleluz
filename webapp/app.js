@@ -1,5 +1,5 @@
 import { power, color, brightness, effect, speed, voiceMode, CHIP_ORDERS, chipConfig } from '../lab/web/protocol.js';
-import { stripPixels } from './strip-settings.js';
+import { stripPixels, validPixels } from './strip-settings.js';
 import { effectName } from './effects.js';
 import { PRESETS, presetFrames } from '../lab/web/presets.js';
 import { createSender } from './sender.js';
@@ -1380,39 +1380,47 @@ const STRIP_SETTINGS_KEY = 'deleluz.webapp.stripSettings';
 const stripOrder = $('#strip-order');
 const stripDensity = $('#strip-density');
 const stripMeters = $('#strip-meters');
+const stripTotal = $('#strip-pixels');
 const stripError = $('#strip-error');
 const stripSend = $('#strip-send');
 const stripConfirm = $('#strip-confirm');
 const stripConfirmSend = $('#strip-confirm-send');
 const stripCancel = $('#strip-cancel');
-const readStripPixels = () => stripPixels(stripDensity.valueAsNumber, stripMeters.valueAsNumber);
+const readStripPixels = () => validPixels(stripTotal.valueAsNumber);
 
 stripOrder.replaceChildren(...CHIP_ORDERS.map(order => new Option(order, order)));
 stripOrder.value = 'GRB';
 try {
   const saved = JSON.parse(localStore.getItem(STRIP_SETTINGS_KEY));
-  if (CHIP_ORDERS.includes(saved?.order) && stripPixels(saved.density, saved.meters) !== null) {
+  if (CHIP_ORDERS.includes(saved?.order) && validPixels(saved.pixels ?? stripPixels(saved.density, saved.meters)) !== null) {
     stripOrder.value = saved.order;
     stripDensity.value = saved.density;
     stripMeters.value = saved.meters;
+    stripTotal.value = saved.pixels ?? stripPixels(saved.density, saved.meters);
   }
 } catch { /* Keep defaults if saved strip settings are unavailable. */ }
 
 function renderStripSettings() {
-  const pixels = readStripPixels();
-  const invalid = pixels === null;
-  text('strip-total', t('stripTotal', { pixels: pixels ?? '—' }));
+  const invalid = readStripPixels() === null;
   stripError.hidden = !invalid;
   stripSend.disabled = stripConfirmSend.disabled = invalid;
 }
 
-for (const field of [stripOrder, stripDensity, stripMeters]) {
+for (const field of [stripDensity, stripMeters]) {
+  field.addEventListener('input', () => {
+    const pixels = stripPixels(stripDensity.valueAsNumber, stripMeters.valueAsNumber);
+    if (pixels !== null) stripTotal.value = pixels;
+  });
+}
+
+for (const field of [stripOrder, stripDensity, stripMeters, stripTotal]) {
   field.addEventListener('input', renderStripSettings);
   field.addEventListener('change', () => {
     if (readStripPixels() === null) return;
     try {
       localStore.setItem(STRIP_SETTINGS_KEY, JSON.stringify({
         order: stripOrder.value, density: stripDensity.valueAsNumber, meters: stripMeters.valueAsNumber,
+        pixels: readStripPixels(),
       }));
     } catch { toast('storageFailed', true); }
   });

@@ -10,3 +10,9 @@ test('strip settings round the product and reject invalid inputs and totals', ()
     assert.equal(stripPixels(density, length), null);
   }
 });
+
+test('a typed LED total must be a whole number from 1 to 1024', async () => {
+  const { validPixels } = await import('./strip-settings.js');
+  for (const total of [1, 100, 150, 1024]) assert.equal(validPixels(total), total);
+  for (const total of [0, -1, 1025, 150.5, NaN, Infinity]) assert.equal(validPixels(total), null);
+});
