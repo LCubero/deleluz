@@ -14,7 +14,7 @@ const red = { kind: 'color', rgb: [255, 0, 0] };
 const police = { kind: 'scene', preset: 'police' };
 
 test('defaults are warm white, cool white, blue, green, yellow and red', () => {
-  assert.deepEqual(DEFAULT_SHORTCUTS.map(s => s.name), ['warmWhite', 'coolWhite', 'blue', 'green', 'yellow', 'red']);
+  assert.deepEqual(DEFAULT_SHORTCUTS.map(s => s.name), ['warmWhite', 'coolWhite']);
   assert.equal(MAX_SHORTCUTS, 6);
   assert.deepEqual(loadShortcuts(store(), presets), DEFAULT_SHORTCUTS);
 });

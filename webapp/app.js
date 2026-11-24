@@ -411,6 +411,7 @@ bind('bri').forEach(input => input.addEventListener('input', () => {
 let colorPalette;
 function renderSwatches() {
   colorPalette ??= createPalette({
+    place: 'color',
     container: bind('swatches')[0],
     mark: rgb => ({ rgb: rgb.join(',') }),
     current: () => state.rgb,
@@ -808,6 +809,7 @@ $('[data-action="shortcut-add-wheel"]').addEventListener('click', () => chooseSh
 let shortcutPalette;
 queueMicrotask(() => {
   shortcutPalette = createPalette({
+    place: 'quick',
     container: bind('shortcut-palette')[0],
     mark: rgb => ({ color: hex(rgb).toLowerCase() }),
     current: () => shortcutWheelRgb,
@@ -828,24 +830,22 @@ function storePalette(next) {
   try { localStore.setItem(PALETTE_KEY, JSON.stringify(paletteColors)); } catch { toast('storageFailed', true); }
   palettes.forEach(palette => palette.render());
 }
-// Favorites can be collapsed; the choice is shared by every palette and remembered.
-const FAVORITES_OPEN_KEY = 'deleluz.webapp.favoritesOpen';
-// Collapsed by default; opening it is remembered.
-let favoritesOpen = (() => { try { return localStorage.getItem(FAVORITES_OPEN_KEY) === '1'; } catch { return false; } })();
-function setFavoritesOpen(open) {
-  favoritesOpen = open;
-  try { localStorage.setItem(FAVORITES_OPEN_KEY, open ? '1' : '0'); } catch { /* keep it for this session */ }
-  palettes.forEach(palette => palette.showOpen?.());
-}
-function createPalette({ container, mark, current, apply }) {
+// Each Favoritos section opens and closes on its own (closed by default, remembered per place).
+const favoritesKey = place => `deleluz.webapp.favoritesOpen.${place}`;
+function createPalette({ place, container, mark, current, apply }) {
   let slot = null;
+  let open = (() => { try { return localStorage.getItem(favoritesKey(place)) === '1'; } catch { return false; } })();
   const grid = container.closest('.swatches') ?? container;
   const toggle = document.createElement('button');
   toggle.className = 'section-toggle favorites-toggle';
   toggle.setAttribute('aria-expanded', 'true');
   toggle.innerHTML = '<span data-i18n="favorites"></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   toggle.querySelector('span').textContent = t('favorites');
-  toggle.addEventListener('click', () => setFavoritesOpen(!favoritesOpen));
+  toggle.addEventListener('click', () => {
+    open = !open;
+    try { localStorage.setItem(favoritesKey(place), open ? '1' : '0'); } catch { /* keep it for this session */ }
+    showOpen();
+  });
   grid.before(toggle);
   const plus = document.createElement('button');
   plus.className = 'swatch palette-plus';
@@ -857,8 +857,8 @@ function createPalette({ container, mark, current, apply }) {
   hint.textContent = t('paletteHint');
   grid.after(hint);
   const showOpen = () => {
-    toggle.setAttribute('aria-expanded', String(favoritesOpen));
-    grid.hidden = hint.hidden = !favoritesOpen;
+    toggle.setAttribute('aria-expanded', String(open));
+    grid.hidden = hint.hidden = !open;
   };
   showOpen();
   // While a saved color is lifted, the "+" turns into a trash can: drop it there to delete it.
@@ -1043,6 +1043,7 @@ function renderSequenceSliders(item) {
 let sequencePalette;
 function renderSequenceSwatches() {
   sequencePalette ??= createPalette({
+    place: 'scene',
     container: sequenceSwatches,
     mark: rgb => ({ color: hex(rgb).toLowerCase() }),
     current: () => editingSequence?.colors[selectedFrame],

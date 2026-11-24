@@ -7,10 +7,6 @@ export const MAX_SHORTCUTS = 6;
 export const DEFAULT_SHORTCUTS = Object.freeze([
   { kind: 'color', name: 'warmWhite', rgb: [255, 200, 128] },
   { kind: 'color', name: 'coolWhite', rgb: [255, 255, 255] },
-  { kind: 'color', name: 'blue', rgb: [0, 0, 255] },
-  { kind: 'color', name: 'green', rgb: [0, 255, 0] },
-  { kind: 'color', name: 'yellow', rgb: [255, 200, 0] },
-  { kind: 'color', name: 'red', rgb: [255, 0, 0] },
 ]);
 
 const isByte = value => Number.isInteger(value) && value >= 0 && value <= 255;
