@@ -6,6 +6,8 @@ This file records meaningful completed changes in chronological order, newest fi
 
 ## 2026-11-24
 
+- Added the Ajustes tab to the webapp (replaces Ayuda; sections Tira, Idioma, Ayuda, Privacidad): strip color order and LED count, typed as a total or calculated per meter, sent as the chip-config frame after a confirmation; verified on the real strip at 100 and 150 LEDs (`odd/tasks/deleluz-webapp.md` T46-T49, L70-L77)
+- Decoded the chip-config color-order byte (1-based position in the vendor list) and recorded the per-pixel probes: this DMX03 ignores the vendor graffiti frame and the custom color-list pattern, so segment colors need a custom controller (`docs/PROTOCOL.md`)
 - Published the project as a public GitHub repository under the MIT license; stopped tracking `.pi/` and moved superseded designs, the store-links note and the original brief to a local, git-ignored `_archive/` (`odd/tasks/deleluz-webapp.md` L67-L69).
 - Reworked the webapp around user-editable content (`odd/tasks/deleluz-webapp.md` T21-T45, L28-L64): customizable quick scenes (2 defaults, up to 6, hold for options, drag to reorder), "Mis escenas" color sequences (gallery cards, editor with wheel, drag-reorder, rename, speed %, intensity), one shared favorites palette (green, yellow, red by default, up to 15, replace/move/delete by drag to the trash), Música as cards, Incluidas as cards, swipe between tabs (wraps), collapsible sections closed by default, Disconnect, status chip in every section, AUTO indicator, privacy and permissions in Help, safer error and deletion handling. Saved custom scenes from the previous version were replaced by "Mis escenas" sequences.
 
