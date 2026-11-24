@@ -22,6 +22,12 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - S17 — "en lugar de escenas rapidas quiza shortcuts o con ese mismo nombre escenas rapidas, pero que el usuario pueda poner las que quiere o quitarlas y que se acomode segun la cantidad. por defecto blanco calido, blanco frio, azul, verde, amarillo y rojo, pero que permita, borrarlas, reordenarlas, o camiarlas de posicion, de preferencia arrastrando, y dejar precionado para tener el menu de opciones tmb. maximo 6."
 - S18 — "una pestaña para \"Mis Escenas\"  y no s´´e, dame ideas usa gentle design quiza o stich o algo para ver que usamos de ui para eso"; sequences as described in L37 ("cuadritos cada cuadro es un color y se tocan para cambiar el color ... solo se puede cambiar la velocidad e intensidad").
 - S19 — "bueno primero no respetan el layout y diseño actual que tenemos, pero dejando eso de lado, galeria + hoja se ve bien"
+- S20 — "el botón de nueva escena no me convence, cuando no hay escenas y quiero una opcion de un + para agregar, quiza en una equina o siembre abao o no sé"
+- S21 — "velocidad no está bien representado, los ms no deberia ser, mejor un 10% y ya, menor porcentaje mas lento mayor porcentaje mas rápido, hay minimo y maximo para el 0% y 100%."
+- S22 — "las escenas de mis escenas se deben poder selecionar en las escenas rapidas del inicio"
+- S23 — "las escenas por defecto de escenas rapidas deberias poder vovlerse a agregar, en menu que sale al hacer nuevo shortcut deberia salir escenas (con las predefinidas de primeras y separadas con una ligera linea), color, y que se puedan cerrar y abrir (como dropbox o combo box o minimizar o ya tu sabes.)"
+- S24 — "en mis escenas si le doy a nueva escena y no toqué nada y cierro, se crea la escena de todos modos, entonces mejor quier un botón de guardar"
+- S25 — "en mis escenas deberia poder activarse la escena con solo tocarla, y si quiero editarla o borrarla que aparesca el menu o lo que sea al dejar apretado y un icono de borrar a la izq de la equiz y que pida combrobación, seria nice"
 - S12 — "frontend debes revisar con tus herramientas, alineamientos, saltos raros en la pagina, orden, margenes, espacios, nada encima o pegado de otra cosa, simetrico y alineado, agradable a la vista, que se lea y se vea bien, contraste, letra, que funcione en cualquier pantalla y sobre todo que revises." Also: "Nada de rutas ni datos personales en archivos o commits: usa placeholders." "Español neutro con \"tú\" en la interfaz."
 
 ## Tasks
@@ -48,6 +54,7 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - T23 — S16 — Strip configuration (LEDs per meter × meters = pixel count) — blocked: needs a dedicated reversible test of the config frame on the real strip (docs/PROTOCOL.md rule) — pending
 - T24 — S18,S12,S7 — Design directions for a 'Mis Escenas' tab of color-square sequences, as gentle-design artboards in `design/deleluz-sequences/` matching Glow Glass — worker — done (L38); user choice pending
 - T25 — S18,S19,S12,S7,S6 — 'Mis escenas' (Galería + hoja) in the real webapp with the existing Glow Glass components and layout: Escenas tab gets the existing segmented control 'Incluidas | Mis escenas'; grid of sequence cards; bottom sheet editor with color squares, Velocidad, Intensidad, Reproducir/Detener — worker — done (L40)
+- T26 — S20-S25,S12,S7 — Mis escenas and quick-scene chooser refinements — worker — pending
 
 ## Log
 
