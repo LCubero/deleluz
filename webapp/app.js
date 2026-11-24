@@ -9,7 +9,7 @@ import { loadState, persistState, solidSelection } from './state.js';
 import { DEFAULT_SHORTCUTS, MAX_SHORTCUTS, loadShortcuts, saveShortcuts, addShortcut, replaceShortcut,
   removeShortcut, moveShortcut, gridColumns, filterShortcuts } from './shortcuts.js';
 import { MAX_SEQUENCES, MAX_COLORS, loadSequences, saveSequences, createSequence, updateSequence,
-  removeSequence, setColor as setFrameColor, addColor, removeColor, speedPercent, intervalFromSpeed } from './sequences.js';
+  removeSequence, setColor as setFrameColor, addColor, removeColor, moveColor, speedPercent, intervalFromSpeed } from './sequences.js';
 import { formatRemaining, fadeBrightness, parseTimerDuration } from './timer.js';
 import { createLink } from './ble.js';
 import { hueToRgb, hueFromPoint, rgbCss, rgbFromHex } from './color.js';
@@ -212,7 +212,7 @@ function applyShortcut(item) {
 
 const HOLD_MS = 450;
 const SLOP = 8;
-// Tap applies; press and hold opens the editor/options; shortcuts can also drag to reorder.
+// A tap activates; a hold can open options, lift an item for reordering, or both.
 function attachPress(button, { tap, hold, drop }) {
   let timer;
   let start = null;
@@ -222,7 +222,7 @@ function attachPress(button, { tap, hold, drop }) {
   const reset = () => {
     clearTimeout(timer);
     button.classList.remove('lifted');
-    button.style.transform = '';
+    button.style.translate = '';
     button.style.pointerEvents = '';
     start = null;
     lifted = false;
@@ -244,13 +244,13 @@ function attachPress(button, { tap, hold, drop }) {
     const dx = event.clientX - start.x;
     const dy = event.clientY - start.y;
     if (!lifted) {
-      if (Math.hypot(dx, dy) > SLOP) { clearTimeout(timer); start = null; }
+      if (Math.hypot(dx, dy) > SLOP) { suppress = true; reset(); }
       return;
     }
     if (Math.hypot(dx, dy) > SLOP) moved = true;
     if (moved && drop) {
       button.style.pointerEvents = 'none';
-      button.style.transform = `translate(${dx}px,${dy}px)`;
+      button.style.translate = `${dx}px ${dy}px`;
     }
   });
   button.addEventListener('touchmove', event => { if (lifted) event.preventDefault(); }, { passive: false });
@@ -261,10 +261,13 @@ function attachPress(button, { tap, hold, drop }) {
     const wasMoved = moved;
     const target = wasMoved && drop ? document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-index]') : null;
     reset();
-    if (wasMoved) drop?.(target);
-    else hold();
+    if (wasMoved) {
+      if (target && target.parentElement === button.parentElement) drop(Number(target.dataset.index));
+    } else hold?.();
   });
-  button.addEventListener('pointercancel', reset);
+  const cancel = event => { if (event.pointerId === start?.id) reset(); };
+  button.addEventListener('pointercancel', cancel);
+  button.addEventListener('lostpointercapture', cancel);
   button.addEventListener('pointerleave', () => { if (!lifted) reset(); });
   button.addEventListener('click', event => {
     if (suppress && event.detail > 0) { suppress = false; event.preventDefault(); return; }
@@ -273,7 +276,7 @@ function attachPress(button, { tap, hold, drop }) {
   button.addEventListener('contextmenu', event => {
     event.preventDefault();
     if (start || lifted) return; // a touch long-press is handled by the hold timer
-    hold();
+    hold?.();
   });
 }
 
@@ -305,10 +308,7 @@ function renderQuick() {
     attachPress(button, {
       tap: () => applyShortcut(item),
       hold: () => openShortcutMenu(index, button),
-      drop: target => {
-        const to = target ? Number(target.dataset.index) : index;
-        if (to !== index) storeShortcuts(moveShortcut(shortcuts, index, to));
-      },
+      drop: to => { if (to !== index) storeShortcuts(moveShortcut(shortcuts, index, to)); },
     });
     return button;
   });
@@ -795,6 +795,10 @@ let isNewSequence = false;
 let selectedFrame = 0;
 const sequenceList = bind('sequence-list')[0];
 const frameList = bind('sequence-frames')[0];
+const frameHint = document.createElement('p');
+frameHint.className = 'sequence-reorder-hint';
+frameHint.dataset.i18n = 'sequenceReorderHint';
+frameList.after(frameHint);
 const sequenceOther = bind('sequence-other')[0];
 const sequenceSwatches = bind('sequence-swatches')[0];
 const sequenceAdd = $('[data-action="sequence-add-color"]');
@@ -861,7 +865,19 @@ function renderSequenceFrames(item, focusFrame = false) {
   const squares = item.colors.map((_, i) => {
     const button = document.createElement('button');
     button.className = 'swatch sequence-frame';
-    button.addEventListener('click', () => { selectedFrame = i; renderSequencePalette(editingSequence); });
+    button.dataset.index = String(i);
+    attachPress(button, {
+      tap: () => { selectedFrame = i; renderSequencePalette(editingSequence); },
+      drop: to => {
+        if (!editingSequence) return;
+        const selected = editingSequence.colors[selectedFrame];
+        const next = moveColor(editingSequence, i, to);
+        if (next === editingSequence) return;
+        selectedFrame = next.colors.indexOf(selected);
+        editSequence(next, 'colors');
+        frameList.children[to].focus({ preventScroll: true });
+      },
+    });
     return button;
   });
   frameList.replaceChildren(...squares);

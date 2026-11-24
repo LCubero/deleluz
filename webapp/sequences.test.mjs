@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SEQUENCES_KEY, loadSequences, saveSequences, createSequence, updateSequence,
-  removeSequence, setColor, addColor, removeColor, speedPercent, intervalFromSpeed,
+  removeSequence, setColor, addColor, removeColor, moveColor, speedPercent, intervalFromSpeed,
 } from './sequences.js';
 
 const defaults = [[255, 0, 0], [0, 255, 0], [0, 0, 255]];
@@ -84,4 +84,19 @@ test('color edits are immutable and enforce valid indices and 1–8 colors', () 
   for (let i = 0; i < 8; i++) next = removeColor(next, 0);
   assert.equal(next.colors.length, 1);
   assert.equal(removeColor(next, 0), next);
+});
+
+test('moves a color to its final index in either direction without changing the original', () => {
+  const [item] = createSequence([]);
+  const moved = moveColor(item, 0, 2);
+  assert.deepEqual(moved, { ...item, colors: [defaults[1], defaults[2], defaults[0]] });
+  assert.deepEqual(moveColor(moved, 2, 0), item);
+  assert.deepEqual(item.colors, defaults);
+});
+
+test('moving a color to the same or an invalid index is a no-op', () => {
+  const [item] = createSequence([]);
+  for (const [from, to] of [[1, 1], [-1, 0], [3, 0], [0, 3], [1.5, 0], [0, '1']]) {
+    assert.equal(moveColor(item, from, to), item);
+  }
 });

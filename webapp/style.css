@@ -114,6 +114,7 @@ nav.tabs a[aria-current="page"] svg{stroke:#f0abfc;filter:drop-shadow(0 0 8px va
 .sequence-thumb > span{aspect-ratio:1;border-radius:3px}
 .sequence-frames{display:flex;justify-content:center;flex-wrap:wrap;gap:12px}
 .sequence-frames .sequence-frame{width:44px;height:44px;min-height:44px;padding:0;border-radius:10px}
+.sequence-reorder-hint{margin:0;text-align:center;font-size:.8125rem;color:var(--muted)}
 .sequence-actions{flex-wrap:wrap}
 [data-sheet="sequence"] .wheel{width:min(190px,65vw)}
 .sequence-swatches{grid-template-columns:repeat(5,44px);gap:12px 8px}
@@ -199,8 +200,10 @@ h2.slider-head{font-size:inherit;margin:0}
 .fx-name{margin:0;text-align:center;font-weight:600;overflow-wrap:anywhere}
 [data-action="close-sheet"]{min-width:44px}
 @media (max-width:360px){.scene{gap:10px}.scene .strip{width:40px}}
-.tile{-webkit-touch-callout:none;user-select:none}
-.tile.lifted,.sequence-card.lifted{position:relative;z-index:5;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.tile,.sequence-frame{-webkit-touch-callout:none;user-select:none}
+[data-index].tile,.sequence-frame{transition:transform 120ms ease,box-shadow 120ms ease}
+.tile.lifted,.sequence-card.lifted,.sequence-frame.lifted{position:relative;z-index:2;box-shadow:0 4px 14px rgba(0,0,0,.45)}
+.tile.lifted,.sequence-frame.lifted{transform:scale(1.06)}
 .add-tile{align-items:center;justify-content:center;font-size:1.5rem;border-style:dashed}
 .shortcut-section > summary{min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 12px;cursor:pointer;font-weight:600;list-style:none}
 .shortcut-section > summary::-webkit-details-marker{display:none}

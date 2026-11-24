@@ -61,6 +61,15 @@ export function setColor(item, index, rgb) {
   return { ...item, colors: item.colors.map((color, i) => i === index ? [...rgb] : color) };
 }
 
+export function moveColor(item, from, to) {
+  const last = item.colors.length - 1;
+  if (from === to || !inRange(from, 0, last) || !inRange(to, 0, last)) return item;
+  const colors = [...item.colors];
+  const [color] = colors.splice(from, 1);
+  colors.splice(to, 0, color);
+  return { ...item, colors };
+}
+
 export function addColor(item) {
   if (item.colors.length >= MAX_COLORS) return item;
   return { ...item, colors: [...item.colors, [...item.colors.at(-1)]] };

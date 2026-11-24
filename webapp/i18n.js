@@ -53,6 +53,7 @@ const strings = {
   sequencesEmpty: ['Aún no tienes escenas. Toca + para crear una.', 'No scenes yet. Tap + to create one.'],
   sequenceEditHint: ['Toca un cuadro para cambiar su color.', 'Tap a square to change its color.'],
   sequenceFrames: ['Cuadros de color', 'Color squares'],
+  sequenceReorderHint: ['Mantén presionado un color y arrástralo para moverlo.', 'Press and hold a color, then drag it to move it.'],
   sequenceFrame: ['Cuadro {number}: {hex}', 'Square {number}: {hex}'],
   addColor: ['Agregar color', 'Add color'],
   removeColor: ['Quitar color', 'Remove color'],
