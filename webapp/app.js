@@ -7,6 +7,8 @@ import { createPlayer } from './player.js';
 import { smoothSteps } from './smooth.js';
 import { persistState } from './state.js';
 import { MAX_SHORTCUTS, loadShortcuts, saveShortcuts, addShortcut, replaceShortcut, removeShortcut, moveShortcut, gridColumns } from './shortcuts.js';
+import { MAX_SEQUENCES, MAX_COLORS, loadSequences, saveSequences, createSequence, updateSequence,
+  removeSequence, setColor as setFrameColor, addColor, removeColor } from './sequences.js';
 import { formatRemaining, fadeBrightness, parseTimerDuration } from './timer.js';
 import { createLink } from './ble.js';
 import { hueToRgb, hueFromPoint, rgbCss } from './color.js';
@@ -39,17 +41,31 @@ const link = createLink({ simulate, onChange: renderLink });
 // 50 ms keeps a margin. Page-mode steps keep their own interval (player MIN_INTERVAL).
 const SEND_GAP_MS = 50;
 const sender = createSender({ write: bytes => link.write(bytes), interval: SEND_GAP_MS });
-const player = createPlayer({ send: bytes => { if (!document.hidden) return send(bytes, 'color'); } });
+const player = createPlayer({ send: async bytes => {
+  if (document.hidden) return;
+  const run = playback;
+  if (await send(bytes, 'color') === 'sent' && run === playback && activeSequence) {
+    state.rgb = Array.from(bytes.subarray(3, 6));
+    renderStrip();
+  }
+} });
 let playback = 0;
+let activeSequence = null;
 function stopPlayback() {
   playback++;
   player.stop();
   sender.cancel();
+  activeSequence = null;
+  renderSequencePlayback();
 }
 
 async function startMode(mode) {
   stopPlayback();
   const run = playback;
+  if (mode.colors) {
+    activeSequence = state.scene;
+    renderSequencePlayback();
+  }
   try {
     const ready = await runStartup(send, [
       { bytes: power(true), key: 'power' },
@@ -60,11 +76,20 @@ async function startMode(mode) {
       const { steps } = presetFrames(mode.preset, mode.interval);
       const frames = smoothSteps(mode.preset, steps);
       await player.play(frames.map(frame => frame.bytes), frames[0].interval);
-    } else if (mode.rgb) await send(color(...mode.rgb), 'color');
+    } else if (mode.colors) await player.play(mode.colors.map(c => color(...c)), mode.interval);
+    else if (mode.rgb) await send(color(...mode.rgb), 'color');
     else if (mode.voice) await send(voiceMode(mode.voice), 'effect');
     else await send(effect(mode.effect), 'effect');
   } catch {
-    if (run === playback && dialog.open && selected) text('preview-error', t('sceneFailed'));
+    if (run === playback && dialog.open) {
+      if (selected) text('preview-error', t('sceneFailed'));
+      if (activeSequence === sequenceKey(editingSequence)) text('sequence-error', t('sceneFailed'));
+    }
+  } finally {
+    if (run === playback && mode.colors) {
+      activeSequence = null;
+      renderSequencePlayback();
+    }
   }
 }
 
@@ -317,6 +342,7 @@ function renderSwatches() {
 }
 
 function currentLabel() {
+  if (state.mode?.colors && typeof state.label === 'string') return state.label;
   if (state.scene?.startsWith('mine:')) return state.scene.slice(5);
   if (Array.isArray(state.label)) return t(...state.label);
   // Older versions persisted English labels instead of translation keys.
@@ -438,6 +464,7 @@ function renderLink(s) {
   renderLinkText(s);
   if (s.status === 'lost') {
     trying = false;
+    if (activeSequence && activeSequence === sequenceKey(editingSequence)) text('sequence-error', t('previewLost'));
     stopPlayback();
     if (selected) text('preview-error', t('previewLost'));
     toast('reconnectPrompt', true);
@@ -459,18 +486,21 @@ function renderLastSent() {
   const s = Math.round((Date.now() - state.lastSentAt) / 1000);
   text('last-sent', t('lastCommand', { time: s < 60 ? `${s} s` : `${Math.round(s / 60)} min` }));
 }
+function renderStrip() {
+  const strip = bind('strip')[0];
+  strip.style.setProperty('--strip', state.on ? (state.mode?.preset ? presetSwatch(state.mode.preset) : rgbCss(state.rgb)) : '#2a2540');
+  strip.style.setProperty('--glow', state.on ? rgbCss(state.rgb).replace(')', ' / .55)') : 'transparent');
+  strip.setAttribute('aria-label', t('previewLabel', { label: state.on ? currentLabel() : t('off') }));
+}
 function render() {
   const pw = $('[data-action="power"]');
   pw.setAttribute('aria-pressed', String(state.on));
   pw.setAttribute('aria-label', t(state.on ? 'powerOn' : 'powerOff'));
   text('power-label', state.on ? t('onLabel', { label: currentLabel() }) : t('off'));
   const quickId = state.mode?.preset ?? state.scene;
-  const strip = bind('strip')[0];
-  strip.style.setProperty('--strip', state.on ? (state.mode?.preset ? presetSwatch(state.mode.preset) : rgbCss(state.rgb)) : '#2a2540');
-  strip.style.setProperty('--glow', state.on ? rgbCss(state.rgb).replace(')', ' / .55)') : 'transparent');
-  strip.setAttribute('aria-label', t('previewLabel', { label: state.on ? currentLabel() : t('off') }));
+  renderStrip();
   $$('.tile').forEach(t => t.setAttribute('aria-pressed', String(state.on && t.dataset.scene === quickId)));
-  $$('.swatch').forEach(s => s.setAttribute('aria-pressed', String(s.dataset.rgb === state.rgb.join(','))));
+  $$('.swatch[data-rgb]').forEach(s => s.setAttribute('aria-pressed', String(s.dataset.rgb === state.rgb.join(','))));
   wheel.style.setProperty('--c', rgbCss(state.rgb));
   bind('wheel-handle')[0].style.cssText = `left:${50 + 38 * Math.sin(hue * Math.PI / 180)}%;top:${50 - 38 * Math.cos(hue * Math.PI / 180)}%`;
   wheel.setAttribute('aria-valuenow', String(hue));
@@ -513,6 +543,7 @@ function closeSheet({ restoreTry = true } = {}) {
   }
   clearInterval(previewClock);
   selected = null;
+  editingSequence = null;
   dialog.close();
   if (opener?.isConnected && !opener.closest('[hidden]')) opener.focus();
 }
@@ -633,6 +664,213 @@ $('[data-action="shortcut-remove"]').addEventListener('click', () => { storeShor
 bind('shortcut-other')[0].addEventListener('change', event => {
   const value = event.target.value.slice(1);
   chooseShortcut({ kind: 'color', rgb: [0, 2, 4].map(i => parseInt(value.slice(i, i + 2), 16)) });
+});
+
+// ---- saved color sequences ----
+const sequenceStorage = {
+  getItem: key => localStorage.getItem(key),
+  setItem: (key, value) => localStorage.setItem(key, value),
+};
+let sequences = loadSequences(sequenceStorage);
+let editingSequence = null;
+let selectedFrame = 0;
+const sequenceKey = id => `sequence:${id}`;
+const sequenceList = bind('sequence-list')[0];
+const frameList = bind('sequence-frames')[0];
+const sequenceOther = bind('sequence-other')[0];
+const sequenceSpeed = $('#sequence-speed');
+const sequenceBri = $('#sequence-bri');
+const sequenceStop = $('[data-action="sequence-stop"]');
+const editedSequence = () => sequences.find(item => item.id === editingSequence);
+const sequenceCard = id => [...sequenceList.children].find(button => button.dataset.id === sequenceKey(id));
+
+$$('[data-scene-tab]').forEach(button => button.addEventListener('click', () => {
+  $$('[data-scene-tab]').forEach(b => b.setAttribute('aria-pressed', String(b === button)));
+  $$('[data-scene-panel]').forEach(panel => { panel.hidden = panel.dataset.scenePanel !== button.dataset.sceneTab; });
+}));
+
+function sequenceSquares(colors) {
+  const row = document.createElement('span');
+  row.className = 'sequence-thumb';
+  row.setAttribute('aria-hidden', 'true');
+  for (const rgb of colors) {
+    const square = document.createElement('span');
+    square.style.background = rgbCss(rgb);
+    row.append(square);
+  }
+  return row;
+}
+
+function renderSequences() {
+  bind('sequences-empty')[0].hidden = sequences.length > 0;
+  const cards = sequences.map(item => {
+    const button = document.createElement('button');
+    button.className = 'scene sequence-card';
+    button.dataset.id = sequenceKey(item.id);
+    const name = document.createElement('b');
+    name.className = 'meta';
+    name.textContent = item.name;
+    button.append(name, sequenceSquares(item.colors));
+    button.addEventListener('click', () => openSequence(item.id, button));
+    return button;
+  });
+  if (sequences.length < MAX_SEQUENCES) {
+    const add = document.createElement('button');
+    add.className = 'scene sequence-card sequence-new';
+    add.textContent = t('newSequence');
+    add.addEventListener('click', () => {
+      sequences = createSequence(sequences, number => t('sequenceName', { number }));
+      const { id } = sequences.at(-1);
+      const saved = saveSequences(sequenceStorage, sequences);
+      renderSequences();
+      openSequence(id, sequenceCard(id));
+      showSequenceSave(saved);
+    });
+    cards.push(add);
+  }
+  sequenceList.replaceChildren(...cards);
+  renderSceneSelection();
+}
+
+function renderSequencePlayback() {
+  // Only the sequence in this editor can be stopped from here.
+  sequenceStop.disabled = !editingSequence || activeSequence !== sequenceKey(editingSequence);
+}
+
+function renderSequenceFrames(item, focusFrame = false) {
+  const squares = item.colors.map((rgb, i) => {
+    const button = document.createElement('button');
+    button.className = 'swatch sequence-frame';
+    button.style.background = rgbCss(rgb);
+    button.setAttribute('aria-label', t('sequenceFrame', { number: i + 1, hex: hex(rgb) }));
+    button.addEventListener('click', () => { selectedFrame = i; renderSequencePalette(item); });
+    return button;
+  });
+  const add = document.createElement('button');
+  add.className = 'btn ghost sequence-frame';
+  add.textContent = '+';
+  add.setAttribute('aria-label', t('addFrame'));
+  add.disabled = item.colors.length === MAX_COLORS;
+  add.addEventListener('click', () => {
+    const next = addColor(item);
+    selectedFrame = next.colors.length - 1;
+    editSequence(next, 'colors', true);
+  });
+  frameList.replaceChildren(...squares, add);
+  $('[data-action="sequence-remove-color"]').disabled = item.colors.length === 1;
+  renderSequencePalette(item);
+  if (focusFrame) squares[selectedFrame].focus();
+}
+
+function renderSequencePalette(item) {
+  const rgb = item.colors[selectedFrame];
+  [...frameList.querySelectorAll('.swatch')].forEach((button, i) => button.setAttribute('aria-pressed', String(i === selectedFrame)));
+  [...bind('sequence-swatches')[0].children].forEach((button, i) => {
+    button.setAttribute('aria-pressed', String(hex(SWATCHES[i][1]) === hex(rgb)));
+  });
+  sequenceOther.value = hex(rgb).toLowerCase();
+}
+
+// The slider moves toward faster playback as the value increases; the readout is the actual interval.
+const reverseInterval = value => Number(sequenceSpeed.min) + Number(sequenceSpeed.max) - Number(value);
+function renderSequenceSliders(item) {
+  sequenceSpeed.value = reverseInterval(item.interval);
+  sequenceBri.value = item.bri;
+  for (const input of [sequenceSpeed, sequenceBri]) {
+    input.style.setProperty('--p', `${100 * (input.value - input.min) / (input.max - input.min)}%`);
+  }
+  text('sequence-speed-out', `${item.interval} ms`);
+  sequenceSpeed.setAttribute('aria-valuetext', `${item.interval} ms`);
+  text('sequence-bri-out', `${item.bri}%`);
+  sequenceBri.setAttribute('aria-valuetext', `${item.bri}%`);
+}
+
+function openSequence(id, trigger) {
+  editingSequence = id;
+  selectedFrame = 0;
+  const item = editedSequence();
+  text('sequence-error', '');
+  bind('sequence-swatches')[0].replaceChildren(...SWATCHES.map(([name, rgb]) => {
+    const button = document.createElement('button');
+    button.className = 'swatch';
+    button.style.background = rgbCss(rgb);
+    button.setAttribute('aria-label', t(name));
+    button.addEventListener('click', () => editSequence(setFrameColor(editedSequence(), selectedFrame, rgb), 'colors'));
+    return button;
+  }));
+  renderSequenceFrames(item);
+  renderSequenceSliders(item);
+  renderSequencePlayback();
+  openSheet('sequence', item.name, trigger);
+}
+
+function showSequenceSave(saved) {
+  text('sequence-error', saved ? '' : t('sequenceSaveFailed'));
+}
+
+function editSequence(next, field, focusFrame = false) {
+  sequences = updateSequence(sequences, next.id, { [field]: next[field] });
+  showSequenceSave(saveSequences(sequenceStorage, sequences));
+  if (field === 'colors') {
+    renderSequenceFrames(next, focusFrame);
+    sequenceCard(next.id).lastElementChild.replaceWith(sequenceSquares(next.colors));
+  } else renderSequenceSliders(next);
+  if (activeSequence !== sequenceKey(next.id) || !link.ready) return;
+  if (field === 'bri') {
+    state.bri = next.bri;
+    persist();
+    renderBrightness();
+    fire(brightness(targetBrightness()), 'brightness');
+  } else {
+    state.mode = { colors: next.colors, interval: next.interval };
+    persist();
+    startMode(state.mode);
+  }
+}
+
+sequenceOther.addEventListener('change', () => {
+  if (!editingSequence) return;
+  const value = sequenceOther.value;
+  const rgb = [1, 3, 5].map(i => parseInt(value.slice(i, i + 2), 16));
+  editSequence(setFrameColor(editedSequence(), selectedFrame, rgb), 'colors');
+});
+sequenceSpeed.addEventListener('input', () => editSequence({ ...editedSequence(), interval: reverseInterval(sequenceSpeed.value) }, 'interval'));
+sequenceBri.addEventListener('input', () => editSequence({ ...editedSequence(), bri: Number(sequenceBri.value) }, 'bri'));
+$('[data-action="sequence-remove-color"]').addEventListener('click', () => {
+  const next = removeColor(editedSequence(), selectedFrame);
+  selectedFrame = Math.min(selectedFrame, next.colors.length - 1);
+  editSequence(next, 'colors', true);
+});
+$('[data-action="sequence-play"]').addEventListener('click', () => {
+  if (!link.ready) { closeSheet(); needsLink(); return; }
+  const { id, name, colors, interval, bri } = editedSequence();
+  const mode = { colors, interval };
+  Object.assign(state, { bri, label: name, scene: sequenceKey(id), mode, on: true });
+  persist();
+  render();
+  startMode(mode);
+});
+function clearSequenceMode() {
+  Object.assign(state, { label: ['colorHex', { hex: hex(state.rgb) }], scene: null, mode: null });
+  persist();
+  render();
+}
+sequenceStop.addEventListener('click', () => {
+  if (activeSequence !== sequenceKey(editingSequence)) return;
+  stopPlayback();
+  clearSequenceMode();
+  $('[data-action="sequence-play"]').focus();
+});
+$('[data-action="sequence-delete"]').addEventListener('click', () => {
+  const key = sequenceKey(editingSequence);
+  if (activeSequence === key) stopPlayback();
+  if (state.scene === key) clearSequenceMode();
+  sequences = removeSequence(sequences, editingSequence);
+  const saved = saveSequences(sequenceStorage, sequences);
+  renderSequences();
+  opener = sequenceList.querySelector('.sequence-new');
+  closeSheet();
+  if (!saved) toast('sequenceSaveFailed', true);
 });
 
 // ---- foreground off timer ----
@@ -761,6 +999,7 @@ function renderLanguage() {
   renderQuick();
   renderSwatches();
   renderScenes();
+  renderSequences();
   render();
   renderLinkText();
   renderTimer(timer ? (timer.end - performance.now()) / 1000 : 0);

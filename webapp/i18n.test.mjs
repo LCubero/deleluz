@@ -24,6 +24,9 @@ test('translation interpolates variables', () => {
   assert.equal(translate('en', 'effectNumber', { id: 12 }), 'Effect 12');
   assert.equal(translate('es', 'effectNumber', { id: 12 }), 'Efecto 12');
   assert.equal(translate('es', 'onLabel', { label: 'Mi escena {id}' }), 'Encendido · Mi escena {id}');
+  assert.equal(translate('es', 'sequenceName', { number: 2 }), 'Secuencia 2');
+  assert.equal(translate('en', 'sequenceName', { number: 2 }), 'Sequence 2');
+  assert.equal(translate('en', 'sequenceFrame', { number: 3, hex: '#00FF00' }), 'Square 3: #00FF00');
 });
 
 test('all HTML translation attributes have dictionary entries', () => {
