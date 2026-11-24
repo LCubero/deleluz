@@ -51,10 +51,10 @@ test('replaces any slot without mutating the source or accepting duplicates and 
   assert.strictEqual(colors.replacePaletteColor(defaults, 0, 'red'), defaults);
 });
 
-test('removing a palette color keeps at least one', () => {
+test('removing palette colors can empty the palette', () => {
   const list = ['#ff0000', '#00ff00', '#0000ff'];
   assert.deepEqual(removePaletteColor(list, 1), ['#ff0000', '#0000ff']);
-  assert.deepEqual(removePaletteColor(['#ff0000'], 0), ['#ff0000']);
+  assert.deepEqual(removePaletteColor(['#ff0000'], 0), []);
   assert.deepEqual(removePaletteColor(list, 5), list);
 });
 

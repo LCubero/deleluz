@@ -25,9 +25,9 @@ export function replacePaletteColor(colors, index, value) {
   return colors.map((old, i) => (i === index ? hex : old));
 }
 
-// Remove one color; the palette always keeps at least one.
+// Remove one color; the palette may end up empty (the "+" still adds colors).
 export function removePaletteColor(colors, index) {
-  if (colors.length <= 1 || index < 0 || index >= colors.length) return colors;
+  if (index < 0 || index >= colors.length) return colors;
   return colors.filter((_, i) => i !== index);
 }
 

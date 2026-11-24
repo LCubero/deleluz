@@ -189,7 +189,7 @@ const hex = rgb => `#${rgb.map(v => v.toString(16).padStart(2, '0')).join('').to
 function shortcutName(item) {
   if (item.kind === 'sequence') return sequences.find(scene => scene.id === item.id).name;
   if (item.kind === 'scene') return t(item.preset);
-  return t(colorName(hex(item.rgb)));
+  return t(item.name ?? colorName(hex(item.rgb)));
 }
 const shortcutId = item => item.kind === 'sequence' ? sequenceKey(item.id) :
   item.kind === 'scene' ? item.preset : `color:${item.rgb.join(',')}`;
@@ -206,7 +206,7 @@ function applyShortcut(item) {
     const scene = sequences.find(scene => scene.id === item.id);
     if (scene) playSequence(scene);
   } else if (item.kind === 'scene') playPreset(item.preset);
-  else setColor(item.rgb, [colorName(hex(item.rgb))], shortcutId(item));
+  else setColor(item.rgb, [item.name ?? colorName(hex(item.rgb))], shortcutId(item));
 }
 
 const HOLD_MS = 450;
@@ -344,12 +344,14 @@ function choice(item) {
 
 // Quick scenes offer only the named default colors (plus "Otro color" with the wheel),
 // not the colors saved in the palette.
+const NAMED_SHORTCUT_COLORS = [
+  { kind: 'color', name: 'warmWhite', rgb: [255, 200, 128] },
+  { kind: 'color', name: 'coolWhite', rgb: [255, 255, 255] },
+  { kind: 'color', name: 'night', rgb: [255, 48, 0] },
+];
 function renderShortcutColors() {
-  bind('shortcut-colors')[0].replaceChildren(...DEFAULT_PALETTE.map(value => {
-    const button = choice({ kind: 'color', rgb: rgbFromHex(value) });
-    button.setAttribute('aria-label', paletteColorLabel(value));
-    return button;
-  }));
+  bind('shortcut-colors')[0].replaceChildren(...NAMED_SHORTCUT_COLORS.map(choice));
+  shortcutPalette.render();
 }
 
 function openShortcutChooser(index, trigger) {
@@ -803,6 +805,15 @@ let shortcutWheelRgb = [255, 0, 0];
 const renderShortcutWheel = createHueWheel(bind('shortcut-wheel')[0], rgb => { shortcutWheelRgb = rgb; renderShortcutWheel(rgb); });
 renderShortcutWheel(shortcutWheelRgb);
 $('[data-action="shortcut-add-wheel"]').addEventListener('click', () => chooseShortcut({ kind: 'color', rgb: [...shortcutWheelRgb] }));
+let shortcutPalette;
+queueMicrotask(() => {
+  shortcutPalette = createPalette({
+    container: bind('shortcut-palette')[0],
+    mark: rgb => ({ color: hex(rgb).toLowerCase() }),
+    current: () => shortcutWheelRgb,
+    apply: rgb => { shortcutWheelRgb = [...rgb]; renderShortcutWheel(shortcutWheelRgb); },
+  });
+});
 
 // Shared palette: tap any circle to apply it and select its replacement slot.
 let paletteColors = loadPalette(localStore);
@@ -866,7 +877,6 @@ function createPalette({ container, mark, current, apply }) {
           },
           drop: to => { slot = null; storePalette(movePaletteColor(paletteColors, i, to)); },
           trash: () => {
-            if (paletteColors.length <= 1) { toast('paletteLast', true); return; }
             slot = null;
             storePalette(removePaletteColor(paletteColors, i));
           },
