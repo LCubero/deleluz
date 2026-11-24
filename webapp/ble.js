@@ -7,7 +7,7 @@ export function createLink({ onChange, simulate = false }) {
   const supported = typeof navigator !== 'undefined' && !!navigator.bluetooth;
   const state = {
     status: simulate || !supported ? 'simulated' : 'idle', // idle | connecting | connected | lost | simulated
-    name: simulate || !supported ? 'Simulated strip' : null,
+    name: null,
     lostAt: null,
     error: null,
     supported,
@@ -35,7 +35,9 @@ export function createLink({ onChange, simulate = false }) {
     }
     const service = await server.getPrimaryService(SERVICE);
     const characteristic = await service.getCharacteristic(WRITE);
-    if (!characteristic.properties.writeWithoutResponse) throw new Error('This controller does not accept commands (FFE1).');
+    if (!characteristic.properties.writeWithoutResponse) {
+      throw Object.assign(new Error('This controller does not accept commands (FFE1).'), { code: 'controllerUnsupported' });
+    }
     writer = characteristic;
   }
 

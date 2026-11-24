@@ -9,6 +9,11 @@ import { formatRemaining, fadeBrightness, parseTimerDuration } from './timer.js'
 import { createLink } from './ble.js';
 import { hueToRgb, hueFromPoint, rgbCss } from './color.js';
 
+import { LANGUAGE_KEY, loadLanguage, translate } from './i18n.js';
+
+let language = loadLanguage({ getItem: key => localStorage.getItem(key) });
+const t = (key, vars) => translate(language, key, vars);
+
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 const bind = name => $$(`[data-bind="${name}"]`);
@@ -19,7 +24,7 @@ const STORE = 'deleluz.webapp.state';
 const WARM = [255, 200, 128];
 const WHITE = [255, 255, 255];
 const saved = (() => { try { return JSON.parse(localStorage.getItem(STORE)) ?? {}; } catch { return {}; } })();
-const state = { on: false, bri: 80, rgb: WARM, label: 'Warm white', scene: 'warm', fx: 1, speed: 50, lastSentAt: null, ...saved };
+const state = { on: false, bri: 80, rgb: WARM, label: ['warmWhite'], scene: 'warm', fx: 1, speed: 50, lastSentAt: null, ...saved };
 const persist = () => {
   const { on, bri, rgb, label, scene, mode, fx, speed: sp } = state;
   localStorage.setItem(STORE, JSON.stringify({ on, bri, rgb, label, scene, mode, fx, speed: sp }));
@@ -55,30 +60,32 @@ async function startMode(mode) {
       await player.play(frames.map(frame => frame.bytes), frames[0].interval);
     } else if (mode.rgb) await send(color(...mode.rgb), 'color');
     else await send(effect(mode.effect), 'effect');
-  } catch (error) {
-    if (run === playback && dialog.open && selected) text('preview-error', error.message);
+  } catch {
+    if (run === playback && dialog.open && selected) text('preview-error', t('sceneFailed'));
   }
 }
 
-function toast(message, error = false) {
+let toastKey;
+function toast(key, error = false) {
+  toastKey = key;
   const el = bind('toast')[0];
-  el.textContent = message;
+  el.textContent = t(key);
   el.classList.toggle('error', error);
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => { el.textContent = ''; }, error ? 6000 : 2500);
+  toast.timer = setTimeout(() => { toastKey = null; el.textContent = ''; }, error ? 6000 : 2500);
 }
 
 // User actions that change the strip do nothing until a strip is connected (or simulated),
 // so the page never shows On / a color that was not sent.
 function needsLink() {
   if (link.ready) return false;
-  toast(link.state.status === 'lost' ? 'Connection lost. Tap Reconnect first.' : 'Connect to the strip first.', true);
+  toast(link.state.status === 'lost' ? 'reconnectFirst' : 'connectFirst', true);
   return true;
 }
 
 async function send(bytes, key) {
   if (!link.ready) {
-    toast('Connect to the strip first.', true);
+    toast('connectFirst', true);
     throw new Error('Not connected');
   }
   try {
@@ -86,21 +93,21 @@ async function send(bytes, key) {
     if (result === 'sent') { state.lastSentAt = Date.now(); renderLastSent(); }
     return result;
   } catch (error) {
-    toast(`Command not sent: ${error.message}`, true);
+    toast('commandFailed', true);
     throw error;
   }
 }
 const fire = (bytes, key) => send(bytes, key).catch(() => {});
 
 // ---- quick scenes (Home) ----
-const presetName = id => PRESETS.find(p => p.id === id).name;
+const effectLabel = id => id === 'AUTO' ? ['autoCycle'] : ['effectNumber', { id }];
 const QUICK = [
-  { id: 'warm', name: 'Warm', label: 'Warm white', rgb: WARM },
-  { id: 'christmas-moving', name: 'Christmas', preset: 'christmas-moving', sw: 'linear-gradient(90deg,#ef4444,#22c55e,#fff7e6)' },
-  { id: 'police', name: 'Police', preset: 'police', sw: 'linear-gradient(90deg,#ef4444,#3b82f6)' },
-  { id: 'rasta', name: 'Rasta', preset: 'rasta', sw: 'linear-gradient(90deg,#22c55e,#facc15,#ef4444)' },
-  { id: 'movie', name: 'Movie night', label: 'Movie night', rgb: [124, 58, 237] },
-  { id: 'flashing', name: 'Flashing', preset: 'flashing', sw: '#fff' },
+  { id: 'warm', name: 'warm', label: ['warmWhite'], rgb: WARM },
+  { id: 'christmas-moving', name: 'christmas', preset: 'christmas-moving', sw: 'linear-gradient(90deg,#ef4444,#22c55e,#fff7e6)' },
+  { id: 'police', name: 'police', preset: 'police', sw: 'linear-gradient(90deg,#ef4444,#3b82f6)' },
+  { id: 'rasta', name: 'rasta', preset: 'rasta', sw: 'linear-gradient(90deg,#22c55e,#facc15,#ef4444)' },
+  { id: 'movie', name: 'movie', label: ['movie'], rgb: [124, 58, 237] },
+  { id: 'flashing', name: 'flashing', preset: 'flashing', sw: '#fff' },
 ];
 
 function setColor(rgb, label, scene = null) {
@@ -117,7 +124,7 @@ function setColor(rgb, label, scene = null) {
   fire(color(...rgb), 'color');
 }
 
-function playPreset(id, interval = PRESETS.find(p => p.id === id).interval, label = presetName(id), scene = id) {
+function playPreset(id, interval = PRESETS.find(p => p.id === id).interval, label = [id], scene = id) {
   if (needsLink()) return;
   const mode = { preset: id, interval };
   Object.assign(state, { label, scene, mode, on: true });
@@ -135,7 +142,7 @@ function renderQuick() {
     const sw = document.createElement('span');
     sw.className = 'sw';
     sw.style.background = q.sw ?? rgbCss(q.rgb);
-    b.append(sw, q.name);
+    b.append(sw, t(q.name));
     b.addEventListener('click', () => (q.preset ? playPreset(q.preset) : setColor(q.rgb, q.label, q.id)));
     return b;
   }));
@@ -157,27 +164,42 @@ bind('bri').forEach(input => input.addEventListener('input', () => {
   renderBrightness();
   fire(brightness(targetBrightness()), 'brightness');
 }));
-$('[data-action="white"]').addEventListener('click', () => setColor(WHITE, 'White', 'white'));
-$('[data-action="warm"]').addEventListener('click', () => setColor(WARM, 'Warm white', 'warm'));
+$('[data-action="white"]').addEventListener('click', () => setColor(WHITE, ['white'], 'white'));
+$('[data-action="warm"]').addEventListener('click', () => setColor(WARM, ['warmWhite'], 'warm'));
 
 // ---- color wheel and swatches ----
-const SWATCHES = [['Red', [255, 0, 0]], ['Orange', [255, 110, 0]], ['Yellow', [255, 200, 0]], ['Green', [0, 255, 0]],
-  ['Cyan', [0, 255, 255]], ['Blue', [0, 0, 255]], ['Pink', [255, 0, 120]], ['White', WHITE]];
-bind('swatches')[0].replaceChildren(...SWATCHES.map(([name, rgb]) => {
-  const b = document.createElement('button');
-  b.className = 'swatch';
-  b.style.background = rgbCss(rgb);
-  b.setAttribute('aria-label', name);
-  b.dataset.rgb = rgb.join(',');
-  b.addEventListener('click', () => setColor(rgb, name));
-  return b;
-}));
+const SWATCHES = [['red', [255, 0, 0]], ['orange', [255, 110, 0]], ['yellow', [255, 200, 0]], ['green', [0, 255, 0]],
+  ['cyan', [0, 255, 255]], ['blue', [0, 0, 255]], ['pink', [255, 0, 120]], ['white', WHITE]];
+function renderSwatches() {
+  bind('swatches')[0].replaceChildren(...SWATCHES.map(([name, rgb]) => {
+    const b = document.createElement('button');
+    b.className = 'swatch';
+    b.style.background = rgbCss(rgb);
+    b.setAttribute('aria-label', t(name));
+    b.dataset.rgb = rgb.join(',');
+    b.addEventListener('click', () => setColor(rgb, [name]));
+    return b;
+  }));
+}
+
+function currentLabel() {
+  if (state.scene?.startsWith('mine:')) return state.scene.slice(5);
+  if (Array.isArray(state.label)) return t(...state.label);
+  // Older versions persisted English labels instead of translation keys.
+  if (state.mode?.preset) return t(state.mode.preset);
+  if (state.mode?.effect) return t(...effectLabel(state.mode.effect));
+  const degrees = /^Hue (\d+)°$/.exec(state.label)?.[1];
+  if (degrees !== undefined) return t('hueValue', { degrees });
+  const key = ['warmWhite', 'movie', ...SWATCHES.map(([name]) => name)]
+    .find(name => translate('en', name) === state.label);
+  return t(key ?? 'solid');
+}
 
 const wheel = bind('wheel')[0];
 let hue = 0;
 function pickHue(next) {
   hue = (next + 360) % 360;
-  setColor(hueToRgb(hue), `Hue ${hue}°`);
+  setColor(hueToRgb(hue), ['hueValue', { degrees: hue }]);
 }
 function wheelPoint(event) {
   const r = wheel.getBoundingClientRect();
@@ -200,7 +222,7 @@ function playEffect(id) {
   if (needsLink()) return;
   if (id !== 'AUTO') state.fx = id;
   const mode = { effect: id };
-  Object.assign(state, { label: id === 'AUTO' ? 'Auto cycle' : `Effect ${id}`, scene: `effect:${id}`, mode, on: true });
+  Object.assign(state, { label: effectLabel(id), scene: `effect:${id}`, mode, on: true });
   persist();
   render();
   startMode(mode);
@@ -229,13 +251,13 @@ bind('speed')[0].addEventListener('input', event => {
 // ---- connection ----
 $$('[data-action="connect"], [data-action="help-connect"]').forEach(button => button.addEventListener('click', () => {
   const action = link.state.status === 'lost' ? link.reconnect() : link.connect();
-  action.catch(error => toast(`Could not connect: ${error.message}`, true));
+  action.catch(error => toast(error.code === 'controllerUnsupported' ? error.code : 'connectFailed', true));
 }));
 
 function renderLostDetail() {
   const { name, lostAt, status } = link.state;
   const elapsed = Math.max(0, Math.floor((Date.now() - lostAt) / 1000));
-  text('help-detail', status === 'lost' ? `${name ?? 'LEDDMX'} · ${elapsed} s ago. The strip keeps its last color.` : '');
+  text('help-detail', status === 'lost' ? t('lostDetail', { name: name ?? 'LEDDMX', seconds: elapsed }) : '');
 }
 
 $$('.acc button').forEach(button => button.addEventListener('click', () => {
@@ -244,31 +266,34 @@ $$('.acc button').forEach(button => button.addEventListener('click', () => {
   document.getElementById(button.getAttribute('aria-controls')).hidden = open;
 }));
 
-function renderLink(s = link.state) {
+function renderLinkText(s = link.state) {
   document.body.dataset.status = s.status;
   $('[data-action="power"]').setAttribute('aria-disabled', String(!link.ready));
-  const labels = { idle: 'Not connected', connecting: 'Connecting…', connected: 'Connected', lost: 'Connection lost', simulated: 'Simulation' };
-  text('chip-text', labels[s.status]);
-  text('name', s.name ?? 'LEDDMX');
-  text('device-sub', s.status === 'simulated'
-    ? (s.supported ? 'Frames are logged, not sent' : 'This browser has no Web Bluetooth; frames are logged')
-    : s.status === 'lost' ? 'The strip keeps its last color' : 'LED strip controller');
+  text('chip-text', t(s.status));
+  text('name', s.status === 'simulated' ? t('simulatedStrip') : s.name ?? 'LEDDMX');
+  text('device-sub', t(s.status === 'simulated'
+    ? (s.supported ? 'simulatedFrames' : 'noWebBluetooth')
+    : s.status === 'lost' ? 'keepsColor' : 'controller'));
   const connect = $('[data-action="connect"]');
   connect.hidden = !['idle', 'lost', 'connecting'].includes(s.status);
   connect.disabled = s.status === 'connecting';
-  connect.querySelector('span').textContent = s.status === 'lost' ? 'Reconnect' : s.status === 'connecting' ? 'Connecting…' : 'Connect';
+  connect.querySelector('span').textContent = t(s.status === 'lost' ? 'reconnect' : s.status === 'connecting' ? 'connecting' : 'connect');
   const helpConnect = $('[data-action="help-connect"]');
   helpConnect.hidden = connect.hidden;
   helpConnect.disabled = connect.disabled;
   helpConnect.textContent = connect.querySelector('span').textContent;
   bind('help-link')[0].hidden = s.status === 'simulated';
-  text('help-status', labels[s.status]);
+  text('help-status', t(s.status));
   renderLostDetail();
+}
+
+function renderLink(s) {
+  renderLinkText(s);
   if (s.status === 'lost') {
     trying = false;
     stopPlayback();
-    if (selected) text('preview-error', 'Connection lost. Reconnect from Home or Help.');
-    toast('Connection lost. Tap Reconnect.', true);
+    if (selected) text('preview-error', t('previewLost'));
+    toast('reconnectPrompt', true);
   }
 }
 
@@ -278,21 +303,21 @@ function renderBrightness() {
   text('bri-out', `${state.bri}%`);
 }
 function renderLastSent() {
-  if (!state.lastSentAt) { text('last-sent', 'No command sent yet'); return; }
+  if (!state.lastSentAt) { text('last-sent', t('noCommand')); return; }
   const s = Math.round((Date.now() - state.lastSentAt) / 1000);
-  text('last-sent', `Last command sent ${s < 60 ? `${s} s` : `${Math.round(s / 60)} min`} ago`);
+  text('last-sent', t('lastCommand', { time: s < 60 ? `${s} s` : `${Math.round(s / 60)} min` }));
 }
 function render() {
   const pw = $('[data-action="power"]');
   pw.setAttribute('aria-pressed', String(state.on));
-  pw.setAttribute('aria-label', state.on ? 'Power: on. Tap to turn off' : 'Power: off. Tap to turn on');
-  text('power-label', state.on ? `On · ${state.label}` : 'Off');
+  pw.setAttribute('aria-label', t(state.on ? 'powerOn' : 'powerOff'));
+  text('power-label', state.on ? t('onLabel', { label: currentLabel() }) : t('off'));
   const quickId = state.mode?.preset ?? state.scene;
   const quick = QUICK.find(q => q.id === quickId);
   const strip = bind('strip')[0];
   strip.style.setProperty('--strip', state.on ? (quick?.sw ?? rgbCss(state.rgb)) : '#2a2540');
   strip.style.setProperty('--glow', state.on ? rgbCss(state.rgb).replace(')', ' / .55)') : 'transparent');
-  strip.setAttribute('aria-label', `Strip preview: ${state.on ? state.label : 'off'}`);
+  strip.setAttribute('aria-label', t('previewLabel', { label: state.on ? currentLabel() : t('off') }));
   $$('.tile').forEach(t => t.setAttribute('aria-pressed', String(state.on && t.dataset.scene === quickId)));
   $$('.swatch').forEach(s => s.setAttribute('aria-pressed', String(s.dataset.rgb === state.rgb.join(','))));
   wheel.style.setProperty('--c', rgbCss(state.rgb));
@@ -352,9 +377,10 @@ dialog.addEventListener('click', event => { if (scrimDown && outsideSheet(event)
 
 // ---- scene gallery ----
 const gallery = [
-  ...PRESETS.map(({ id, name, interval }) => ({ id, name, interval, preset: id })),
-  ...['AUTO', 1, 2].map(id => ({ id: `effect:${id}`, name: id === 'AUTO' ? 'Auto cycle' : `Effect ${id}`, effect: id })),
+  ...PRESETS.map(({ id, interval }) => ({ id, interval, preset: id })),
+  ...['AUTO', 1, 2].map(id => ({ id: `effect:${id}`, effect: id })),
 ];
+const sceneName = scene => scene.own ? scene.name : scene.preset ? t(scene.preset) : t(...effectLabel(scene.effect));
 let collection = 'included';
 const intervalInput = $('#step-interval');
 const uiMinInterval = Number(intervalInput.min);
@@ -377,7 +403,7 @@ function renderSceneSelection() {
 
 function renderScenes() {
   const mine = loadScenes(localStorage).map(scene => ({ ...scene, id: `mine:${scene.name}`, own: true }));
-  text('mine-count', `Mine (${mine.length})`);
+  text('mine-count', t('mineCount', { count: mine.length }));
   $$('[data-collection]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.collection === collection)));
   bind('scene-empty')[0].hidden = collection !== 'mine' || mine.length > 0;
   bind('scene-list')[0].replaceChildren(...(collection === 'mine' ? mine : gallery).map(scene => {
@@ -389,10 +415,10 @@ function renderScenes() {
     strip.style.setProperty('--strip', sceneSwatch(scene));
     const name = document.createElement('b');
     name.className = 'meta';
-    name.textContent = scene.name;
+    name.textContent = sceneName(scene);
     const tag = document.createElement('span');
     tag.className = 'tag';
-    tag.textContent = scene.preset ? 'Page' : scene.rgb ? 'Solid' : 'Built-in';
+    tag.textContent = t(scene.preset ? 'page' : scene.rgb ? 'solid' : 'builtInTag');
     button.append(strip, name, tag);
     button.addEventListener('click', () => openPreview(scene, button));
     return button;
@@ -425,7 +451,7 @@ function openPreview(scene, trigger) {
   bind('page-controls')[0].hidden = !scene.preset;
   $('[data-action="delete-scene"]').hidden = !scene.own;
   intervalInput.value = scene.interval ?? uiMinInterval;
-  openSheet('preview', scene.name, trigger);
+  openSheet('preview', sceneName(scene), trigger);
   updatePreview();
 }
 
@@ -434,12 +460,12 @@ reducedMotion.addEventListener('change', updatePreview);
 $$('[data-collection]').forEach(button => button.addEventListener('click', () => { collection = button.dataset.collection; renderScenes(); }));
 
 function useScene(apply) {
-  if (!link.ready) { text('preview-error', 'Connect to the strip first.'); return; }
-  const { id, name, preset, rgb, effect: fx } = selected;
+  if (!link.ready) { text('preview-error', t('connectFirst')); return; }
+  const { id, name, own, preset, rgb, effect: fx } = selected;
   const mode = preset ? { preset, interval: Number(intervalInput.value) } : rgb ? { rgb } : { effect: fx };
   if (apply) {
     closeSheet({ restoreTry: false });
-    if (preset) playPreset(preset, mode.interval, name, id);
+    if (preset) playPreset(preset, mode.interval, own ? name : [preset], id);
     else if (rgb) {
       // A Try may have changed power and brightness without changing page state.
       Object.assign(state, { rgb, label: name, scene: id, mode: null, on: true });
@@ -458,7 +484,7 @@ $('[data-action="try-scene"]').addEventListener('click', () => useScene(false));
 $('[data-action="apply-scene"]').addEventListener('click', () => useScene(true));
 $('[data-action="delete-scene"]').addEventListener('click', () => {
   try { deleteScene(localStorage, selected.name); }
-  catch (error) { text('preview-error', `Could not delete scene: ${error.message}`); return; }
+  catch { text('preview-error', t('deleteFailed')); return; }
   renderScenes();
   closeSheet();
 });
@@ -470,15 +496,15 @@ $$('[data-action="new-scene"]').forEach(button => button.addEventListener('click
   modeToSave = currentMode();
   saveForm.reset();
   text('save-error', '');
-  text('save-current', modeToSave.effect ? 'Choose a solid color or a page scene before saving.' : `Save current mode: ${state.label}`);
+  text('save-current', modeToSave.effect ? t('chooseMode') : t('saveCurrent', { label: currentLabel() }));
   saveForm.querySelector('[type="submit"]').disabled = Boolean(modeToSave.effect);
-  openSheet('new', 'New scene', button, nameInput);
+  openSheet('new', t('newScene'), button, nameInput);
 }));
 saveForm.addEventListener('submit', event => {
   event.preventDefault();
   if (modeToSave.effect) return;
   try { saveScene(localStorage, nameInput.value, modeToSave); }
-  catch (error) { text('save-error', error.message); return; }
+  catch (error) { text('save-error', t(error.code === 'invalidSceneName' || error.code === 'duplicateSceneName' ? error.code : 'saveFailed')); return; }
   collection = 'mine';
   renderScenes();
   closeSheet();
@@ -493,7 +519,7 @@ const customMinutes = $('#timer-minutes');
 const customSeconds = $('#timer-seconds');
 const timerError = $('#timer-error');
 function showTimerError(invalid) {
-  timerError.textContent = invalid ? 'Enter whole minutes (0–720) and seconds (0–59), at least 1 second.' : '';
+  timerError.textContent = invalid ? t('invalidTimer') : '';
   for (const input of [customMinutes, customSeconds]) input.setAttribute('aria-invalid', String(invalid));
 }
 const fadeInput = $('#timer-fade');
@@ -517,9 +543,9 @@ function renderTimer(remaining) {
   const chip = bind('timer-chip')[0];
   chip.hidden = !timer;
   bind('timer-note')[0].hidden = !timer;
-  if (timer) chip.textContent = `Off in ${formatRemaining(remaining)}`;
+  if (timer) chip.textContent = t('offIn', { time: formatRemaining(remaining) });
   $('[data-action="cancel-timer"]').hidden = !timer;
-  $('[data-action="start-timer"]').textContent = timer ? 'Restart timer' : 'Start timer';
+  $('[data-action="start-timer"]').textContent = t(timer ? 'restartTimer' : 'startTimer');
 }
 
 function stopTimer() {
@@ -557,7 +583,7 @@ function updateTimer() {
   }
 }
 
-$('[data-action="timer"]').addEventListener('click', event => openSheet('timer', 'Off timer', event.currentTarget));
+$('[data-action="timer"]').addEventListener('click', event => openSheet('timer', t('offTimer'), event.currentTarget));
 $$('[data-minutes]').forEach(button => button.addEventListener('click', () => {
   duration = button.dataset.minutes;
   $$('[data-minutes]').forEach(option => option.setAttribute('aria-pressed', String(option === button)));
@@ -597,13 +623,32 @@ function route() {
 }
 addEventListener('hashchange', route);
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && player.playing) toast('The scene pauses while the page is in the background.', true);
+  if (document.hidden && player.playing) toast('backgroundPause', true);
   if (!document.hidden) { updateTimer(); requestWakeLock(); }
 });
 
-renderQuick();
-renderScenes();
-render();
-renderLink();
+function renderLanguage() {
+  document.documentElement.lang = language;
+  $$('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  $$('[data-i18n-aria]').forEach(el => el.setAttribute('aria-label', t(el.dataset.i18nAria)));
+  $$('[data-i18n-placeholder]').forEach(el => el.setAttribute('placeholder', t(el.dataset.i18nPlaceholder)));
+  $$('[data-language]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.language === language)));
+  renderQuick();
+  renderSwatches();
+  renderScenes();
+  render();
+  renderLinkText();
+  renderTimer(timer ? (timer.end - performance.now()) / 1000 : 0);
+  if (timerError.textContent) showTimerError(true);
+  if (toastKey) text('toast', t(toastKey));
+}
+
+$$('[data-language]').forEach(button => button.addEventListener('click', () => {
+  language = button.dataset.language;
+  try { localStorage.setItem(LANGUAGE_KEY, language); } catch { /* Keep the choice for this session. */ }
+  renderLanguage();
+}));
+
+renderLanguage();
 route();
 setInterval(() => { renderLastSent(); renderLostDetail(); updateTimer(); }, 1000);

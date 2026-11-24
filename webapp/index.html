@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0a0918">
-<title>DeleLuz</title>
+<title data-i18n="title">DeleLuz</title>
 <link rel="stylesheet" href="style.css">
 <script type="module" src="app.js"></script>
 </head>
@@ -29,150 +29,157 @@
     <!-- HOME -->
     <section id="home" class="screen" aria-labelledby="home-title">
       <div class="top">
-        <h1 id="home-title" class="brand"><svg viewBox="0 0 30 18" aria-hidden="true"><path d="M2 14c4-12 8-12 13-5s9 7 13-5" fill="none" stroke="url(#g)" stroke-width="4" stroke-linecap="round"/></svg>DeleLuz</h1>
-        <div class="header-actions"><span class="chip" data-bind="timer-chip" hidden></span><button class="icon-btn" data-action="timer" aria-label="Off timer"><svg aria-hidden="true"><use href="#i-timer"/></svg></button></div>
+        <h1 id="home-title" class="brand"><svg viewBox="0 0 30 18" aria-hidden="true"><path d="M2 14c4-12 8-12 13-5s9 7 13-5" fill="none" stroke="url(#g)" stroke-width="4" stroke-linecap="round"/></svg><span data-i18n="title">DeleLuz</span></h1>
+        <div class="header-actions"><span class="chip" data-bind="timer-chip" hidden></span><button class="icon-btn" data-action="timer" aria-label="Temporizador de apagado" data-i18n-aria="offTimer"><svg aria-hidden="true"><use href="#i-timer"/></svg></button></div>
       </div>
 
-      <section class="glass device" aria-label="Device">
+      <section class="glass device" aria-label="Dispositivo" data-i18n-aria="device">
         <div class="device-row">
-          <div><b data-bind="name">LEDDMX</b><div class="small muted" data-bind="device-sub">Not connected</div></div>
-          <span class="chip" data-bind="chip"><span class="dot" aria-hidden="true"></span><span data-bind="chip-text">Not connected</span></span>
+          <div><b data-bind="name">LEDDMX</b><div class="small muted" data-bind="device-sub" data-i18n="idle">Sin conexión</div></div>
+          <span class="chip" data-bind="chip"><span class="dot" aria-hidden="true"></span><span data-bind="chip-text" data-i18n="idle">Sin conexión</span></span>
         </div>
-        <div class="strip" data-bind="strip" role="img" aria-label="Strip preview"></div>
-        <button class="btn primary" data-action="connect" hidden><svg width="20" height="20" aria-hidden="true"><use href="#i-bt"/></svg><span>Connect</span></button>
+        <div class="strip" data-bind="strip" role="img" aria-label="Vista previa de la tira" data-i18n-aria="stripPreview"></div>
+        <button class="btn primary" data-action="connect" hidden><svg width="20" height="20" aria-hidden="true"><use href="#i-bt"/></svg><span data-i18n="connect">Conectar</span></button>
       </section>
 
       <div class="power-wrap">
-        <button class="power" data-action="power" aria-pressed="false" aria-label="Power"><svg aria-hidden="true"><use href="#i-power"/></svg></button>
-        <div class="power-label" data-bind="power-label">Off</div>
-        <div class="small muted" data-bind="last-sent">No command sent yet</div>
-        <div class="small timer-note" data-bind="timer-note" hidden>Off timer runs only while this app is open.</div>
+        <button class="power" data-action="power" aria-pressed="false" aria-label="Encendido" data-i18n-aria="power"><svg aria-hidden="true"><use href="#i-power"/></svg></button>
+        <div class="power-label" data-bind="power-label" data-i18n="off">Apagado</div>
+        <div class="small muted" data-bind="last-sent" data-i18n="noCommand">Aún no se han enviado comandos</div>
+        <div class="small timer-note" data-bind="timer-note" hidden data-i18n="timerNote">El temporizador solo funciona con la app abierta.</div>
       </div>
 
       <section aria-labelledby="qs">
-        <div class="top section-head"><h2 id="qs" class="h3">Quick scenes</h2><a class="small link" href="#scenes">All scenes</a></div>
+        <div class="top section-head"><h2 id="qs" class="h3" data-i18n="quickScenes">Escenas rápidas</h2><a class="small link" href="#scenes" data-i18n="allScenes">Todas las escenas</a></div>
         <div class="grid3" data-bind="quick"></div>
       </section>
 
-      <section class="glass thumb" aria-label="Brightness and white">
-        <label class="slider-head" for="bri-home"><span class="with-icon"><svg width="20" height="20" aria-hidden="true"><use href="#i-sun"/></svg>Brightness</span><output data-bind="bri-out">80%</output></label>
+      <section class="glass thumb" aria-label="Brillo y blanco" data-i18n-aria="brightnessWhite">
+        <label class="slider-head" for="bri-home"><span class="with-icon"><svg width="20" height="20" aria-hidden="true"><use href="#i-sun"/></svg><span data-i18n="brightness">Brillo</span></span><output data-bind="bri-out">80%</output></label>
         <input id="bri-home" class="range" type="range" min="1" max="100" value="80" data-bind="bri">
-        <div class="quick"><button class="btn white grow" data-action="white">White</button><button class="btn ghost grow" data-action="warm">Warm white</button></div>
+        <div class="quick"><button class="btn white grow" data-action="white" data-i18n="white">Blanco</button><button class="btn ghost grow" data-action="warm" data-i18n="warmWhite">Blanco cálido</button></div>
       </section>
     </section>
 
     <!-- COLOR -->
     <section id="color" class="screen" aria-labelledby="color-title" hidden>
-      <div class="top"><h1 id="color-title">Color</h1><span class="chip"><span class="dot" aria-hidden="true"></span><span data-bind="chip-text">Not connected</span></span></div>
-      <div class="seg" role="group" aria-label="Mode">
-        <button aria-pressed="true" data-mode="solid">Solid</button><button aria-pressed="false" data-mode="effects">Built-in effects</button>
+      <div class="top"><h1 id="color-title" data-i18n="color">Color</h1><span class="chip"><span class="dot" aria-hidden="true"></span><span data-bind="chip-text" data-i18n="idle">Sin conexión</span></span></div>
+      <div class="seg" role="group" aria-label="Modo" data-i18n-aria="mode">
+        <button aria-pressed="true" data-mode="solid" data-i18n="solid">Color fijo</button><button aria-pressed="false" data-mode="effects" data-i18n="builtIn">Efectos integrados</button>
       </div>
 
       <div data-panel="solid" class="stack">
-        <div class="wheel" data-bind="wheel" role="slider" tabindex="0" aria-label="Hue" aria-valuemin="0" aria-valuemax="359" aria-valuenow="0">
+        <div class="wheel" data-bind="wheel" role="slider" tabindex="0" aria-label="Tono" data-i18n-aria="hue" aria-valuemin="0" aria-valuemax="359" aria-valuenow="0">
           <div class="cur" data-bind="wheel-cur"></div><div class="handle" data-bind="wheel-handle"></div>
         </div>
-        <div class="swatches" role="group" aria-label="Quick colors" data-bind="swatches"></div>
+        <div class="swatches" role="group" aria-label="Colores rápidos" data-i18n-aria="quickColors" data-bind="swatches"></div>
       </div>
 
       <div data-panel="effects" class="stack" hidden>
         <div class="glass pad stack">
-          <div class="slider-head"><span>Effect</span><output data-bind="fx-out">1</output></div>
+          <div class="slider-head"><span data-i18n="effect">Efecto</span><output data-bind="fx-out">1</output></div>
           <div class="quick">
-            <button class="btn ghost" data-action="fx-prev" aria-label="Previous effect">‹</button>
-            <input class="num grow" type="number" min="1" max="210" value="1" inputmode="numeric" aria-label="Effect number, 1 to 210" data-bind="fx">
-            <button class="btn ghost" data-action="fx-next" aria-label="Next effect">›</button>
+            <button class="btn ghost" data-action="fx-prev" aria-label="Efecto anterior" data-i18n-aria="previousEffect">‹</button>
+            <input class="num grow" type="number" min="1" max="210" value="1" inputmode="numeric" aria-label="Número de efecto, del 1 al 210" data-i18n-aria="effectRange" data-bind="fx">
+            <button class="btn ghost" data-action="fx-next" aria-label="Efecto siguiente" data-i18n-aria="nextEffect">›</button>
           </div>
-          <div class="quick"><button class="btn primary grow" data-action="fx-play">Play effect</button><button class="btn ghost grow" data-action="fx-auto">Auto cycle</button></div>
-          <p class="small muted">Effects are built into the controller and are numbered 1–210; their names are not known yet.</p>
+          <div class="quick"><button class="btn primary grow" data-action="fx-play" data-i18n="playEffect">Reproducir efecto</button><button class="btn ghost grow" data-action="fx-auto" data-i18n="autoCycle">Ciclo automático</button></div>
+          <p class="small muted" data-i18n="effectsNote">El controlador incluye los efectos del 1 al 210. Sus nombres aún no se conocen.</p>
         </div>
         <div class="glass pad">
-          <label class="slider-head" for="speed"><span>Speed</span><output data-bind="speed-out">50</output></label>
+          <label class="slider-head" for="speed"><span data-i18n="speed">Velocidad</span><output data-bind="speed-out">50</output></label>
           <input id="speed" class="range" type="range" min="1" max="100" value="50" data-bind="speed">
         </div>
       </div>
 
-      <section class="glass thumb" aria-label="Brightness">
-        <label class="slider-head" for="bri-color"><span>Brightness</span><output data-bind="bri-out">80%</output></label>
+      <section class="glass thumb" aria-label="Brillo" data-i18n-aria="brightness">
+        <label class="slider-head" for="bri-color"><span data-i18n="brightness">Brillo</span><output data-bind="bri-out">80%</output></label>
         <input id="bri-color" class="range" type="range" min="1" max="100" value="80" data-bind="bri">
-        <div class="small muted">Changes are sent as you drag, at most every 50 ms.</div>
+        <div class="small muted" data-i18n="dragNote">Los cambios se envían al deslizar, como máximo una vez cada 50 ms.</div>
       </section>
     </section>
 
     <section id="scenes" class="screen" aria-labelledby="scenes-title" hidden>
-      <div class="top"><h1 id="scenes-title">Scenes</h1><button class="icon-btn" data-action="new-scene" aria-label="New scene">+</button></div>
-      <div class="seg" role="group" aria-label="Scene collection">
-        <button data-collection="included" aria-pressed="true">Included</button><button data-collection="mine" aria-pressed="false" data-bind="mine-count">Mine (0)</button>
+      <div class="top"><h1 id="scenes-title" data-i18n="scenes">Escenas</h1><button class="icon-btn" data-action="new-scene" aria-label="Nueva escena" data-i18n-aria="newScene">+</button></div>
+      <div class="seg" role="group" aria-label="Colección de escenas" data-i18n-aria="sceneCollection">
+        <button data-collection="included" aria-pressed="true" data-i18n="included">Incluidas</button><button data-collection="mine" aria-pressed="false" data-bind="mine-count" data-i18n="mine">Mis escenas</button>
       </div>
       <div class="stack" data-bind="scene-list"></div>
       <div class="glass pad stack" data-bind="scene-empty" hidden>
-        <p class="muted">No saved scenes yet. Save your current color or page mode to get started.</p>
-        <button class="btn primary" data-action="new-scene">New scene</button>
+        <p class="muted" data-i18n="emptyScenes">Aún no tienes escenas guardadas. Guarda el color o la escena actual de la página para empezar.</p>
+        <button class="btn primary" data-action="new-scene" data-i18n="newScene">Nueva escena</button>
       </div>
     </section>
 
     <section id="help" class="screen" aria-labelledby="help-title" hidden>
-      <div class="top"><h1 id="help-title">Help</h1></div>
+      <div class="top"><h1 id="help-title" data-i18n="help">Ayuda</h1></div>
       <div class="banner" data-bind="help-link" hidden>
         <div class="meta"><b data-bind="help-status"></b><p class="small muted" data-bind="help-detail"></p></div>
-        <button class="btn primary" data-action="help-connect">Reconnect</button>
+        <button class="btn primary" data-action="help-connect" data-i18n="reconnect">Reconectar</button>
       </div>
-      <h2 class="h3">Fix a problem</h2>
-      <div class="acc"><button aria-expanded="true" aria-controls="help-list">The strip is not in the list <span aria-hidden="true">›</span></button>
-        <ol id="help-list"><li>Close the LED LAMP app. Only one phone or app can connect at a time.</li><li>Turn on Bluetooth and Location.</li><li>Stand within a few meters of the strip and tap Connect.</li></ol></div>
-      <div class="acc"><button aria-expanded="false" aria-controls="help-drop">It disconnects often <span aria-hidden="true">›</span></button>
-        <ol id="help-drop" hidden><li>Move closer and check that the controller has steady power.</li><li>Close other apps that control the strip, then tap Reconnect.</li></ol></div>
-      <div class="acc"><button aria-expanded="false" aria-controls="help-dark">Connected, but lights don't respond <span aria-hidden="true">›</span></button>
-        <ol id="help-dark" hidden><li>Check the strip's power supply and plugs.</li><li>Turn it on in Home, raise brightness, and try White. The page can't read the strip's actual state.</li></ol></div>
-      <div class="acc"><button aria-expanded="false" aria-controls="help-scene">Scene stopped when I left the page <span aria-hidden="true">›</span></button>
-        <ol id="help-scene" hidden><li>Keep this page open and in front for page scenes. The strip stays on its last color if you leave.</li><li>Return to the scene and tap Apply to start it again, or choose a built-in effect.</li></ol></div>
-      <footer class="small muted">Works in Chrome on Android. iPhone browsers don't support Web Bluetooth.</footer>
+      <h2 class="h3" data-i18n="troubleshoot">Solución de problemas</h2>
+      <div class="acc"><button aria-expanded="true" aria-controls="help-list"><span data-i18n="missingStrip">La tira no aparece en la lista</span> <span aria-hidden="true">›</span></button>
+        <ol id="help-list"><li data-i18n="closeLamp">Cierra la app LED LAMP. Solo se puede conectar un teléfono o una app a la vez.</li><li data-i18n="enableBluetooth">Activa Bluetooth y la ubicación.</li><li data-i18n="standNear">Acércate a la tira y toca Conectar.</li></ol></div>
+      <div class="acc"><button aria-expanded="false" aria-controls="help-drop"><span data-i18n="frequentDrops">Se desconecta a menudo</span> <span aria-hidden="true">›</span></button>
+        <ol id="help-drop" hidden><li data-i18n="steadyPower">Acércate y comprueba que el controlador recibe alimentación estable.</li><li data-i18n="closeOtherApps">Cierra las otras apps que controlan la tira y toca Reconectar.</li></ol></div>
+      <div class="acc"><button aria-expanded="false" aria-controls="help-dark"><span data-i18n="noResponse">Hay conexión, pero las luces no responden</span> <span aria-hidden="true">›</span></button>
+        <ol id="help-dark" hidden><li data-i18n="checkPower">Revisa la fuente de alimentación y las conexiones de la tira.</li><li data-i18n="tryWhite">Enciéndela en Inicio, sube el brillo y prueba Blanco. La página no puede leer el estado real de la tira.</li></ol></div>
+      <div class="acc"><button aria-expanded="false" aria-controls="help-scene"><span data-i18n="sceneStopped">La escena se detuvo al salir de la página</span> <span aria-hidden="true">›</span></button>
+        <ol id="help-scene" hidden><li data-i18n="keepForeground">Mantén esta página abierta y en primer plano para reproducir sus escenas. Si sales, la tira conserva el último color.</li><li data-i18n="applyAgain">Vuelve a la escena y toca Aplicar para reiniciarla, o elige un efecto integrado.</li></ol></div>
+      <div class="glass pad stack">
+        <h2 class="h3" id="language-title"><span lang="es" data-i18n="languageEs">Idioma</span> / <span lang="en" data-i18n="languageEn">Language</span></h2>
+        <div class="seg" role="group" aria-labelledby="language-title">
+          <button data-language="es" lang="es" aria-pressed="true" data-i18n="spanish">Español</button>
+          <button data-language="en" lang="en" aria-pressed="false" data-i18n="english">English</button>
+        </div>
+      </div>
+      <footer class="small muted" data-i18n="browserSupport">Funciona en Chrome para Android. Los navegadores de iPhone no admiten Web Bluetooth.</footer>
     </section>
   </main>
 
   <p class="toast" role="status" aria-live="polite" data-bind="toast"></p>
 
-  <nav class="tabs" aria-label="Main">
-    <a href="#home" aria-current="page"><svg aria-hidden="true"><use href="#i-home"/></svg>Home</a>
-    <a href="#color"><svg aria-hidden="true"><use href="#i-color"/></svg>Color</a>
-    <a href="#scenes"><svg aria-hidden="true"><use href="#i-scenes"/></svg>Scenes</a>
-    <a href="#help"><svg aria-hidden="true"><use href="#i-help"/></svg>Help</a>
+  <nav class="tabs" aria-label="Menú principal" data-i18n-aria="mainNav">
+    <a href="#home" aria-current="page"><svg aria-hidden="true"><use href="#i-home"/></svg><span data-i18n="home">Inicio</span></a>
+    <a href="#color"><svg aria-hidden="true"><use href="#i-color"/></svg><span data-i18n="color">Color</span></a>
+    <a href="#scenes"><svg aria-hidden="true"><use href="#i-scenes"/></svg><span data-i18n="scenes">Escenas</span></a>
+    <a href="#help"><svg aria-hidden="true"><use href="#i-help"/></svg><span data-i18n="help">Ayuda</span></a>
   </nav>
 </div>
 <dialog class="sheet" id="sheet" aria-modal="true" aria-labelledby="sheet-title">
   <div class="grabber" aria-hidden="true"></div>
-  <div class="top"><h2 id="sheet-title" tabindex="-1"></h2><button class="icon-btn" data-action="close-sheet" aria-label="Close">×</button></div>
+  <div class="top"><h2 id="sheet-title" tabindex="-1"></h2><button class="icon-btn" data-action="close-sheet" aria-label="Cerrar" data-i18n-aria="close">×</button></div>
   <section class="stack" data-sheet="preview" hidden>
-    <div class="strip" data-bind="preview-strip" role="img" aria-label="On-screen strip preview"></div>
+    <div class="strip" data-bind="preview-strip" role="img" aria-label="Vista previa de la tira en pantalla" data-i18n-aria="screenPreview"></div>
     <div data-bind="page-controls">
-      <label class="slider-head" for="step-interval">Step interval <output data-bind="interval-out"></output></label>
+      <label class="slider-head" for="step-interval"><span data-i18n="stepInterval">Intervalo entre pasos</span> <output data-bind="interval-out"></output></label>
       <input id="step-interval" class="range" type="range" min="150" max="2000" step="10">
-      <p class="note">This scene is played by this page. Keep it open and in front; the strip stays on its last color if you leave.</p>
+      <p class="note" data-i18n="pageSceneNote">Esta página reproduce la escena. Mantenla abierta y en primer plano. Si sales, la tira conserva el último color.</p>
     </div>
     <p class="small error" data-bind="preview-error" role="status"></p>
-    <div class="quick"><button class="btn ghost grow" data-action="try-scene">Try on strip</button><button class="btn primary grow" data-action="apply-scene">Apply</button></div>
-    <button class="btn ghost" data-action="delete-scene" hidden>Delete scene</button>
+    <div class="quick"><button class="btn ghost grow" data-action="try-scene" data-i18n="tryScene">Probar en la tira</button><button class="btn primary grow" data-action="apply-scene" data-i18n="apply">Aplicar</button></div>
+    <button class="btn ghost" data-action="delete-scene" hidden data-i18n="deleteScene">Eliminar escena</button>
   </section>
   <form class="stack" data-sheet="new" hidden>
     <p class="muted" data-bind="save-current"></p>
-    <label for="scene-name">Scene name</label><input class="num" id="scene-name" type="text" autocomplete="off">
+    <label for="scene-name" data-i18n="sceneName">Nombre de la escena</label><input class="num" id="scene-name" type="text" autocomplete="off">
     <p class="small error" data-bind="save-error" role="status"></p>
-    <button class="btn primary" type="submit">Save scene</button>
+    <button class="btn primary" type="submit" data-i18n="saveScene">Guardar escena</button>
   </form>
   <section class="stack" data-sheet="timer" hidden>
-    <div class="opts" role="group" aria-label="Duration">
-      <button class="opt" data-minutes="15" aria-pressed="true">15 min</button><button class="opt" data-minutes="30" aria-pressed="false">30 min</button><button class="opt" data-minutes="60" aria-pressed="false">1 h</button><button class="opt" data-minutes="120" aria-pressed="false">2 h</button>
-      <button class="opt timer-custom" data-minutes="custom" aria-pressed="false">Custom</button>
+    <div class="opts" role="group" aria-label="Duración" data-i18n-aria="duration">
+      <button class="opt" data-minutes="15" aria-pressed="true" data-i18n="minutes15">15 min</button><button class="opt" data-minutes="30" aria-pressed="false" data-i18n="minutes30">30 min</button><button class="opt" data-minutes="60" aria-pressed="false" data-i18n="hour1">1 h</button><button class="opt" data-minutes="120" aria-pressed="false" data-i18n="hours2">2 h</button>
+      <button class="opt timer-custom" data-minutes="custom" aria-pressed="false" data-i18n="custom">Personalizado</button>
     </div>
     <div class="quick" id="timer-custom" hidden>
-      <label class="stack grow small">Minutes <input class="num" id="timer-minutes" type="number" min="0" max="720" step="1" inputmode="numeric" placeholder="0" aria-describedby="timer-error"></label>
-      <label class="stack grow small">Seconds <input class="num" id="timer-seconds" type="number" min="0" max="59" step="1" inputmode="numeric" placeholder="0" aria-describedby="timer-error"></label>
+      <label class="stack grow small"><span data-i18n="minutes">Minutos</span> <input class="num" id="timer-minutes" type="number" min="0" max="720" step="1" inputmode="numeric" placeholder="0" data-i18n-placeholder="zero" aria-describedby="timer-error"></label>
+      <label class="stack grow small"><span data-i18n="seconds">Segundos</span> <input class="num" id="timer-seconds" type="number" min="0" max="59" step="1" inputmode="numeric" placeholder="0" data-i18n-placeholder="zero" aria-describedby="timer-error"></label>
     </div>
     <p class="small error" id="timer-error" role="status"></p>
-    <label class="slider-head">Fade out <input class="toggle" type="checkbox" id="timer-fade"></label>
-    <p class="note"><b>Only works while this app is open.</b> The strip has no timer of its own: keep this page open and the screen on until it finishes. If you close it, the strip stays on.</p>
-    <button class="btn primary" data-action="start-timer">Start timer</button>
-    <button class="btn ghost" data-action="cancel-timer" hidden>Cancel timer</button>
+    <label class="slider-head"><span data-i18n="fade">Apagado gradual</span> <input class="toggle" type="checkbox" id="timer-fade"></label>
+    <p class="note"><b data-i18n="timerOpen">Solo funciona con la app abierta.</b> <span data-i18n="timerDetail">La tira no tiene temporizador propio. Mantén la página abierta y la pantalla encendida hasta que termine. Si cierras la página, la tira sigue encendida.</span></p>
+    <button class="btn primary" data-action="start-timer" data-i18n="startTimer">Iniciar temporizador</button>
+    <button class="btn ghost" data-action="cancel-timer" hidden data-i18n="cancelTimer">Cancelar temporizador</button>
   </section>
 </dialog>
 </body>

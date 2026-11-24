@@ -9,9 +9,9 @@ export function loadScenes(storage) {
 
 export function saveScene(storage, name, mode) {
   const trimmed = name.trim();
-  if ([...trimmed].length < 1 || [...trimmed].length > 30) throw new Error('Enter a name with 1–30 characters.');
+  if ([...trimmed].length < 1 || [...trimmed].length > 30) throw Object.assign(new Error('Enter a name with 1–30 characters.'), { code: 'invalidSceneName' });
   const scenes = loadScenes(storage);
-  if (scenes.some(scene => scene.name.toLowerCase() === trimmed.toLowerCase())) throw new Error('A scene with that name already exists.');
+  if (scenes.some(scene => scene.name.toLowerCase() === trimmed.toLowerCase())) throw Object.assign(new Error('A scene with that name already exists.'), { code: 'duplicateSceneName' });
   const scene = { ...mode, name: trimmed };
   storage.setItem(SCENES_KEY, JSON.stringify([...scenes, scene]));
   return scene;

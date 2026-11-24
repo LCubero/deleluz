@@ -10,6 +10,7 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - S3 — Visual style: "Neón/glass como las referencias" (`.ld9/design-refs/otros/`).
 - S4 — V1 scope: "Escenas/modos de la página", "Temporizador de apagado", "Ayuda por síntoma + Reconectar", "Escenas propias guardadas".
 - S5 — Order: "Mockup primero, luego código".
+- S7 — Language: "y hay que agregar idioma español y por defecto en español."
 - S6 — Truthful to device limits (docs/CAPABILITIES.md): no state read-back, no per-pixel, page-sequenced modes and timer only run while the page is open; no music sync, no groups in V1.
 
 ## Tasks
@@ -24,6 +25,8 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - T8 — S2 — Home fits short screens: smaller power circle and tighter spacing so Brightness is reachable without scrolling on common phones — worker — done (L19)
 - T9 — S4 — Off timer custom duration (minutes) besides 15/30/60/120 — worker — done (L19)
 - T10 — S5 — Dev server without browser caching (`webapp/serve.py`), README updated — worker — done (L18)
+
+- T11 — S7 — Spanish UI, Spanish by default, English selectable — worker — done (L26)
 
 ## Log
 
@@ -51,3 +54,6 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - L22 — User clarifies: "me refiero para el app cuando se haga el app, lol" → device selection, connecting to other strips safely and Bluetooth robustness are requirements for the future native app, not the webapp. Native-app notes: an Android app can remember devices, keep several GATT links, close/refresh stale GATT on errors (status 133) and release links cleanly; the Chrome limits in L21 do not apply. Webapp keeps the chooser-per-load behavior.
 - L23 — User: "el timer debe poder poner segundos, no solo minutos". Custom timer now has Minutes (0-720) and Seconds (0-59), blank = 0, total 1 s..720 min (parseTimerDuration, RED→GREEN). CDP 411x778: 0:0, 0:60, blank, 720:1 rejected with message, no timer; 0:3 shows 'Off in 00:03' and sends power-off after expiry; stale error cleared on valid start; fields equal width. 41/41.
 - L24 — User: "hay que aclarar que el temporizador solo funciona con el app abierta". Timer sheet note now starts with 'Only works while this app is open.'; Home shows 'Off timer runs only while this app is open.' while a timer runs; README limit reworded. CDP 411x778: note visible between last-sent (310) and quick scenes (355), no overflow; 41/41. Done directly on main after the squash integration.
+- L25 — User: "y hay que agregar idioma español y por defecto en español." → S7, T11.
+- L26 — T11: Spanish by default, with instant switching to English in Help and localStorage persistence. Static and dynamic UI, accessibility labels, included scenes, effects, and timer text are localized; saved scene names and lab presets are unchanged. RED: `node --test webapp/ lab/web/` 41 passed, 1 failed (missing i18n module). GREEN: 46/46; `node --check webapp/app.js` passed. Grep audit found no unintended English UI copy; bilingual selector, technical names, and units are intentional. Browser visual and interaction checks are pending parent verification.
+- L27 — Parent browser check (CDP, sim): Spanish default, lang=es; 320x568 and 411x778, all four tabs: no overflow, no clipped text, no target < 44 px, no overlapping buttons; switching to English keeps a running timer (Se apaga en 15:00 → Off in 14:59) and survives reload (lang=en); no JS errors; screenshots reviewed (neutral tú Spanish). 46/46.

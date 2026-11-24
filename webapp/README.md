@@ -13,6 +13,8 @@ adb reverse tcp:8000 tcp:8000   # phone connected over USB
 
 Open `http://localhost:8000/webapp/` in Chrome on Android. Close the LED LAMP app first: the controller accepts one connection. Add `?sim` to the URL to log frames instead of sending them; simulation is automatic when the browser has no Web Bluetooth (for example, iPhone browsers).
 
+Spanish is the default; choose English in Help (Ayuda).
+
 ## What it does
 
 - **Home**: power, brightness, White / Warm white, quick scenes, off timer (clock icon).
