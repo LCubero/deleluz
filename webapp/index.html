@@ -111,15 +111,8 @@
     </section>
 
     <section id="scenes" class="screen" aria-labelledby="scenes-title" hidden>
-      <div class="top"><h1 id="scenes-title" data-i18n="scenes">Escenas</h1><button class="icon-btn" data-action="new-scene" aria-label="Nueva escena" data-i18n-aria="newScene">+</button></div>
-      <div class="seg" role="group" aria-label="Colección de escenas" data-i18n-aria="sceneCollection">
-        <button data-collection="included" aria-pressed="true" data-i18n="included">Incluidas</button><button data-collection="mine" aria-pressed="false" data-bind="mine-count" data-i18n="mine">Mis escenas</button>
-      </div>
+      <div class="top"><h1 id="scenes-title" data-i18n="scenes">Escenas</h1></div>
       <div class="stack" data-bind="scene-list"></div>
-      <div class="glass pad stack" data-bind="scene-empty" hidden>
-        <p class="muted" data-i18n="emptyScenes">Aún no tienes escenas guardadas. Guarda el color o la escena actual de la página para empezar.</p>
-        <button class="btn primary" data-action="new-scene" data-i18n="newScene">Nueva escena</button>
-      </div>
     </section>
 
     <section id="help" class="screen" aria-labelledby="help-title" hidden>
@@ -169,14 +162,7 @@
     </div>
     <p class="small error" data-bind="preview-error" role="status"></p>
     <div class="quick"><button class="btn ghost grow" data-action="try-scene" data-i18n="tryScene">Probar en la tira</button><button class="btn primary grow" data-action="apply-scene" data-i18n="apply">Aplicar</button></div>
-    <button class="btn ghost" data-action="delete-scene" hidden data-i18n="deleteScene">Eliminar escena</button>
   </section>
-  <form class="stack" data-sheet="new" hidden>
-    <p class="muted" data-bind="save-current"></p>
-    <label for="scene-name" data-i18n="sceneName">Nombre de la escena</label><input class="num" id="scene-name" type="text" autocomplete="off">
-    <p class="small error" data-bind="save-error" role="status"></p>
-    <button class="btn primary" type="submit" data-i18n="saveScene">Guardar escena</button>
-  </form>
   <section class="stack" data-sheet="timer" hidden>
     <div class="opts" role="group" aria-label="Duración" data-i18n-aria="duration">
       <button class="opt" data-minutes="15" aria-pressed="true" data-i18n="minutes15">15 min</button><button class="opt" data-minutes="30" aria-pressed="false" data-i18n="minutes30">30 min</button><button class="opt" data-minutes="60" aria-pressed="false" data-i18n="hour1">1 h</button><button class="opt" data-minutes="120" aria-pressed="false" data-i18n="hours2">2 h</button>

@@ -6,7 +6,6 @@ import { runStartup } from './startup.js';
 import { createPlayer } from './player.js';
 import { smoothSteps } from './smooth.js';
 import { persistState } from './state.js';
-import { loadScenes, saveScene, deleteScene } from './scenes.js';
 import { formatRemaining, fadeBrightness, parseTimerDuration } from './timer.js';
 import { createLink } from './ble.js';
 import { hueToRgb, hueFromPoint, rgbCss } from './color.js';
@@ -380,7 +379,6 @@ function closeSheet({ restoreTry = true } = {}) {
   selected = null;
   dialog.close();
   if (opener?.isConnected && !opener.closest('[hidden]')) opener.focus();
-  else $('[data-collection="mine"]').focus();
 }
 
 $('[data-action="close-sheet"]').addEventListener('click', () => closeSheet());
@@ -398,8 +396,7 @@ const gallery = [
   ...PRESETS.map(({ id, interval }) => ({ id, interval, preset: id })),
   ...['AUTO', 1, 2].map(id => ({ id: `effect:${id}`, effect: id })),
 ];
-const sceneName = scene => scene.own ? scene.name : scene.preset ? t(scene.preset) : effectTitle(scene.effect);
-let collection = 'included';
+const sceneName = scene => scene.preset ? t(scene.preset) : effectTitle(scene.effect);
 const intervalInput = $('#step-interval');
 const uiMinInterval = Number(intervalInput.min);
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -420,11 +417,7 @@ function renderSceneSelection() {
 }
 
 function renderScenes() {
-  const mine = loadScenes(localStorage).map(scene => ({ ...scene, id: `mine:${scene.name}`, own: true }));
-  text('mine-count', t('mineCount', { count: mine.length }));
-  $$('[data-collection]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.collection === collection)));
-  bind('scene-empty')[0].hidden = collection !== 'mine' || mine.length > 0;
-  bind('scene-list')[0].replaceChildren(...(collection === 'mine' ? mine : gallery).map(scene => {
+  bind('scene-list')[0].replaceChildren(...gallery.map(scene => {
     const button = document.createElement('button');
     button.className = 'scene';
     button.dataset.id = scene.id;
@@ -436,7 +429,7 @@ function renderScenes() {
     name.textContent = sceneName(scene);
     const tag = document.createElement('span');
     tag.className = 'tag';
-    tag.textContent = t(scene.preset ? 'page' : scene.rgb ? 'solid' : 'builtInTag');
+    tag.textContent = t(scene.preset ? 'page' : 'builtInTag');
     button.append(strip, name, tag);
     button.addEventListener('click', () => openPreview(scene, button));
     return button;
@@ -467,7 +460,6 @@ function updatePreview() {
 function openPreview(scene, trigger) {
   selected = scene;
   bind('page-controls')[0].hidden = !scene.preset;
-  $('[data-action="delete-scene"]').hidden = !scene.own;
   intervalInput.value = scene.interval ?? uiMinInterval;
   openSheet('preview', sceneName(scene), trigger);
   updatePreview();
@@ -475,22 +467,14 @@ function openPreview(scene, trigger) {
 
 intervalInput.addEventListener('input', updatePreview);
 reducedMotion.addEventListener('change', updatePreview);
-$$('[data-collection]').forEach(button => button.addEventListener('click', () => { collection = button.dataset.collection; renderScenes(); }));
 
 function useScene(apply) {
   if (!link.ready) { text('preview-error', t('connectFirst')); return; }
-  const { id, name, own, preset, rgb, effect: fx } = selected;
-  const mode = preset ? { preset, interval: Number(intervalInput.value) } : rgb ? { rgb } : { effect: fx };
+  const { id, preset, effect: fx } = selected;
+  const mode = preset ? { preset, interval: Number(intervalInput.value) } : { effect: fx };
   if (apply) {
     closeSheet({ restoreTry: false });
-    if (preset) playPreset(preset, mode.interval, own ? name : [preset], id);
-    else if (rgb) {
-      // A Try may have changed power and brightness without changing page state.
-      Object.assign(state, { rgb, label: name, scene: id, mode: null, on: true });
-      persist();
-      render();
-      startMode(mode);
-    }
+    if (preset) playPreset(preset, mode.interval, [preset], id);
     else playEffect(fx);
   } else {
     text('preview-error', '');
@@ -500,35 +484,6 @@ function useScene(apply) {
 }
 $('[data-action="try-scene"]').addEventListener('click', () => useScene(false));
 $('[data-action="apply-scene"]').addEventListener('click', () => useScene(true));
-$('[data-action="delete-scene"]').addEventListener('click', () => {
-  try { deleteScene(localStorage, selected.name); }
-  catch { text('preview-error', t('deleteFailed')); return; }
-  renderScenes();
-  closeSheet();
-});
-
-const saveForm = $('[data-sheet="new"]');
-const nameInput = $('#scene-name');
-let modeToSave;
-$$('[data-action="new-scene"]').forEach(button => button.addEventListener('click', () => {
-  modeToSave = currentMode();
-  saveForm.reset();
-  text('save-error', '');
-  const canSave = Boolean(modeToSave.rgb || modeToSave.preset);
-  text('save-current', canSave ? t('saveCurrent', { label: currentLabel() }) : t('chooseMode'));
-  saveForm.querySelector('[type="submit"]').disabled = !canSave;
-  openSheet('new', t('newScene'), button, nameInput);
-}));
-saveForm.addEventListener('submit', event => {
-  event.preventDefault();
-  if (!modeToSave.rgb && !modeToSave.preset) return;
-  try { saveScene(localStorage, nameInput.value, modeToSave); }
-  catch (error) { text('save-error', t(error.code === 'invalidSceneName' || error.code === 'duplicateSceneName' ? error.code : 'saveFailed')); return; }
-  collection = 'mine';
-  renderScenes();
-  closeSheet();
-});
-
 // ---- foreground off timer ----
 let timer;
 let wakeLock;
