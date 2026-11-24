@@ -52,8 +52,8 @@
       </div>
 
       <section aria-labelledby="qs">
-        <div class="top section-head"><h2 id="qs" class="h3" data-i18n="quickScenes">Escenas rápidas</h2><a class="small link" href="#scenes" data-i18n="allScenes">Todas las escenas</a></div>
-        <div class="grid3" data-bind="quick"></div>
+        <div class="top section-head"><h2 id="qs" class="h3"><button class="section-toggle" data-action="toggle-quick" aria-expanded="true" aria-controls="quick-grid"><span data-i18n="quickScenes">Escenas rápidas</span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></h2><a class="small link" href="#scenes" data-i18n="allScenes">Todas las escenas</a></div>
+        <div class="grid3" id="quick-grid" data-bind="quick"></div>
       </section>
 
       <section class="glass thumb" aria-label="Brillo" data-i18n-aria="brightness">
@@ -85,11 +85,11 @@
             <button class="btn ghost" data-action="fx-next" aria-label="Efecto siguiente" data-i18n-aria="nextEffect">›</button>
           </div>
           <p class="fx-name" data-bind="fx-name" aria-live="polite">Forward Dreaming</p>
-          <div class="quick"><button class="btn primary grow" data-action="fx-play" data-i18n="playEffect">Reproducir efecto</button><button class="btn ghost grow" data-action="fx-auto" data-i18n="autoCycle">Ciclo automático</button></div>
+          <button class="btn ghost" data-action="fx-auto" data-i18n="autoCycleAll">Ciclo automático (todos los efectos)</button>
           <p class="small muted" data-i18n="effectsNote">El controlador incluye los efectos del 1 al 210. Los nombres son los de la app del fabricante.</p>
         </div>
         <div class="glass pad">
-          <label class="slider-head" for="speed"><span data-i18n="speed">Velocidad</span><output data-bind="speed-out">50</output></label>
+          <label class="slider-head" for="speed"><span data-i18n="speed">Velocidad</span><output data-bind="speed-out">50 %</output></label>
           <input id="speed" class="range" type="range" min="1" max="100" value="50" data-bind="speed">
         </div>
         <section class="glass pad stack" aria-labelledby="music-title">

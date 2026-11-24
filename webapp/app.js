@@ -345,6 +345,17 @@ function chooseShortcut(item) {
   closeSheet();
 }
 
+// ---- collapsible quick scenes (open/closed remembered in this browser) ----
+const QUICK_OPEN_KEY = 'deleluz.webapp.quickOpen';
+const quickToggle = $('[data-action="toggle-quick"]');
+function setQuickOpen(open) {
+  quickToggle.setAttribute('aria-expanded', String(open));
+  bind('quick')[0].hidden = !open;
+  try { localStorage.setItem(QUICK_OPEN_KEY, open ? '1' : '0'); } catch { /* keep it for this session */ }
+}
+quickToggle.addEventListener('click', () => setQuickOpen(quickToggle.getAttribute('aria-expanded') !== 'true'));
+setQuickOpen((() => { try { return localStorage.getItem(QUICK_OPEN_KEY) !== '0'; } catch { return true; } })());
+
 // ---- power and brightness ----
 $('[data-action="power"]').addEventListener('click', () => {
   if (needsLink()) return;
@@ -427,7 +438,8 @@ const clampFx = n => Math.min(210, Math.max(1, Math.round(n) || 1));
 fxInput.addEventListener('input', () => text('fx-name', effectName(clampFx(Number(fxInput.value)))));
 $('[data-action="fx-prev"]').addEventListener('click', () => playEffect(clampFx(state.fx - 1)));
 $('[data-action="fx-next"]').addEventListener('click', () => playEffect(clampFx(state.fx + 1)));
-$('[data-action="fx-play"]').addEventListener('click', () => playEffect(clampFx(Number(fxInput.value))));
+// Typing a number applies it when done (Enter / Listo or leaving the field), like the arrows.
+fxInput.addEventListener('change', () => playEffect(clampFx(Number(fxInput.value))));
 $('[data-action="fx-auto"]').addEventListener('click', () => playEffect('AUTO'));
 const voiceButtons = $$('[data-voice]');
 voiceButtons.forEach(button => button.addEventListener('click', () => {
