@@ -41,6 +41,7 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - S37 — "colo fijo deberia poder agregar o cambiar los favoritos sin conexion"
 - S38 — "ahora que lo pienso los colores deberian poderse cambiar cualquiera de los que salen y ser los mismos en todos los sitios que se use eso"
 - S39 — "en escenas rapidas xq hay colores fijos guardados, eso no me refería"
+- S40 — "al dejar apretado un circulo de color guardado o favorito mejor dicho deberia permitir borrar arrastrando al + que el + se comvierta en basurero o algo asi cuando se esta moviendo un color y si lo pones ahi se borra, quiza ?"
 - S12 — "frontend debes revisar con tus herramientas, alineamientos, saltos raros en la pagina, orden, margenes, espacios, nada encima o pegado de otra cosa, simetrico y alineado, agradable a la vista, que se lea y se vea bien, contraste, letra, que funcione en cualquier pantalla y sobre todo que revises." Also: "Nada de rutas ni datos personales en archivos o commits: usa placeholders." "Español neutro con \"tú\" en la interfaz."
 
 ## Tasks
@@ -75,6 +76,7 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - T33 — S36,S12 — 7 saved colors shared by Color fijo and the scene editor; + replaces the tapped saved circle, otherwise adds; quick-scene custom colors named "Color fijo" — inline — done (L49)
 - T34 — S37 — Color fijo wheel and circles choose a color without a strip so favorites can be added/changed offline; nothing is sent until connected — inline — done (L50)
 - T35 — S38,S36,S37,S12,S7 — One editable color palette (defaults + added, max 15) used by Color fijo, the scene editor and the quick-scene chooser; any circle can be replaced — worker — done (L51)
+- T36 — S40,S12 — Palette: hold a color to drag; the + becomes a trash can while dragging (drop = delete, min 1); drop on another color = move — inline — done (L53)
 
 ## Log
 
@@ -130,3 +132,4 @@ Worktree `<workspace>/deleluz-app`, branch `feat/app` (another agent works on `m
 - L50 — T34: chooseColor() sends via setColor when connected, otherwise only updates the chosen color (state.rgb/label, not power) so the wheel, circles and + work offline. CDP without sim (status idle) 390x700: two colors saved with +, tapping saved #1 marks the slot, new wheel color + replaces only it; power label stays "Apagado", no toast; quick scenes still show "Conéctate a la tira primero." offline; no JS errors. 70/70.
 - L51 — T35 by worker (RED 66/5 → GREEN 72/72): colors.js palette (9 defaults, max 15, migration from customColors, add/replace, colorName); one palette in Color fijo, the editor and the quick-scene chooser; any circle is a replaceable slot; non-default colors named "Color fijo". Parent CDP without sim 320x568 and 412x915: legacy [#123456, #abcdef] migrated after the 9 defaults; offline tap Rojo + wheel + "+" replaced it (#f200ff) and only it; editor circles identical to Color; chooser lists the same palette (Rojo now "Color fijo"); the existing Home "Rojo" shortcut kept its RGB until replaced from the chooser; no JS errors, overflow, overlaps, targets < 44 px or clipped text.
 - L52 — S39: the quick-scene chooser no longer lists the palette; it offers the 9 named default colors plus "Otro color" (wheel). The palette stays shared by Color fijo and the editor only. CDP 320x568 with an edited palette (Rojo replaced + 1 added): chooser shows Blanco cálido…Rosa (Rojo included, no "Color fijo"), wheel present; Color tab still shows the 10 palette circles; no JS errors. 72/72.
+- L53 — T36 inline: removePaletteColor (keeps ≥1) and movePaletteColor with tests (RED: functions missing → GREEN 74/74); attachPress gains trash/onLift/onEnd; palette circles use it (tap still selects the slot). Hint under each palette. CDP without sim 320x568 and 412x915: while dragging, + shows the trash icon with aria-label "Suelta aquí para borrar"; dropping Rojo on it removed only Rojo; + came back; dragging color 1 onto 4 moved it; tap still marks the slot; no JS errors. Dragged circle at 80 % opacity so the trash stays visible.

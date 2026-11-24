@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as colors from './colors.js';
+const { removePaletteColor, movePaletteColor } = colors;
 
 const key = 'deleluz.webapp.palette';
 const legacy = 'deleluz.webapp.customColors';
@@ -48,4 +49,19 @@ test('replaces any slot without mutating the source or accepting duplicates and 
   for (const index of [-1, defaults.length, 1.5, '0', NaN]) assert.strictEqual(colors.replacePaletteColor(defaults, index, '#aabbcc'), defaults);
   assert.strictEqual(colors.replacePaletteColor(defaults, 0, '#FFFFFF'), defaults);
   assert.strictEqual(colors.replacePaletteColor(defaults, 0, 'red'), defaults);
+});
+
+test('removing a palette color keeps at least one', () => {
+  const list = ['#ff0000', '#00ff00', '#0000ff'];
+  assert.deepEqual(removePaletteColor(list, 1), ['#ff0000', '#0000ff']);
+  assert.deepEqual(removePaletteColor(['#ff0000'], 0), ['#ff0000']);
+  assert.deepEqual(removePaletteColor(list, 5), list);
+});
+
+test('moving a palette color reorders without losing any', () => {
+  const list = ['#a00000', '#00a000', '#0000a0', '#a0a000'];
+  assert.deepEqual(movePaletteColor(list, 0, 2), ['#00a000', '#0000a0', '#a00000', '#a0a000']);
+  assert.deepEqual(movePaletteColor(list, 3, 0), ['#a0a000', '#a00000', '#00a000', '#0000a0']);
+  assert.equal(movePaletteColor(list, 1, 1), list);
+  assert.equal(movePaletteColor(list, 0, 9), list);
 });

@@ -13,7 +13,7 @@ import { MAX_SEQUENCES, MAX_COLORS, loadSequences, saveSequences, createSequence
 import { formatRemaining, fadeBrightness, parseTimerDuration } from './timer.js';
 import { createLink } from './ble.js';
 import { hueToRgb, hueFromPoint, rgbCss, rgbFromHex } from './color.js';
-import { DEFAULT_PALETTE, PALETTE_KEY, PALETTE_LIMIT, loadPalette, addPaletteColor, replacePaletteColor, colorName } from './colors.js';
+import { DEFAULT_PALETTE, PALETTE_KEY, PALETTE_LIMIT, loadPalette, addPaletteColor, replacePaletteColor, removePaletteColor, movePaletteColor, colorName } from './colors.js';
 
 import { LANGUAGE_KEY, loadLanguage, translate } from './i18n.js';
 
@@ -212,7 +212,7 @@ function applyShortcut(item) {
 const HOLD_MS = 450;
 const SLOP = 8;
 // A tap activates; a hold can open options, lift an item for reordering, or both.
-function attachPress(button, { tap, hold, drop }) {
+function attachPress(button, { tap, hold, drop, trash, onLift, onEnd }) {
   let timer;
   let start = null;
   let lifted = false;
@@ -220,6 +220,7 @@ function attachPress(button, { tap, hold, drop }) {
   let suppress = false;
   const reset = () => {
     clearTimeout(timer);
+    if (lifted) onEnd?.();
     button.classList.remove('lifted');
     button.style.translate = '';
     button.style.pointerEvents = '';
@@ -234,6 +235,7 @@ function attachPress(button, { tap, hold, drop }) {
     timer = setTimeout(() => {
       lifted = true;
       button.classList.add('lifted');
+      onLift?.();
       try { button.setPointerCapture(start.id); } catch { /* the pointer may already be gone */ }
       navigator.vibrate?.(15);
     }, HOLD_MS);
@@ -258,10 +260,13 @@ function attachPress(button, { tap, hold, drop }) {
     if (!lifted) { reset(); return; }
     suppress = true;
     const wasMoved = moved;
-    const target = wasMoved && drop ? document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-index]') : null;
+    const under = wasMoved && drop ? document.elementFromPoint(event.clientX, event.clientY) : null;
+    const target = under?.closest('[data-index]');
+    const bin = trash && under?.closest('[data-trash]');
     reset();
     if (wasMoved) {
-      if (target && target.parentElement === button.parentElement) drop(Number(target.dataset.index));
+      if (bin && bin.parentElement === button.parentElement) trash();
+      else if (target && target.parentElement === button.parentElement) drop(Number(target.dataset.index));
     } else hold?.();
   });
   const cancel = event => { if (event.pointerId === start?.id) reset(); };
@@ -817,6 +822,19 @@ function createPalette({ container, mark, current, apply }) {
   const plus = document.createElement('button');
   plus.className = 'swatch palette-plus';
   plus.textContent = '+';
+  plus.dataset.trash = '';
+  const hint = document.createElement('p');
+  hint.className = 'small muted palette-hint';
+  hint.dataset.i18n = 'paletteHint';
+  hint.textContent = t('paletteHint');
+  (container.closest('.swatches') ?? container).after(hint);
+  // While a saved color is lifted, the "+" turns into a trash can: drop it there to delete it.
+  const showTrash = on => {
+    plus.classList.toggle('trash', on);
+    if (on) plus.innerHTML = '<svg width="22" height="22" aria-hidden="true"><use href="#i-trash"/></svg>';
+    else plus.textContent = '+';
+    plus.setAttribute('aria-label', t(on ? 'dropToDelete' : slot === null ? 'saveSelectedColor' : 'replaceSavedColor'));
+  };
   plus.addEventListener('click', () => {
     const value = hex(current());
     if (slot !== null) storePalette(replacePaletteColor(paletteColors, slot, value));
@@ -837,12 +855,23 @@ function createPalette({ container, mark, current, apply }) {
         button.setAttribute('aria-pressed', String(value === currentHex));
         Object.assign(button.dataset, mark(rgb));
         button.classList.toggle('slot', i === slot);
-        button.addEventListener('click', () => {
-          container.querySelector('.slot')?.classList.remove('slot');
-          slot = i;
-          button.classList.add('slot');
-          plus.setAttribute('aria-label', t('replaceSavedColor'));
-          apply(rgb, [colorName(value)]);
+        button.dataset.index = String(i);
+        attachPress(button, {
+          tap: () => {
+            container.querySelector('.slot')?.classList.remove('slot');
+            slot = i;
+            button.classList.add('slot');
+            plus.setAttribute('aria-label', t('replaceSavedColor'));
+            apply(rgb, [colorName(value)]);
+          },
+          drop: to => { slot = null; storePalette(movePaletteColor(paletteColors, i, to)); },
+          trash: () => {
+            if (paletteColors.length <= 1) { toast('paletteLast', true); return; }
+            slot = null;
+            storePalette(removePaletteColor(paletteColors, i));
+          },
+          onLift: () => showTrash(true),
+          onEnd: () => showTrash(false),
         });
         return button;
       }),

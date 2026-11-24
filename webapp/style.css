@@ -223,3 +223,7 @@ h2.slider-head{font-size:inherit;margin:0}
 [data-action="sequence-delete-confirm"]{color:#fecaca;border-color:rgba(248,113,113,.6)}
 .palette-plus{display:grid;place-items:center;border-style:dashed;font-size:1.375rem;background:transparent}
 .swatch.slot{outline:2px dashed #fff;outline-offset:3px}
+.palette-plus.trash{border-color:rgba(248,113,113,.8);color:#fecaca;background:rgba(248,113,113,.15)}
+.palette-plus svg{display:block;margin:auto}
+.palette-hint{margin:0;text-align:center}
+.swatches .swatch.lifted{opacity:.8}

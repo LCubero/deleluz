@@ -25,6 +25,19 @@ export function replacePaletteColor(colors, index, value) {
   return colors.map((old, i) => (i === index ? hex : old));
 }
 
+// Remove one color; the palette always keeps at least one.
+export function removePaletteColor(colors, index) {
+  if (colors.length <= 1 || index < 0 || index >= colors.length) return colors;
+  return colors.filter((_, i) => i !== index);
+}
+
+export function movePaletteColor(colors, from, to) {
+  if (from === to || from < 0 || to < 0 || from >= colors.length || to >= colors.length) return colors;
+  const next = colors.slice();
+  next.splice(to, 0, next.splice(from, 1)[0]);
+  return next;
+}
+
 export function loadPalette(storage) {
   // Only a missing key triggers migration, not malformed JSON or a denied read.
   let missing = false;
