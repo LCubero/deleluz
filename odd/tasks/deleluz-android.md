@@ -1,0 +1,35 @@
+# DeleLuz Android app
+
+Native Android app (Flutter, built on Windows, shared as an APK, no app store) that controls the stock LEDDMX-03 strip with the same features and Glow Glass design as `webapp/`.
+Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mirror: `lab/web/protocol.js` with vectors in `lab/web/protocol.test.mjs`; feature reference: `webapp/README.md`.
+
+## Specs
+
+- S1 — Scope, user choice (2026-11-25): "Todo lo del webapp" — power, brightness, quick scenes, off timer, shortcuts, color wheel, Favoritos palette, effects 1-210 + AUTO with speed, included scenes, Mis escenas editor and player, Música (voice modes 1-4 + sensitivity), Ajustes (color order, LED count, language, help, privacy), as described in `webapp/README.md` "What it does".
+- S2 — Strips, user choice: "Una a la vez, recuerda" — "Conecta a una tira, la recuerda, reconecta sola con 4 intentos máximo, y puedes cambiar a otra o olvidarla."
+- S3 — Design, user choice: "Glow Glass como el webapp" — "El mismo diseño ya aprobado, adaptado a Android." (`design/deleluz-webapp/01-glow-glass.html`).
+- S4 — Language, user choice: "Español + inglés" — "Español por defecto e inglés seleccionable, igual que el webapp."
+- S5 — Connection (Log L20 of `odd/tasks/deleluz-webapp.md`): "en el app no se debe poder encender si no está conectado." "se debe poder selecionar el dispositivo a controlar" "se debe poder conectar a otras led strip sin dañar la conexion, nos preocupa mucho el tema de la conexion bluetooth, como lo maneja el app oficial o el chip, ya que aveces no se puede conectar, falla mucho, hay que borrar el app, volver a instalar, etc."
+- S6 — Frontend review (L2): "frontend debes revisar con tus herramientas, alineamientos, saltos raros en la pagina, orden, margenes, espacios, nada encima o pegado de otra cosa, simetrico y alineado, agradable a la vista, que se lea y se vea bien, contraste, letra, que funcione en cualquier pantalla y sobre todo que revises."
+- S7 — Privacy (L2): "recuerda no usar rutas ni datos personales, de ser necesario utiliza path genericos o con placeholders."
+- S8 — Project north (L2): "recuerda el alma y norte del proyecto en pro de eficiencia, seguridad, minimos recursos. menos es más, pero bien hecho."
+- S9 — Protocol: frames byte-identical to `lab/web/protocol.js`; plain GATT on `FFE0`, write without response to `FFE1`; no vendor handshake; commands spaced 50 ms; up to 4 connect tries 300 ms apart; the app shows what it last sent, not the strip state (`docs/CAPABILITIES.md`).
+
+## Tasks
+
+- T1 — S9, S7, S8 — Flutter project `app/` (package `com.deleluz.deleluz`, Flutter default from `--org com.deleluz`), Dart protocol port with the `protocol.test.mjs` vectors — inline — done (6 tests, analyze clean)
+- T2 — S2, S5, S9 — BLE layer: scan by name, connect/discover, bounded retries, remember/switch/forget, 50 ms coalescing sender, Android 12+ permissions — inline — pending
+- T3 — S1, S4 — State, local persistence and es/en strings — inline — pending
+- T4 — S1, S3, S5 — Inicio: device card, power (disabled when disconnected), brightness, quick scenes, off timer, shortcuts — inline — pending
+- T5 — S1, S3 — Color: wheel, Favoritos, effects + AUTO, speed — inline — pending
+- T6 — S1, S3 — Escenas: included scenes, Mis escenas editor/player, Música — inline — pending
+- T7 — S1, S3, S4 — Ajustes: strip settings, language, help, privacy — inline — pending
+- T8 — S6 — Visual review at small to large phone widths; real-strip session with the user; debug APK build — inline + user — pending
+- T9 — S7 — Docs: `app/README.md`, CHANGELOG, current state, roadmap — inline — pending
+
+## Log
+
+- L1 — 2026-11-25, user (after the proposal to start the Android app with a minimal plan): "dale dae una vez". Earlier (2026-11-24, truncated in memory): "...luego crear el app nativa para android, y quiero para iphone, no las vamos a subir a t..." — iOS is out of scope here (needs macOS).
+- L2 — 2026-11-25, user: "Tu eres quien puede leer todo y el repo y toda la doc y asegurarte, no asumas, no creas, mejor comprueba, mientras leas, revises y te asegures, revisa y recuerda sin sobreingenieria, exagerar o complicarlo, recuerda el alma y norte del proyecto en pro de eficiencia, seguridad, minimos recursos. menos es más, pero bien hecho. Ademas recuerda no usar rutas ni datos personales, de ser necesario utiliza path genericos o con placeholders." plus the S6 frontend sentence.
+- L3 — 2026-11-25, user answers: scope "Todo lo del webapp"; strips "Una a la vez, recuerda (Recomendado)"; design "Glow Glass como el webapp (Recomendado)"; language "Español + inglés (Recomendado)".
+- L4 — 2026-11-25, verified: Windows `flutter doctor` passes Android toolchain (SDK 36.1, licenses accepted); `flutter` is not on PATH (use `_tools/flutter/bin/flutter`); no Android phone connected at that time.
