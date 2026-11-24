@@ -404,7 +404,7 @@ function renderSwatches() {
     container: bind('swatches')[0],
     mark: rgb => ({ rgb: rgb.join(',') }),
     current: () => state.rgb,
-    apply: (rgb, label) => setColor(rgb, label),
+    apply: (rgb, label) => chooseColor(rgb, label),
   });
   colorPalette.render();
 }
@@ -453,7 +453,15 @@ function createHueWheel(wheel, onPick) {
     wheel.setAttribute('aria-valuenow', String(hue));
   };
 }
-const renderColorWheel = createHueWheel(bind('wheel')[0], (rgb, degrees) => setColor(rgb, ['hueValue', { degrees }]));
+// Without a strip, the wheel and circles still choose a color so favorites can be added or changed;
+// nothing is sent until a strip is connected.
+function chooseColor(rgb, label) {
+  if (link.ready) { setColor(rgb, label); return; }
+  Object.assign(state, { rgb, label });
+  persist();
+  render();
+}
+const renderColorWheel = createHueWheel(bind('wheel')[0], (rgb, degrees) => chooseColor(rgb, ['hueValue', { degrees }]));
 
 // ---- built-in effects ----
 $$('[data-mode]').forEach(button => button.addEventListener('click', () => {
