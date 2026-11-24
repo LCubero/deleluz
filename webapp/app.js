@@ -4,6 +4,7 @@ import { createSender } from './sender.js';
 import { runStartup } from './startup.js';
 import { createPlayer } from './player.js';
 import { smoothSteps } from './smooth.js';
+import { persistState } from './state.js';
 import { loadScenes, saveScene, deleteScene } from './scenes.js';
 import { formatRemaining, fadeBrightness, parseTimerDuration } from './timer.js';
 import { createLink } from './ble.js';
@@ -27,7 +28,7 @@ const saved = (() => { try { return JSON.parse(localStorage.getItem(STORE)) ?? {
 const state = { on: false, bri: 80, rgb: WARM, label: ['warmWhite'], scene: 'warm', fx: 1, speed: 50, lastSentAt: null, ...saved };
 const persist = () => {
   const { on, bri, rgb, label, scene, mode, fx, speed: sp } = state;
-  localStorage.setItem(STORE, JSON.stringify({ on, bri, rgb, label, scene, mode, fx, speed: sp }));
+  persistState(STORE, { on, bri, rgb, label, scene, mode, fx, speed: sp });
 };
 
 // ---- link, sender, player ----
