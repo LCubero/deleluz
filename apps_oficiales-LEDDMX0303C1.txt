@@ -1,2 +1,0 @@
-andorid: https://play.google.com/store/apps/details?id=com.ledlamp&pcampaignid=web_share
-ios: https://apps.apple.com/us/app/led-lamp/id1449109039

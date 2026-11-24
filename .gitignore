@@ -19,3 +19,6 @@ _tools/
 
 # Pi runtime copies of the harness skills (local only).
 .pi/
+
+# Superseded research and design files kept locally (still in Git history).
+_archive/
