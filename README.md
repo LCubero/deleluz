@@ -1,6 +1,6 @@
 # deleluz
 
-Local control for an LEDDMX-03-03C1 addressable LED strip. Phone web app: [`webapp/`](webapp/README.md). Protocol lab: [`lab/`](lab/README.md).
+Local control for an LEDDMX-03 addressable LED strip. Phone web app: [`webapp/`](webapp/README.md). Protocol lab: [`lab/`](lab/README.md).
 
 
 <!-- repo-harness-builder:start -->
