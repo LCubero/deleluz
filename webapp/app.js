@@ -6,14 +6,14 @@ import { runStartup } from './startup.js';
 import { createPlayer } from './player.js';
 import { smoothSteps } from './smooth.js';
 import { loadState, persistState, solidSelection } from './state.js';
-import { DEFAULT_SHORTCUTS, MAX_SHORTCUTS, loadShortcuts, saveShortcuts, addShortcut, replaceShortcut,
+import { MAX_SHORTCUTS, loadShortcuts, saveShortcuts, addShortcut, replaceShortcut,
   removeShortcut, moveShortcut, gridColumns, filterShortcuts } from './shortcuts.js';
 import { MAX_SEQUENCES, MAX_COLORS, loadSequences, saveSequences, createSequence, updateSequence,
   removeSequence, setColor as setFrameColor, addColor, removeColor, moveColor, speedPercent, intervalFromSpeed } from './sequences.js';
 import { formatRemaining, fadeBrightness, parseTimerDuration } from './timer.js';
 import { createLink } from './ble.js';
 import { hueToRgb, hueFromPoint, rgbCss, rgbFromHex } from './color.js';
-import { CUSTOM_COLORS_KEY, CUSTOM_LIMIT, loadCustomColors, addCustomColor, replaceCustomColor } from './colors.js';
+import { PALETTE_KEY, PALETTE_LIMIT, loadPalette, addPaletteColor, replacePaletteColor, colorName } from './colors.js';
 
 import { LANGUAGE_KEY, loadLanguage, translate } from './i18n.js';
 
@@ -38,7 +38,6 @@ const text = (name, value) => bind(name).forEach(el => { el.textContent = value;
 // ---- state (what the page last sent; the controller cannot report its real state) ----
 const STORE = 'deleluz.webapp.state';
 const WARM = [255, 200, 128];
-const WHITE = [255, 255, 255];
 const presetIds = PRESETS.map(p => p.id);
 let sequences = loadSequences(localStore);
 const sequenceKey = id => `sequence:${id}`;
@@ -190,7 +189,7 @@ const hex = rgb => `#${rgb.map(v => v.toString(16).padStart(2, '0')).join('').to
 function shortcutName(item) {
   if (item.kind === 'sequence') return sequences.find(scene => scene.id === item.id).name;
   if (item.kind === 'scene') return t(item.preset);
-  return item.name ? t(item.name) : t('solid');
+  return t(colorName(hex(item.rgb)));
 }
 const shortcutId = item => item.kind === 'sequence' ? sequenceKey(item.id) :
   item.kind === 'scene' ? item.preset : `color:${item.rgb.join(',')}`;
@@ -207,7 +206,7 @@ function applyShortcut(item) {
     const scene = sequences.find(scene => scene.id === item.id);
     if (scene) playSequence(scene);
   } else if (item.kind === 'scene') playPreset(item.preset);
-  else setColor(item.rgb, item.name ? [item.name] : ['solid'], shortcutId(item));
+  else setColor(item.rgb, [colorName(hex(item.rgb))], shortcutId(item));
 }
 
 const HOLD_MS = 450;
@@ -332,19 +331,23 @@ function openShortcutMenu(index, trigger) {
   openSheet('shortcut', shortcutName(shortcuts[index]), trigger);
 }
 
+function choice(item) {
+  const button = shortcutTile(item);
+  button.addEventListener('click', () => chooseShortcut(item));
+  return button;
+}
+
+function renderShortcutColors() {
+  bind('shortcut-colors')[0].replaceChildren(...paletteColors.map(value => {
+    const button = choice({ kind: 'color', rgb: rgbFromHex(value) });
+    button.setAttribute('aria-label', paletteColorLabel(value));
+    return button;
+  }));
+}
+
 function openShortcutChooser(index, trigger) {
   shortcutIndex = index;
-  const choice = item => {
-    const button = shortcutTile(item);
-    button.addEventListener('click', () => chooseShortcut(item));
-    return button;
-  };
-  const defaultColors = new Set(DEFAULT_SHORTCUTS.map(item => hex(item.rgb)));
-  const colors = SWATCHES.filter(([, rgb]) => !defaultColors.has(hex(rgb)));
-  bind('shortcut-colors')[0].replaceChildren(
-    ...DEFAULT_SHORTCUTS.map(choice),
-    ...colors.map(([name, rgb]) => choice({ kind: 'color', name, rgb })),
-  );
+  renderShortcutColors();
   bind('shortcut-scenes')[0].replaceChildren(...PRESETS.map(({ id }) => choice({ kind: 'scene', preset: id })));
   const savedChoices = bind('shortcut-sequences')[0];
   savedChoices.replaceChildren(...sequences.map(({ id }) => choice({ kind: 'sequence', id })));
@@ -396,8 +399,6 @@ bind('bri').forEach(input => input.addEventListener('input', () => {
 }));
 
 // ---- color wheel and swatches ----
-const SWATCHES = [['red', [255, 0, 0]], ['orange', [255, 110, 0]], ['yellow', [255, 200, 0]], ['green', [0, 255, 0]],
-  ['cyan', [0, 255, 255]], ['blue', [0, 0, 255]], ['pink', [255, 0, 120]], ['white', WHITE]];
 let colorPalette;
 function renderSwatches() {
   colorPalette ??= createPalette({
@@ -796,47 +797,51 @@ const renderShortcutWheel = createHueWheel(bind('shortcut-wheel')[0], rgb => { s
 renderShortcutWheel(shortcutWheelRgb);
 $('[data-action="shortcut-add-wheel"]').addEventListener('click', () => chooseShortcut({ kind: 'color', rgb: [...shortcutWheelRgb] }));
 
-// Quick circles + up to 7 saved colors + a dashed "+" shared by the Color tab and the scene editor.
-// Tap a saved circle to choose it as the slot; "+" then replaces that slot with the current color,
-// otherwise it adds a new one. Nothing is overwritten silently when the list is full.
-let customColors = loadCustomColors(localStore);
-const palettes = [];
-function storeCustomColors(next) {
-  if (next === customColors) return;
-  customColors = next;
-  try { localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(customColors)); } catch { toast('storageFailed', true); }
+// Shared palette: tap any circle to apply it and select its replacement slot.
+let paletteColors = loadPalette(localStore);
+const palettes = [{ render: renderShortcutColors }];
+function paletteColorLabel(value) {
+  const name = colorName(value);
+  return name === 'solid' ? t('paletteColorHex', { hex: value.toUpperCase() }) : t(name);
+}
+function storePalette(next) {
+  if (next === paletteColors) return;
+  paletteColors = next;
+  try { localStore.setItem(PALETTE_KEY, JSON.stringify(paletteColors)); } catch { toast('storageFailed', true); }
   palettes.forEach(palette => palette.render());
 }
 function createPalette({ container, mark, current, apply }) {
   let slot = null;
-  const circle = (label, rgb, onTap, extra = {}) => {
-    const button = document.createElement('button');
-    button.className = 'swatch';
-    button.style.background = rgbCss(rgb);
-    button.setAttribute('aria-label', label);
-    Object.assign(button.dataset, mark(rgb), extra);
-    button.addEventListener('click', onTap);
-    return button;
-  };
   const plus = document.createElement('button');
   plus.className = 'swatch palette-plus';
-  plus.innerHTML = '<span aria-hidden="true">+</span>';
+  plus.textContent = '+';
   plus.addEventListener('click', () => {
-    const value = hex(current()).toLowerCase();
-    if (SWATCHES.some(([, c]) => hex(c).toLowerCase() === value)) return;
-    if (slot !== null) storeCustomColors(replaceCustomColor(customColors, slot, value));
-    else if (customColors.length >= CUSTOM_LIMIT) { toast('customFull', true); return; }
-    else storeCustomColors(addCustomColor(customColors, value));
+    const value = hex(current());
+    if (slot !== null) storePalette(replacePaletteColor(paletteColors, slot, value));
+    else if (paletteColors.length >= PALETTE_LIMIT) toast('paletteFull', true);
+    else storePalette(addPaletteColor(paletteColors, value));
   });
   function render() {
-    if (slot !== null && slot >= customColors.length) slot = null;
     plus.setAttribute('aria-label', t(slot === null ? 'saveSelectedColor' : 'replaceSavedColor'));
+    const selectedRgb = current();
+    const currentHex = selectedRgb && hex(selectedRgb).toLowerCase();
     container.replaceChildren(
-      ...SWATCHES.map(([name, rgb]) => circle(t(name), rgb, () => { slot = null; apply(rgb, [name]); render(); })),
-      ...customColors.map((value, i) => {
+      ...paletteColors.map((value, i) => {
         const rgb = rgbFromHex(value);
-        const button = circle(t('customColor', { hex: value.toUpperCase() }), rgb, () => { slot = i; apply(rgb, ['solid']); render(); });
+        const button = document.createElement('button');
+        button.className = 'swatch';
+        button.style.background = rgbCss(rgb);
+        button.setAttribute('aria-label', paletteColorLabel(value));
+        button.setAttribute('aria-pressed', String(value === currentHex));
+        Object.assign(button.dataset, mark(rgb));
         button.classList.toggle('slot', i === slot);
+        button.addEventListener('click', () => {
+          container.querySelector('.slot')?.classList.remove('slot');
+          slot = i;
+          button.classList.add('slot');
+          plus.setAttribute('aria-label', t('replaceSavedColor'));
+          apply(rgb, [colorName(value)]);
+        });
         return button;
       }),
       plus,
@@ -975,10 +980,10 @@ function renderSequenceSwatches() {
   sequencePalette ??= createPalette({
     container: sequenceSwatches,
     mark: rgb => ({ color: hex(rgb).toLowerCase() }),
-    current: () => editingSequence.colors[selectedFrame],
+    current: () => editingSequence?.colors[selectedFrame],
     apply: rgb => pickSequenceColor(rgb),
   });
-  sequencePalette.render();
+  sequencePalette.clearSlot();
 }
 
 function openSequence(item, trigger, isNew = false) {
@@ -1202,6 +1207,7 @@ function route() {
   if (dialog.open) closeSheet();
   const id = (location.hash || '#home').slice(1);
   const target = document.getElementById(id)?.classList.contains('screen') ? id : 'home';
+  if (target !== 'color') colorPalette?.clearSlot();
   $$('.screen').forEach(s => { s.hidden = s.id !== target; });
   $$('nav.tabs a').forEach(a => (a.getAttribute('href') === `#${target}` ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
   window.scrollTo(0, 0);

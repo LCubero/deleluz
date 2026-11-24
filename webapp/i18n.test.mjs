@@ -29,6 +29,13 @@ test('translation interpolates variables', () => {
   assert.equal(translate('en', 'sequenceFrame', { number: 3, hex: '#00FF00' }), 'Square 3: #00FF00');
 });
 
+test('palette capacity notices and unnamed color labels are localized', () => {
+  assert.equal(translate('es', 'paletteFull'), 'Ya tienes 15 colores. Toca uno para cambiarlo.');
+  assert.equal(translate('en', 'paletteFull'), 'You already have 15 colors. Tap one to replace it.');
+  assert.equal(translate('es', 'paletteColorHex', { hex: '#ABCDEF' }), 'Color fijo #ABCDEF');
+  assert.equal(translate('en', 'paletteColorHex', { hex: '#ABCDEF' }), 'Solid color #ABCDEF');
+});
+
 test('custom shortcut names are literal text, not dictionary keys', () => {
   assert.equal(translate('en', '<img src=x> {id}'), '<img src=x> {id}');
   assert.equal(translate('es', '__proto__'), '__proto__');
