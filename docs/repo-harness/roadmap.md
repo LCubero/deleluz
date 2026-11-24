@@ -27,6 +27,7 @@ This roadmap is the canonical lifecycle owner. Track only non-trivial work with 
 - Webapp strip test session: quick scenes, Mis escenas, favorites, Música, effects + AUTO with speed 10 %/90 %, disconnect and link loss on the real strip (`odd/tasks/deleluz-webapp.md` L64).
 - Strip configuration (RGB order + pixel count): capture the vendor app's chip-config frame while changing 150 → 100 → 150 LEDs, then add it to the webapp (T23).
 - Phone-mic music modes (host-driven color/brightness from the phone microphone): deferred by the user until the firmware path advances (L31).
+- Native app: when it starts, move the still-useful parts of the archived original brief (`_archive/DeleLuz-LEDDMX0303C1-LLM-FIRST.md`: native app MVP, connection states, phone-mic music idea) into a new repo doc; deferred by the user.
 - Phone design: the webapp uses the approved Glow Glass design (`design/deleluz-webapp/`); earlier phone directions are archived locally in `_archive/` (still in Git history).
 
 ## Resolved Records
