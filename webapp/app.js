@@ -1233,6 +1233,28 @@ $('[data-action="cancel-timer"]').addEventListener('click', () => {
   closeSheet();
 });
 
+// ---- "more below" hint for the page and the sheet ----
+const chevron = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const pageMore = document.createElement('div');
+pageMore.className = 'more-below';
+pageMore.innerHTML = chevron;
+document.body.append(pageMore);
+const sheetMore = document.createElement('div');
+sheetMore.className = 'sheet-more';
+sheetMore.innerHTML = chevron;
+dialog.append(sheetMore);
+function updateMore() {
+  const doc = document.documentElement;
+  document.body.classList.toggle('has-more', doc.scrollHeight - innerHeight - scrollY > 24);
+  dialog.classList.toggle('has-more', dialog.open && dialog.scrollHeight - dialog.clientHeight - dialog.scrollTop > 24);
+}
+let moreFrame = 0;
+const scheduleMore = () => { cancelAnimationFrame(moreFrame); moreFrame = requestAnimationFrame(updateMore); };
+addEventListener('scroll', scheduleMore, { passive: true });
+addEventListener('resize', scheduleMore);
+dialog.addEventListener('scroll', scheduleMore, { passive: true });
+new MutationObserver(scheduleMore).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'open'] });
+
 // ---- tabs (hash routing) ----
 function route() {
   if (dialog.open) closeSheet();

@@ -5,7 +5,7 @@ import {
   removeSequence, setColor, addColor, removeColor, moveColor, speedPercent, intervalFromSpeed,
 } from './sequences.js';
 
-const defaults = [[255, 0, 0], [0, 255, 0], [0, 0, 255]];
+const defaults = [[0, 255, 0], [255, 200, 0], [255, 0, 0]];
 const storage = value => ({ getItem: key => key === SEQUENCES_KEY ? value : null });
 
 test('speed is linear from 0% slowest to 100% fastest', () => {

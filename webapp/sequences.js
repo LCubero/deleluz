@@ -3,7 +3,7 @@ import { readStoredJson } from './state.js';
 export const SEQUENCES_KEY = 'deleluz.webapp.sequences';
 export const MAX_SEQUENCES = 12;
 export const MAX_COLORS = 8;
-const DEFAULT_COLORS = [[255, 0, 0], [0, 255, 0], [0, 0, 255]];
+const DEFAULT_COLORS = [[0, 255, 0], [255, 200, 0], [255, 0, 0]];
 const inRange = (n, min, max) => Number.isInteger(n) && n >= min && n <= max;
 const validRgb = rgb => Array.isArray(rgb) && rgb.length === 3 && [...rgb].every(n => inRange(n, 0, 255));
 const validText = value => typeof value === 'string' && !!value.trim();
