@@ -18,7 +18,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 ## Tasks
 
 - T1 — S9, S7, S8 — Flutter project `app/` (package `com.deleluz.deleluz`, Flutter default from `--org com.deleluz`), Dart protocol port with the `protocol.test.mjs` vectors — inline — done 93add08 (6 tests, analyze clean)
-- T2 — S2, S5, S9 — BLE layer: scan by name, connect/discover, bounded retries, remember/switch/forget, 50 ms coalescing sender, Android 12+ permissions — inline — pending
+- T2 — S2, S5, S9 — BLE layer: scan by name, connect/discover, bounded retries, remember/switch/forget, 50 ms coalescing sender, Android 12+ permissions — inline — done (17 tests; runtime permission request and scan UI land with T4)
 - T3 — S1, S4 — State, local persistence and es/en strings — inline — pending
 - T4 — S1, S3, S5 — Inicio: device card, power (disabled when disconnected), brightness, quick scenes, off timer, shortcuts — inline — pending
 - T5 — S1, S3 — Color: wheel, Favoritos, effects + AUTO, speed — inline — pending
@@ -33,3 +33,5 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - L2 — 2026-11-25, user: "Tu eres quien puede leer todo y el repo y toda la doc y asegurarte, no asumas, no creas, mejor comprueba, mientras leas, revises y te asegures, revisa y recuerda sin sobreingenieria, exagerar o complicarlo, recuerda el alma y norte del proyecto en pro de eficiencia, seguridad, minimos recursos. menos es más, pero bien hecho. Ademas recuerda no usar rutas ni datos personales, de ser necesario utiliza path genericos o con placeholders." plus the S6 frontend sentence.
 - L3 — 2026-11-25, user answers: scope "Todo lo del webapp"; strips "Una a la vez, recuerda (Recomendado)"; design "Glow Glass como el webapp (Recomendado)"; language "Español + inglés (Recomendado)".
 - L4 — 2026-11-25, verified: Windows `flutter doctor` passes Android toolchain (SDK 36.1, licenses accepted); `flutter` is not on PATH (use `_tools/flutter/bin/flutter`); no Android phone connected at that time.
+- L5 — 2026-11-25, slice note: T1 commit 93add08 is ~780 lines, almost all `flutter create` scaffold; hand-written code is `app/lib/protocol.dart` and `app/test/protocol_test.dart`. Slice boundary: T1 alone.
+- L6 — 2026-11-25, decision (agent-owned, checked on pub.dev): BLE plugin `universal_ble` (BSD 3-Clause; name-prefix scan; write without response on Android). Rejected `flutter_blue_plus`: its FlutterBluePlus License 1.6 requires a paid license for any for-profit use and may send build-time telemetry. Storage: `shared_preferences`. Adding dependencies is Risk item 5.
