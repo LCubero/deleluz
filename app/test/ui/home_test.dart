@@ -390,7 +390,7 @@ void main() {
     await tester.pumpAndSettle();
     final row = find.byKey(const ValueKey('one'));
     Finder within(Finder child) => find.descendant(of: row, matching: child);
-    expect(tester.getSize(within(find.byType(Material)).first).height, lessThanOrEqualTo(80));
+    expect(tester.getSize(within(find.byType(Material)).first).height, lessThanOrEqualTo(88)); // 48 dp icon targets + pill + 6 dp inner margin (pill must not touch the edge).
     final actionY = tester.getCenter(within(find.text('Conectar'))).dy;
     for (final label in ['Renombrar', 'Olvidar']) {
       final icon = within(find.byTooltip(label));

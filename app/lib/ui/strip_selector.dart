@@ -169,10 +169,10 @@ class _StripSelectorState extends State<StripSelector> {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onLongPress: saved == null || c.busy ? null : () => _menu(saved),
-        child: Padding(padding: EdgeInsets.symmetric(horizontal: 12, vertical: saved == null ? 8 : 2),
+        child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(spacing: 8, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Expanded(flex: 3, child: Padding(padding: const EdgeInsets.symmetric(vertical: 4),
+              Expanded(flex: 3, child: Padding(padding: EdgeInsets.zero,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(saved?.label ?? strip.name, style: theme.titleMedium),
                   if (saved != null) Text(strip.name, style: theme.bodySmall),
