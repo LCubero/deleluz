@@ -64,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
             color: on ? Colors.white : glowFaint)),
       ))),
       const SizedBox(height: 6),
-      Text(on ? (c.language == 'en' ? 'On' : c.text('power')) : c.text('off'),
+      Text(c.text(on ? 'on' : 'off'),
         textAlign: TextAlign.center,
         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       const SizedBox(height: 6),

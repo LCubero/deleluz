@@ -8,9 +8,36 @@ import 'ui/glow_glass.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final store = PreferencesStore(await SharedPreferences.getInstance());
+  final store = await loadStore();
   runApp(MainApp(controller: AppController(AppBleApi(), store,
       checkAccess: bluetoothAccess)));
+}
+
+Future<LocalStore> loadStore({
+  Future<SharedPreferences> Function() preferences = SharedPreferences.getInstance,
+}) async {
+  try {
+    return PreferencesStore(await preferences());
+  } catch (_) {
+    return _MemoryStore();
+  }
+}
+
+class _MemoryStore implements LocalStore {
+  final _values = <String, String>{};
+
+  @override
+  String? read(String key) => _values[key];
+
+  @override
+  Future<bool> write(String key, String? value) async {
+    if (value == null) {
+      _values.remove(key);
+    } else {
+      _values[key] = value;
+    }
+    return true;
+  }
 }
 
 class MainApp extends StatelessWidget {

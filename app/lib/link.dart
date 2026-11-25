@@ -57,6 +57,7 @@ class Link {
   // releases whatever it opened, so only one strip is ever held.
   int _generation = 0;
   bool _droppedWhileOpening = false;
+  Future<void>? _releasing;
 
   LinkStatus status = LinkStatus.idle;
   Strip? strip;
@@ -73,13 +74,15 @@ class Link {
 
   Future<void> connect(Strip target) async {
     if (status == LinkStatus.connecting) return;
-    final previous = strip;
-    final wasConnected = status == LinkStatus.connected;
+    if (ready && strip?.id == target.id) return;
     final generation = ++_generation;
-    strip = target;
-    _set(LinkStatus.connecting);
-    if (previous != null && previous.id != target.id && wasConnected) {
-      await _ble.disconnect(previous.id);
+    if (ready) {
+      await _release();
+      if (generation != _generation) return;
+      strip = target;
+    } else {
+      strip = target;
+      _set(LinkStatus.connecting);
     }
     await _open(generation, LinkStatus.idle);
   }
@@ -136,19 +139,35 @@ class Link {
     await _ble.write(strip!.id, bytes);
   }
 
+  Future<void> _release() async {
+    final id = strip!.id;
+    _droppedWhileOpening = false;
+    final release = Future<void>.microtask(() => _ble.disconnect(id));
+    _releasing = release;
+    _set(LinkStatus.connecting);
+    try {
+      await release;
+    } catch (_) {
+      _set(_droppedWhileOpening ? LinkStatus.lost : LinkStatus.connected);
+      rethrow;
+    } finally {
+      _releasing = null;
+    }
+  }
+
   /// Releases the strip on purpose, so another phone or app can connect.
   Future<void> disconnect() async {
-    if (status != LinkStatus.connected) return;
+    if (!ready) return;
+    await _release();
     _set(LinkStatus.idle);
-    await _ble.disconnect(strip!.id);
   }
 
   Future<void> forget() async {
+    final releasing = _releasing;
+    if (releasing != null) await releasing;
+    if (ready) await disconnect();
     _generation++; // Invalidates a pending open; it releases the strip itself.
-    final id = strip?.id;
-    final held = status == LinkStatus.connected;
     strip = null;
-    if (held && id != null) await _ble.disconnect(id);
     _set(LinkStatus.idle);
     onRemember?.call(null);
   }

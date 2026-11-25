@@ -36,7 +36,11 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    widget.controller.setForeground(state == AppLifecycleState.resumed);
+    // Android permission dialogs can make the app inactive without hiding it.
+    if (state == AppLifecycleState.resumed) widget.controller.setForeground(true);
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      widget.controller.setForeground(false);
+    }
   }
 
   void _show(int index) => setState(() => _tab = index % tabs.length);

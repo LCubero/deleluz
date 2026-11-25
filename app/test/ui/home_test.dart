@@ -51,7 +51,11 @@ class FakeBle implements BleApi {
   @override
   Future<void> stopScan() async {}
   @override
-  Future<void> write(String id, Uint8List bytes) async => writes.add(bytes);
+  Future<void> write(String id, Uint8List bytes) async {
+    if (failWrite?.call(bytes) == true) throw StateError('Fake write failure');
+    writes.add(bytes);
+  }
+  bool Function(Uint8List)? failWrite;
   @override
   Stream<(String, bool)> get connectionChanges => changes.stream;
 }
@@ -79,6 +83,35 @@ void main() {
     await tester.pumpWidget(MainApp(controller: controller));
     await tester.pumpAndSettle();
     return controller;
+  }
+
+  for (final (state, connect) in [
+    (AppLifecycleState.inactive, false),
+    (AppLifecycleState.hidden, false),
+    (AppLifecycleState.inactive, true),
+    (AppLifecycleState.hidden, true),
+  ]) {
+    testWidgets('pending ${connect ? 'connect' : 'scan'} permission across ${state.name} and resumed', (tester) async {
+      final permission = Completer<String?>();
+      final controller = AppController(ble, store, checkAccess: (request) {
+        expect(request, isTrue);
+        return permission.future;
+      });
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(MainApp(controller: controller));
+      final action = connect ? controller.connect(FakeBle.strip) : controller.startScan();
+      tester.binding.handleAppLifecycleStateChanged(state);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      permission.complete(null);
+      await action;
+      await tester.pump();
+      final expected = state == AppLifecycleState.inactive;
+      if (connect) {
+        expect(ble.connections, expected ? [FakeBle.strip.id] : isEmpty);
+      } else {
+        expect(controller.devices, expected ? [FakeBle.strip] : isEmpty);
+      }
+    });
   }
 
   Future<void> connect(WidgetTester tester) async {

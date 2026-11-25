@@ -22,6 +22,7 @@ class FakeBle implements BleApi {
   Completer<void>? discoveryGate;
   Completer<void>? disconnectGate;
   Object? discoveryError;
+  bool failDisconnect = false;
   final open = <String>{};
 
   @override
@@ -37,6 +38,7 @@ class FakeBle implements BleApi {
   @override
   Future<void> disconnect(String id) async {
     await disconnectGate?.future;
+    if (failDisconnect) throw StateError('Release failed');
     disconnected.add(id);
     open.remove(id);
   }
@@ -108,6 +110,25 @@ void main() {
     expect(ble.disconnected, ['A']);
     expect(link.strip?.id, 'B');
   });
+
+  for (final switching in [true, false]) {
+    test('${switching ? 'switch' : 'manual disconnect'} failure keeps the old strip and allows retry', () async {
+      const a = Strip('A', 'x');
+      const b = Strip('B', 'y');
+      await link.connect(a);
+      ble.failDisconnect = true;
+      await expectLater(switching ? link.connect(b) : link.disconnect(), throwsStateError);
+      expect(link.status, LinkStatus.connected);
+      expect(link.strip, a);
+      expect(ble.open, {'A'});
+      expect(ble.connectCalls, 1);
+      ble.failDisconnect = false;
+      await link.connect(b);
+      expect(link.status, LinkStatus.connected);
+      expect(link.strip, b);
+      expect(ble.open, {'B'});
+    });
+  }
 
   test('disconnect is deliberate (idle, not lost) and forget clears memory', () async {
     await link.connect(const Strip('A', 'x'));

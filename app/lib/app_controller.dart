@@ -95,6 +95,7 @@ class AppController extends ChangeNotifier {
   bool busy = false;
   bool scanning = false;
   bool _foreground = true;
+  int _foregroundGeneration = 0;
   bool _disposed = false;
   final _devices = <String, Strip>{};
   List<Strip> get devices => List.unmodifiable(_devices.values);
@@ -272,12 +273,14 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> connect(Strip target, {void Function(String)? onFailure}) => _deviceAction(() async {
+    final generation = _foregroundGeneration;
     if (!_devices.containsKey(target.id)) {
       final problem = await checkAccess(true);
+      if (!_foreground || _disposed || generation != _foregroundGeneration) return;
       if (problem != null) return (onFailure ?? _notice)(problem);
     }
     await stopScan();
-    if (!_foreground || _disposed) return;
+    if (!_foreground || _disposed || generation != _foregroundGeneration) return;
     try {
       await link.connect(target);
     } finally {
@@ -290,10 +293,12 @@ class AppController extends ChangeNotifier {
   Future<void> _reconnect({required bool request}) => _deviceAction(() async {
     final target = remembered;
     if (target == null || link.ready) return;
+    final generation = _foregroundGeneration;
     final problem = await checkAccess(request);
+    if (!_foreground || _disposed || generation != _foregroundGeneration) return;
     if (problem != null) return _notice(problem);
-    if (!_foreground || _disposed) return;
     await stopScan();
+    if (!_foreground || _disposed || generation != _foregroundGeneration) return;
     link.restore(target);
     await link.reconnect();
   }, 'connectFailed');
@@ -333,7 +338,7 @@ class AppController extends ChangeNotifier {
 
   Future<bool> _send(Uint8List frame, String label, {
     String? key, Map<String, Object?> values = const {},
-    void Function()? onSent,
+    void Function()? onSent, void Function()? onWriteError,
   }) async {
     if (!canSend) return false;
     final generation = _generation;
@@ -349,7 +354,10 @@ class AppController extends ChangeNotifier {
       _refresh();
       return true;
     } catch (_) {
-      if (generation == _generation) _notice('commandFailed');
+      if (generation == _generation) {
+        _notice('commandFailed');
+        onWriteError?.call();
+      }
       return false;
     }
   }
@@ -399,9 +407,9 @@ class AppController extends ChangeNotifier {
     if (await _sendPower(false)) _select({'on': false});
   }
 
-  Future<bool> _sendBrightness(int value) => _send(wire.brightness(value),
+  Future<bool> _sendBrightness(int value, {void Function()? onWriteError}) => _send(wire.brightness(value),
       'brightness', key: 'brightness', values: {'value': value},
-      onSent: () => sentBrightness = value);
+      onSent: () => sentBrightness = value, onWriteError: onWriteError);
 
   void setBrightness(int value) {
     if (value == brightness) return;
@@ -522,7 +530,7 @@ class AppController extends ChangeNotifier {
     _beginPlayback(sequence: sequence?['id'] as String?, playing: colors != null);
     final run = _playback;
     final intensity = preset != null ? 50 : sequence?['bri'] as int? ?? brightness;
-    if (!await _prepare(run, intensity)) return;
+    if (!await _prepare(run, intensity)) return _stopCurrentPlayback(run);
     if (rgb != null && await _sendColor(rgb) && run == _playback) {
       _select({...solidSelection(rgb), 'rgb': rgb, 'on': true});
     } else if (colors != null) {
@@ -533,7 +541,7 @@ class AppController extends ChangeNotifier {
       Future<void> next() async {
         if (run != _playback || !_foreground) return;
         final sent = await _sendColor(colors[index]);
-        if (!sent || run != _playback) return;
+        if (!sent || run != _playback) return _stopCurrentPlayback(run);
         index = (index + 1) % colors.length;
         _player = Timer(Duration(milliseconds: interval), () => unawaited(next()));
       }
@@ -563,20 +571,22 @@ class AppController extends ChangeNotifier {
     final run = _playback;
     final liveDraft = preview && draft != null;
     if (liveDraft) {
-      if (sentPower != true && !await _sendPower(true)) return;
-      if (run != _playback || !canSend) return;
+      if (sentPower != true && !await _sendPower(true)) return _stopCurrentPlayback(run);
+      if (run != _playback || !canSend) return _stopCurrentPlayback(run);
       // Queue ahead of the first color, but don't await a frame that a drag can replace.
       final initialBrightness = draft().intensity;
-      if (sentBrightness != initialBrightness) setDraftPreviewBrightness(initialBrightness);
+      if (sentBrightness != initialBrightness && initialBrightness >= 1 && initialBrightness <= 100) {
+        unawaited(_sendBrightness(initialBrightness, onWriteError: () => _stopCurrentPlayback(run)));
+      }
     } else if (!await _prepare(run, intensity)) {
-      return;
+      return _stopCurrentPlayback(run);
     }
     var index = 0;
     Future<void> next() async {
-      if (run != _playback || !canSend) return;
+      if (run != _playback || !canSend) return _stopCurrentPlayback(run);
       final step = draft?.call() ?? (colors: colors, interval: interval, intensity: intensity);
-      if (step.colors.isEmpty || (!liveDraft && !await _prepare(run, step.intensity))) return;
-      if (!await _sendColor(step.colors[index % step.colors.length]) || run != _playback) return;
+      if (step.colors.isEmpty || (!liveDraft && !await _prepare(run, step.intensity))) return _stopCurrentPlayback(run);
+      if (!await _sendColor(step.colors[index % step.colors.length]) || run != _playback) return _stopCurrentPlayback(run);
       index++;
       _player = Timer(Duration(milliseconds: step.interval), () => unawaited(next()));
     }
@@ -592,6 +602,10 @@ class AppController extends ChangeNotifier {
 
   void stopSequence(String id) {
     if (_playingSequence == id) stopPlayback();
+  }
+
+  void _stopCurrentPlayback(int run) {
+    if (run == _playback) stopPlayback();
   }
 
   void stopPlayback() {
@@ -661,6 +675,7 @@ class AppController extends ChangeNotifier {
     if (_foreground == value) return;
     _foreground = value;
     if (!value) {
+      _foregroundGeneration++;
       cancelTimer();
       _stopPlayback();
       _sender.cancel();

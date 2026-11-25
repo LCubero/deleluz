@@ -19,8 +19,12 @@ class SceneTransport extends ChangeNotifier with WidgetsBindingObserver {
   int get sensitivity => controller.sensitivity;
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) =>
-      controller.setForeground(state == AppLifecycleState.resumed);
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) controller.setForeground(true);
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      controller.setForeground(false);
+    }
+  }
 
   void useShared(Fields shortcut) => unawaited(controller.applyShortcut(shortcut));
   Future<void> playVoice(int mode) => controller.setVoiceMode(mode);

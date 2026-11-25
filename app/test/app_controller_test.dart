@@ -105,6 +105,33 @@ void main() {
     expect(ble.writes, hasLength(count));
   });
 
+  for (final live in [true, false]) {
+    testWidgets('failed first draft ${live ? 'power' : 'color'} clears preview', (tester) async {
+      await c.connect(FakeBle.strip);
+      ble.failWrite = (bytes) => bytes[2] == (live ? 4 : 7);
+      final playback = c.playDraft(colors, 500, 25,
+          draft: live ? () => (colors: colors, interval: 500, intensity: 25) : null);
+      await drain(tester);
+      await playback;
+      expect(c.message, 'commandFailed');
+      expect(c.previewing, isFalse);
+    });
+  }
+
+  testWidgets('failed first saved scene send clears the active player', (tester) async {
+    await c.connect(FakeBle.strip);
+    await c.models.saveSequences([
+      {'id': 'scene', 'name': 'Scene', 'colors': colors, 'interval': 500, 'bri': 80},
+    ]);
+    ble.failWrite = (_) => true;
+    await c.applyShortcut({'kind': 'sequence', 'id': 'scene'});
+    expect(c.message, 'commandFailed');
+    var notified = false;
+    c.addListener(() => notified = true);
+    c.stopSequence('scene');
+    expect(notified, isFalse);
+  });
+
   testWidgets('draft preview is gated, does not persist, and can stop without sending', (tester) async {
     await c.playDraft(colors, 500, 25);
     expect(ble.writes, isEmpty);
