@@ -8,6 +8,7 @@ import 'package:deleluz/model/models.dart';
 import 'package:deleluz/protocol.dart' as wire;
 import 'package:deleluz/ui/glow_glass.dart';
 import 'package:deleluz/ui/color_disc.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -84,7 +85,7 @@ void main() {
     final controller = AppController(ble, store, checkAccess: (request) async {
       accessChecks.add(request);
       return accessProblem;
-    }, now: () => now);
+    }, now: () => now, wallClock: () => DateTime(2026, 1, 1, 23, 55, 1));
     addTearDown(controller.dispose);
     await tester.pumpWidget(MainApp(controller: controller));
     await tester.pumpAndSettle();
@@ -709,6 +710,122 @@ void main() {
     expect(ble.writes, hasLength(1));
     expect(controller.remaining, isNull);
   });
+
+  Future<void> timerTap(WidgetTester tester, Finder target) async {
+    await tester.ensureVisible(target);
+    await tester.tap(target);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('timer sheet counts down, extends and cancels', (tester) async {
+    final c = await start(tester);
+    await connect(tester);
+    c.startTimer(3601, fade: false);
+    await timerTap(tester, find.byTooltip(c.text('offTimer')));
+    expect(find.text('1:00:01'), findsOneWidget);
+    expect(find.text('Se apaga a las 00:55'), findsOneWidget);
+    expect(find.text(c.text('startTimer')), findsNothing);
+    now = 2000;
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.text('59:59'), findsOneWidget);
+    await timerTap(tester, find.text('+5 min'));
+    expect(find.text('1:04:59'), findsOneWidget);
+    await timerTap(tester, find.text('+15 min'));
+    expect(find.text('1:19:59'), findsOneWidget);
+    expect(find.text('Se apaga a las 01:15'), findsOneWidget);
+    await timerTap(tester, find.text(c.text('cancelTimer')));
+    expect(c.remaining, isNull);
+    expect(find.text(c.text('startTimer')), findsOneWidget);
+    now = 6000000;
+    await tester.pump(const Duration(seconds: 1));
+    expect(ble.writes, isEmpty);
+  });
+
+  testWidgets('timer sheet validates custom seconds and remembers them on reload', (tester) async {
+    final c = await start(tester);
+    await timerTap(tester, find.byTooltip(c.text('offTimer')));
+    expect(find.text(c.text('connectFirst')), findsOneWidget);
+    expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, c.text('startTimer'))).onPressed, isNull);
+    expect(tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, c.text('minutes15'))).selected, isTrue);
+    await timerTap(tester, find.byTooltip(c.text('close')));
+    await connect(tester);
+    await timerTap(tester, find.byTooltip(c.text('offTimer')));
+    await timerTap(tester, find.text(c.text('custom')));
+    final minutes = find.widgetWithText(TextField, c.text('minutes'));
+    final seconds = find.widgetWithText(TextField, c.text('seconds'));
+    await tester.enterText(minutes, '0');
+    await tester.enterText(seconds, '0');
+    await timerTap(tester, find.text(c.text('startTimer')));
+    expect(find.text(c.text('invalidTimer')), findsOneWidget);
+    await tester.enterText(seconds, '1');
+    await timerTap(tester, find.text(c.text('startTimer')));
+    expect(c.remaining, 1);
+    expect(find.text('0:01'), findsOneWidget);
+    now = 1000;
+    await tester.pump(const Duration(seconds: 1));
+    expect(ble.writes.single.sublist(2, 4), [4, 0]);
+    await tester.pumpWidget(const SizedBox());
+    final reloaded = await start(tester);
+    await timerTap(tester, find.byTooltip(reloaded.text('offTimer')));
+    expect(tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, c.text('custom'))).selected, isTrue);
+    expect(tester.widget<TextField>(minutes).controller!.text, '0');
+    expect(tester.widget<TextField>(seconds).controller!.text, '1');
+  });
+
+  testWidgets('extending an ongoing fade restores brightness until the new fade window', (tester) async {
+    final c = await start(tester);
+    await connect(tester);
+    c.startTimer(10, fade: true);
+    await tester.pump();
+    expect(ble.writes.single[4], lessThan(c.brightness));
+    now = 1000;
+    c.extendTimer(300);
+    await tester.pump(const Duration(seconds: 1));
+    expect(c.remaining, 309);
+    expect(ble.writes, hasLength(2));
+    expect(ble.writes.last[4], c.brightness);
+    now = 255000;
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(c.remaining, 55);
+    expect(ble.writes, hasLength(3));
+    expect(ble.writes.last[4], lessThan(c.brightness));
+    now += 250;
+    c.cancelTimer(restoreBrightness: true);
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(ble.writes, hasLength(4));
+    expect(ble.writes.last[4], c.brightness);
+  });
+
+  for (final size in [const Size(320, 640), const Size(412, 915)]) {
+    testWidgets('timer sheet fits $size with enlarged text', (tester) async {
+      await tester.binding.setSurfaceSize(size);
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final c = await start(tester);
+      await connect(tester);
+      final title = find.text(c.text('offTimer'));
+      void checkTitle() {
+        final paragraph = tester.renderObject<RenderParagraph>(title);
+        expect(paragraph.didExceedMaxLines, isFalse);
+        if (size.width == 320) {
+          final boxes = paragraph.getBoxesForSelection(TextSelection(
+            baseOffset: 0, extentOffset: c.text('offTimer').length));
+          expect(boxes.map((box) => box.top).toSet(), hasLength(greaterThan(1)));
+        }
+        expect(tester.takeException(), isNull);
+      }
+      await timerTap(tester, find.byTooltip(c.text('offTimer')));
+      checkTitle();
+      await timerTap(tester, find.text(c.text('custom')));
+      expect(find.widgetWithText(TextField, c.text('seconds')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      c.startTimer(43200, fade: false);
+      await tester.pumpAndSettle();
+      checkTitle();
+      expect(find.text('12:00:00'), findsOneWidget);
+    });
+  }
 
   Future<void> tapKey(WidgetTester tester, String key) async {
     await tester.tap(find.byKey(Key(key)));

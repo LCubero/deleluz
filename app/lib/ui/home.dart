@@ -9,6 +9,7 @@ import 'glow_icon.dart';
 import 'home_presets.dart';
 import 'hue_wheel.dart';
 import 'strip_selector.dart';
+import 'timer_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.controller, required this.openScenes});
@@ -45,8 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
             fixedSize: const Size.square(44), padding: EdgeInsets.zero,
             side: const BorderSide(color: glowLine),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-          onPressed: () => showDialog<void>(context: context,
-            builder: (_) => _TimerDialog(controller: c)))),
+          onPressed: () => TimerSheet.open(context, c))),
       ]),
       if (c.remaining case final seconds?)
         Text(c.text('offIn', {'time': formatRemaining(seconds)}), style: style.bodySmall),
@@ -303,59 +303,4 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _swatch(List<int> rgb) => CircleAvatar(radius: 12, backgroundColor: Color.fromARGB(255, rgb[0], rgb[1], rgb[2]));
-}
-
-class _TimerDialog extends StatefulWidget {
-  const _TimerDialog({required this.controller});
-  final AppController controller;
-
-  @override
-  State<_TimerDialog> createState() => _TimerDialogState();
-}
-
-class _TimerDialogState extends State<_TimerDialog> {
-  int? _preset = 15;
-  String _minutes = '', _seconds = '';
-  bool _fade = false, _invalid = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = widget.controller;
-    return AlertDialog(scrollable: true, title: Text(c.text('offTimer')),
-      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(c.text('timerNote')),
-        if (!c.ready) Text(c.text('connectFirst')),
-        const SizedBox(height: 12),
-        Wrap(spacing: 8, children: [
-          for (final (minutes, key) in [(15, 'minutes15'), (30, 'minutes30'),
-            (60, 'hour1'), (120, 'hours2'), (null, 'custom')])
-            ChoiceChip(label: Text(c.text(key)), selected: _preset == minutes,
-              onSelected: (_) => setState(() { _preset = minutes; _invalid = false; })),
-        ]),
-        if (_preset == null) ...[
-          TextField(decoration: InputDecoration(labelText: c.text('minutes')),
-            keyboardType: TextInputType.number, onChanged: (value) => _minutes = value),
-          TextField(decoration: InputDecoration(labelText: c.text('seconds')),
-            keyboardType: TextInputType.number, onChanged: (value) => _seconds = value),
-        ],
-        if (_invalid) Text(c.text('invalidTimer')),
-        CheckboxListTile(contentPadding: EdgeInsets.zero, title: Text(c.text('fade')),
-          value: _fade, onChanged: (value) => setState(() => _fade = value ?? false)),
-      ]),
-      actions: [
-        if (c.remaining != null)
-          TextButton(onPressed: () { c.cancelTimer(restoreBrightness: true); Navigator.pop(context); }, child: Text(c.text('cancelTimer'))),
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(c.text('close'))),
-        FilledButton(onPressed: !c.ready ? null : () {
-          final seconds = _preset == null ? parseTimerDuration(_minutes, _seconds) : _preset! * 60;
-          if (seconds == null) {
-            setState(() => _invalid = true);
-          } else {
-            c.startTimer(seconds, fade: _fade);
-            Navigator.pop(context);
-          }
-        }, child: Text(c.text(c.remaining == null ? 'startTimer' : 'restartTimer'))),
-      ],
-    );
-  }
 }

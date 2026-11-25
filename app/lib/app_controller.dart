@@ -56,8 +56,11 @@ class AppController extends ChangeNotifier {
   AppController(this._ble, LocalStore store, {
     required this.checkAccess,
     double Function()? now,
+    DateTime Function()? wallClock,
   }) : models = Models(store, presetIds: homePresets.keys.toSet()),
-       _now = now ?? _monotonicClock() {
+       _now = now ?? _monotonicClock(),
+       _wallClock = wallClock ?? DateTime.now {
+    _lastTimerDuration = loadTimerDuration(store);
     _selection = models.loadState();
     language = models.loadLanguage();
     shortcuts = models.loadShortcuts();
@@ -131,6 +134,15 @@ class AppController extends ChangeNotifier {
   }
   int? remaining;
   int? _fadeLevel;
+  bool _timerFade = false;
+  double _timerDeadline = 0;
+  final DateTime Function() _wallClock;
+  DateTime? _timerEndTime;
+  DateTime? get timerEndTime => _timerEndTime;
+  late int _lastTimerDuration;
+  int get lastTimerDuration => _lastTimerDuration;
+  int _timerSpan = 1;
+  double get timerFraction => (remaining ?? 0) / _timerSpan;
   int _generation = 0;
   int _playback = 0;
   bool _playing = false;
@@ -766,34 +778,57 @@ class AppController extends ChangeNotifier {
   void startTimer(int seconds, {required bool fade}) {
     if (!ready || !_foreground || seconds <= 0) return;
     cancelTimer(restoreBrightness: true);
-    remaining = seconds;
-    final deadline = _now() + seconds * 1000;
-    void tick() {
-      final left = (deadline - _now()) / 1000;
-      if (left <= 0) {
-        cancelTimer();
-        setPower(false);
-        return;
-      }
-      final step = fadeBrightness(brightness, left, fade);
-      if (step != null && step != _fadeLevel) {
-        _fadeLevel = step;
-        unawaited(_sendBrightness(step));
-      }
-      if (remaining != left.ceil()) {
-        remaining = left.ceil();
-        _refresh();
-      }
+    remaining = _timerSpan = seconds;
+    _timerFade = fade;
+    _timerDeadline = _now() + seconds * 1000;
+    _timerEndTime = _wallClock().toLocal().add(Duration(seconds: seconds));
+    if (seconds <= 43200 && seconds != _lastTimerDuration) {
+      _lastTimerDuration = seconds;
+      unawaited(_save(saveTimerDuration(models.storage, seconds)));
     }
-    _timer = Timer.periodic(const Duration(milliseconds: 250), (_) => tick());
-    tick();
+    _timer = Timer.periodic(const Duration(milliseconds: 250), (_) => _tickTimer());
+    _tickTimer();
     _refresh();
+  }
+
+  void extendTimer(int seconds) {
+    final end = _timerEndTime;
+    if (end == null || seconds <= 0) return;
+    if (_timerDeadline <= _now()) {
+      _tickTimer();
+      return;
+    }
+    _timerDeadline += seconds * 1000;
+    _timerEndTime = end.add(Duration(seconds: seconds));
+    _timerSpan += seconds;
+    _tickTimer();
+  }
+
+  void _tickTimer() {
+    final left = (_timerDeadline - _now()) / 1000;
+    if (left <= 0) {
+      cancelTimer();
+      setPower(false);
+      return;
+    }
+    // If an extension backs out of the fade window, restore the selected
+    // brightness now; the same timer will fade again at its new deadline.
+    final step = fadeBrightness(brightness, left, _timerFade);
+    if (step != _fadeLevel) {
+      _fadeLevel = step;
+      unawaited(_sendBrightness(step ?? brightness));
+    }
+    if (remaining != left.ceil()) {
+      remaining = left.ceil();
+      _refresh();
+    }
   }
 
   void cancelTimer({bool restoreBrightness = false}) {
     _timer?.cancel();
     if (remaining == null) return;
     remaining = null;
+    _timerEndTime = null;
     final faded = _fadeLevel != null;
     _fadeLevel = null;
     if (faded && restoreBrightness) unawaited(_sendBrightness(brightness));
