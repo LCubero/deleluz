@@ -5,6 +5,7 @@ import 'package:deleluz/app_controller.dart';
 import 'package:deleluz/link.dart';
 import 'package:deleluz/main.dart';
 import 'package:deleluz/model/models.dart';
+import 'package:deleluz/protocol.dart' as wire;
 import 'package:deleluz/ui/glow_glass.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -84,6 +85,87 @@ void main() {
     expect(find.text('Buscando tiras…'), findsNothing);
     expect(find.text('No se pudo conectar.'), findsNothing);
   }
+
+  Future<void> send(WidgetTester tester, Future<void> Function() command) async {
+    final done = command();
+    for (var i = 0; i < 4; i++) {
+      now += 60;
+      await tester.pump(const Duration(milliseconds: 60));
+    }
+    await done;
+  }
+
+  testWidgets('Home speed follows the last sent mode, not the last command', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(412, 915));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final c = await start(tester);
+    await connect(tester);
+    Slider speed() => tester.widget<Slider>(find.byKey(const Key('speed')));
+    expect(speed().onChanged, isNull);
+    expect(find.text('La velocidad aplica a efectos'), findsOneWidget);
+
+    await send(tester, () => c.setEffect(210));
+    expect(speed().onChanged, isNotNull);
+    expect(find.text('La velocidad aplica a efectos'), findsNothing);
+    speed().onChanged!(70);
+    await tester.pump();
+    expect(ble.writes.last, orderedEquals(wire.speed(70)));
+    expect(speed().onChanged, isNotNull);
+
+    await send(tester, () => c.applyShortcut({'kind': 'color', 'rgb': [1, 2, 3]}));
+    expect(speed().onChanged, isNull);
+    await send(tester, () => c.setEffect(wire.autoEffect));
+    expect(speed().onChanged, isNotNull);
+    await send(tester, () => c.setVoiceMode(2));
+    expect(speed().onChanged, isNull);
+
+    c.setLanguage('en');
+    await tester.pump();
+    expect(find.text('Speed applies to effects'), findsOneWidget);
+    await send(tester, () => c.setEffect(1));
+    await send(tester, () => c.playDraft([[10, 20, 30], [40, 50, 60]], 650, 50, preview: false));
+    expect(speed().onChanged, isNull);
+    await send(tester, () => c.setEffect(2));
+    await send(tester, () async => c.setPower(false));
+    expect(speed().onChanged, isNull);
+  });
+
+  testWidgets('Home strip preview distinguishes unknown, sent and disconnected', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(412, 915));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final c = await start(tester);
+    final preview = find.byType(GlowStrip).first;
+    GlowStrip strip() => tester.widget<GlowStrip>(preview);
+    BoxDecoration paint() => tester.widget<Container>(
+      find.descendant(of: preview, matching: find.byType(Container)).first,
+    ).decoration! as BoxDecoration;
+    expect(strip().dotted, isTrue);
+    expect(paint().color, const Color(0xff2a2540));
+
+    await connect(tester);
+    expect(ble.writes, isEmpty);
+    final unknown = paint().gradient as LinearGradient;
+    expect(unknown.colors.length, greaterThan(1));
+    await send(tester, () => c.applyShortcut({'kind': 'color', 'rgb': [10, 20, 30]}));
+    expect(paint().gradient, isNull);
+    expect(paint().color, const Color(0xff0a141e));
+    await send(tester, () => c.setEffect(2));
+    expect(paint().gradient, isA<LinearGradient>());
+    expect(paint().gradient, isNot(unknown));
+    await send(tester, () async => c.setPower(false));
+    expect(paint().gradient, isNull);
+    expect(paint().color, const Color(0xff2a2540));
+    await send(tester, () => c.setEffect(2));
+    await c.disconnect();
+    await tester.pumpAndSettle();
+    expect(strip().dotted, isTrue);
+    expect(paint().gradient, isNull);
+    expect(paint().color, const Color(0xff2a2540));
+    await c.reconnect();
+    await tester.pumpAndSettle();
+    expect(paint().gradient, unknown);
+    expect(tester.widget<Slider>(find.byKey(const Key('speed'))).onChanged, isNull);
+  });
 
   testWidgets('each tab renders the shared header', (tester) async {
     await tester.binding.setSurfaceSize(const Size(320, 640));
@@ -260,6 +342,12 @@ void main() {
         await tester.binding.setSurfaceSize(null);
       });
       await start(tester);
+      final hint = find.text('La velocidad aplica a efectos');
+      await tester.scrollUntilVisible(hint, 100);
+      await tester.ensureVisible(hint);
+      await tester.pumpAndSettle();
+      expect(hint.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
       final quick = find.text('ESCENAS RÁPIDAS');
       await tester.scrollUntilVisible(quick, 100);
       await tester.ensureVisible(quick);
@@ -267,6 +355,7 @@ void main() {
       await tester.tap(quick.hitTestable());
       await tester.pumpAndSettle();
       expect(find.text('Blanco cálido'), findsOneWidget);
+      expect(find.byKey(const Key('speed')), findsNothing);
       expect(tester.takeException(), isNull);
     });
   }

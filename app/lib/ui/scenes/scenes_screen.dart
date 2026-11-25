@@ -15,7 +15,6 @@ import 'scene_transport.dart';
 part 'scene_editor.dart';
 
 Color _rgb(List<int> rgb) => Color.fromARGB(255, rgb[0], rgb[1], rgb[2]);
-const _effectColors = [[236, 72, 153], [168, 85, 247], [34, 211, 238]];
 const _voiceColors = [
   [[236, 72, 153], [168, 85, 247]], [[34, 211, 238], [59, 130, 246]],
   [[34, 197, 94], [250, 204, 21]], [[249, 115, 22], [239, 68, 68]],
@@ -90,9 +89,9 @@ class _ScenesScreenState extends State<ScenesScreen> {
           _transport.useShared({'kind': 'scene', 'preset': entry.key, 'interval': interval});
         }, preset: entry.key)),
     for (final id in const [wire.autoEffect, 1, 2])
-      _card('included-effect-$id', _effectName(id), _effectColors,
+      _card('included-effect-$id', _effectName(id), glowEffectColors,
         () => _applyEffect(id),
-        () => _preview(_effectName(id), _effectColors, 650, (_) => _applyEffect(id), effect: id)),
+        () => _preview(_effectName(id), glowEffectColors, 650, (_) => _applyEffect(id), effect: id)),
   ];
 
   String _effectName(int id) => id == wire.autoEffect ? c.text('autoCycle') : effectNames[id - 1];

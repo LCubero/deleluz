@@ -108,6 +108,7 @@ class AppController extends ChangeNotifier {
   bool? sentPower;
   int? sentBrightness;
   List<int>? sentColor;
+  int? _sentEffect;
   String? lastCommand;
   String? _sentDeviceId;
   Map<String, Object?> lastValues = const {};
@@ -117,6 +118,7 @@ class AppController extends ChangeNotifier {
   int get sensitivity => _selection['micSens'] as int;
   bool get ready => link.ready && !busy;
   bool get canSend => ready && _foreground && !_disposed;
+  bool get hasActiveEffect => link.ready && sentPower == true && _sentEffect != null;
   String? get lastSentLabel => switch (lastCommand) {
     null => null,
     'brightness' || 'speed' || 'micSensitivity' =>
@@ -156,6 +158,7 @@ class AppController extends ChangeNotifier {
       sentPower = null;
       sentBrightness = null;
       sentColor = null;
+      _sentEffect = null;
     } else if (_sentDeviceId != link.strip?.id) {
       lastCommand = null;
     }
@@ -299,7 +302,10 @@ class AppController extends ChangeNotifier {
   }
 
   Future<bool> _sendPower(bool value) => _send(wire.power(value),
-      value ? 'power' : 'off', onSent: () => sentPower = value);
+      value ? 'power' : 'off', onSent: () {
+        sentPower = value;
+        if (!value) _sentEffect = null;
+      });
 
   void setPower(bool value) {
     if (!ready) return;
@@ -383,7 +389,10 @@ class AppController extends ChangeNotifier {
     if (!await _prepare(run, brightness)) return;
     final label = id == wire.autoEffect ? 'autoCycle' : 'effectNamed';
     if (await _send(wire.effect(id), label, key: 'effect',
-        values: {'id': id, 'name': effectName(id)}) && run == _playback && !preview) {
+        values: {'id': id, 'name': effectName(id)}, onSent: () {
+          _sentEffect = id;
+          sentColor = null;
+        }) && run == _playback && !preview) {
       final fx = id == wire.autoEffect ? 'AUTO' : id;
       _select({'on': true, 'fx': fx, 'scene': null,
         'label': [label, {'id': id, 'name': effectName(id) ?? 'AUTO'}],
@@ -396,8 +405,11 @@ class AppController extends ChangeNotifier {
     _beginPlayback();
     final run = _playback;
     if (!await _prepare(run, brightness)) return;
-    if (!await _send(wire.voiceMode(id), 'musicMode', key: 'voice', values: {'id': id}) ||
-        run != _playback) {
+    if (!await _send(wire.voiceMode(id), 'musicMode', key: 'voice', values: {'id': id},
+        onSent: () {
+          _sentEffect = null;
+          sentColor = null;
+        }) || run != _playback) {
       return;
     }
     _select({'on': true, 'scene': null, 'label': ['musicMode'], 'mode': {'voice': id}});
@@ -441,7 +453,10 @@ class AppController extends ChangeNotifier {
       .where((item) => item['id'] == id).firstOrNull;
 
   Future<bool> _sendColor(List<int> rgb) => _send(wire.color(rgb[0], rgb[1], rgb[2]),
-      'color', key: 'color', values: {'hex': rgbHex(rgb)}, onSent: () => sentColor = rgb);
+      'color', key: 'color', values: {'hex': rgbHex(rgb)}, onSent: () {
+        _sentEffect = null;
+        sentColor = rgb;
+      });
 
   Future<void> applyShortcut(Fields item) async {
     if (!canSend) return;

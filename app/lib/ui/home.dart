@@ -77,7 +77,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _quick(context),
       if (!_quickOpen) ...[
         const SizedBox(height: 12),
-        _slider('speed', c.speed, c.setSpeed),
+        _slider('speed', c.speed, c.hasActiveEffect ? c.setSpeed : null,
+          hint: c.hasActiveEffect ? null : c.text('speedEffectsHint')),
       ],
       const SizedBox(height: 12),
       _slider('brightness', c.brightness, c.setBrightness),
@@ -139,22 +140,30 @@ class _HomeScreenState extends State<HomeScreen> {
     ));
   }
 
-  Widget _slider(String label, int value, ValueChanged<int> change) =>
+  Widget _slider(String label, int value, ValueChanged<int>? change, {String? hint}) =>
     GlassCard(verticalInset: 14, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       GlowValueLabel(label: c.text(label), value: c.text('percent', {'value': value}),
         icon: label == 'brightness' ? const GlowIcon(GlowGlyph.sun, size: 20) : null),
       const SizedBox(height: 10),
       Semantics(label: c.text(label), child: Slider(key: Key(label), value: value.toDouble(), max: 100,
-        onChanged: (value) => change(value.round()),
-        onChangeEnd: (_) => c.saveSelection())),
+        onChanged: change == null ? null : (value) => change(value.round()),
+        onChangeEnd: change == null ? null : (_) => c.saveSelection())),
+      if (hint != null) Text(hint, style: const TextStyle(color: glowMuted, fontSize: 13)),
     ]));
 
   Widget _device(BuildContext context) {
-    final rgb = c.sentColor;
-    final preview = c.link.ready && c.sentPower == true && rgb != null
-        ? Color.fromARGB(255, rgb[0], rgb[1], rgb[2]) : null;
-    final strip = c.link.ready ? c.link.strip : c.remembered;
-    final previewColors = preview == null || rgb == null ? const <List<int>>[] : [rgb];
+    final connected = c.link.ready;
+    // No visual command yet: this gradient is decorative, not device telemetry.
+    final unknown = connected && c.sentPower == null;
+    final rgb = connected && c.sentPower == true ? c.sentColor : null;
+    final previewColors = switch (rgb) {
+      final color? => [color],
+      _ when c.hasActiveEffect => glowEffectColors,
+      _ when unknown => const [[100, 75, 125], [141, 91, 126], [68, 117, 135]],
+      _ => const <List<int>>[],
+    };
+    final glow = rgb == null ? null : Color.fromARGB(255, rgb[0], rgb[1], rgb[2]);
+    final strip = connected ? c.link.strip : c.remembered;
     final theme = Theme.of(context).textTheme;
     return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: [
       Row(spacing: 12, crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -165,8 +174,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Flexible(child: Align(alignment: AlignmentDirectional.topEnd,
           widthFactor: 1, heightFactor: 1, child: ConnectionChip(controller: c))),
       ]),
-      Semantics(container: true, image: true, label: c.text('stripPreview'), child: GlowStrip(
-        colors: previewColors, height: 14, glow: preview)),
+      Semantics(container: true, image: true,
+        label: c.text(unknown ? 'stripPreviewUnknown' : 'stripPreview'),
+        child: GlowStrip(colors: previewColors, height: 14, glow: glow)),
       Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
         if (!c.link.ready && c.remembered != null)
           _connectButton(c.text('reconnect'), c.busy ? null : c.reconnect),

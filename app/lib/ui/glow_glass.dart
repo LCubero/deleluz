@@ -171,6 +171,9 @@ class GlowTile extends StatelessWidget {
   );
 }
 
+// Illustrative swatch for controller effects, whose actual colors are not read.
+const glowEffectColors = [[236, 72, 153], [168, 85, 247], [34, 211, 238]];
+
 class GlowStrip extends StatelessWidget {
   const GlowStrip({super.key, required this.colors, this.height = 10, this.dotted = true, this.glow});
   final List<List<int>> colors;
