@@ -105,3 +105,4 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - L52 — 2026-11-25, user: "asi: !Dele, enciandala mae! algo asi" — tagline «¡Dele, enciéndala, mae!» (spelling and accents normalized), untranslated in English.
 - L53 — 2026-11-25, T19 native review (Risk item 4) approved; its three findings were refuted. T20 About in 315e5b8; build number 1.0.0+2 so testers install over 1.0.0+1 without losing data. Parent verified 145 tests, analyze clean.
 - L54 — 2026-11-25, user after testing 1.0.0+2: "bien nada más que el color de cancelar deberia ser como gris o no sé pero diferente al de conectar. todo lo demás buenisimo".
+- L55 — 2026-11-25, grey Cancelar in c003368 (Inicio card and selector rows): no gradient or glow, grey glass with a close icon; RED observed with the old button, 145 tests pass, analyze clean; build 1.0.0+3.
