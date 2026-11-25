@@ -1,6 +1,16 @@
 # deleluz
 
-Local control for an LEDDMX-03 addressable LED strip. Phone web app: [`webapp/`](webapp/README.md). Protocol lab: [`lab/`](lab/README.md).
+Local control for an LEDDMX-03 addressable LED strip over Bluetooth, with no account and no internet.
+
+- **Android app** (recommended): [`app/`](app/README.md). Download the APK from the [Releases](https://github.com/LCubero/deleluz/releases) page.
+- **Phone web app** (Android Chrome): [`webapp/`](webapp/README.md).
+- **Protocol lab and notes**: [`lab/`](lab/README.md), [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
+
+<p align="center"><img src="docs/app-screens/showreel.gif" width="300" alt="DeleLuz Android app tour: Inicio, Color, Escenas, Música, strip selector and Ajustes"></p>
+
+| Inicio | Color | Escenas | Elegir tira |
+|---|---|---|---|
+| <img src="docs/app-screens/01-inicio.png" width="180" alt="Inicio: connected strip, power and sliders"> | <img src="docs/app-screens/03-color.png" width="180" alt="Color wheel"> | <img src="docs/app-screens/05-escenas.png" width="180" alt="Included scenes"> | <img src="docs/app-screens/07-elegir-tira.png" width="180" alt="Strip selector with an alias"> |
 
 
 <!-- repo-harness-builder:start -->

@@ -4,6 +4,10 @@
 
 This file records meaningful completed changes in chronological order, newest first. Current state and future work belong in `docs/repo-harness/current-state.md`.
 
+## 2026-11-25
+
+- Added the native Android app DeleLuz 1.0.0 (`app/`, Flutter, shared as a signed APK): connect, power, color, brightness, built-in effects 1-210 and Auto, scenes, music modes, several saved strips with per-phone aliases and per-strip setup, cancel a pending connection, and an About section. Verified on two phones and two strips; screenshots and a showreel are in `docs/app-screens/` (`odd/tasks/deleluz-android.md`).
+
 ## 2026-11-24
 
 - Added a microphone sensitivity slider for the strip’s onboard mic and verified it on the real strip from Android.
