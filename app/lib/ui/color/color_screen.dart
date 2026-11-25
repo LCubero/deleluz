@@ -123,10 +123,10 @@ class _ColorScreenState extends State<ColorScreen> {
             ]),
           const SizedBox(height: 8),
           if (_effects) ...[
+            _effectCard(),
+            const SizedBox(height: 12),
             AppAutoCard(key: const Key('app-auto'), controller: c,
               onStart: () => setState(() => _auto = false)),
-            const SizedBox(height: 12),
-            _effectCard(),
           ] else ...[
             SharedColorPicker(controller: c, rgb: _rgb, showDiscHint: false,
               onChanged: (rgb, _) => _choose(rgb)),

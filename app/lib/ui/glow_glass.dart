@@ -28,19 +28,18 @@ abstract final class GlowSelection {
 
 class GlowChoice extends StatelessWidget {
   const GlowChoice({super.key, this.choiceKey, this.avatar, required this.label,
-    required this.selected, required this.onSelected, this.compact = false});
+    required this.selected, required this.onSelected});
   final Key? choiceKey;
   final Widget label;
   final Widget? avatar;
   final bool selected;
   final ValueChanged<bool>? onSelected;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) => ChoiceChip(key: choiceKey,
-    padding: compact ? EdgeInsets.zero : null,
-    labelPadding: compact ? const EdgeInsets.symmetric(horizontal: 2) : null,
-    avatarBoxConstraints: compact ? const BoxConstraints.tightFor(width: 18, height: 18) : null,
+    // Swatches match the selection marker; keep the standard Material chip inset.
+    avatarBoxConstraints: avatar == null ? null : const BoxConstraints.tightFor(width: 18, height: 18),
+    labelPadding: avatar == null ? null : const EdgeInsets.symmetric(horizontal: 4),
     selected: selected, onSelected: onSelected, showCheckmark: false,
     avatar: selected ? GlowSelection.check() : avatar,
     color: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected)

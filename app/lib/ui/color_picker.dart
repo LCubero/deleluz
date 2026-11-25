@@ -40,10 +40,9 @@ class SharedColorPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final current = rgbHex(rgb).toLowerCase();
-    final style = Theme.of(context).textTheme;
     Widget chip((String, String, List<int>) preset) {
       final (label, name, tone) = preset;
-      return GlowChoice(compact: true,
+      return GlowChoice(
         avatar: CircleAvatar(backgroundColor: _color(tone)),
         label: Text(controller.text(label)),
         selected: current == rgbHex(tone).toLowerCase(),
@@ -59,13 +58,10 @@ class SharedColorPicker extends StatelessWidget {
       }),
       if (showDiscHint) Notice(controller.text('colorDiscHint'), compact: true),
       const SizedBox(height: 12),
-      GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text(controller.text('whiteTones'), style: style.titleMedium),
-        const SizedBox(height: 6),
-        Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 4, children: [
+      Semantics(container: true, explicitChildNodes: true, label: controller.text('whiteTones'),
+        child: Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 4, children: [
           for (final preset in _whites) chip(preset),
-        ]),
-      ])),
+        ])),
       const SizedBox(height: 12),
       ColorFavorites(controller: controller, current: current, nameFor: _favoriteName,
         onColor: onChanged),

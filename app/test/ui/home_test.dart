@@ -100,12 +100,26 @@ void main() {
     return controller;
   }
 
-  void expectBrightnessInViewport(WidgetTester tester, String key) {
+  void useOwnerPhoneView(WidgetTester tester) {
+    const density = 2.625;
+    tester.view.devicePixelRatio = density;
+    tester.view.physicalSize = const Size(1080, 2189);
+    const statusBar = FakeViewPadding(top: 32 * density);
+    tester.view.padding = statusBar;
+    tester.view.viewPadding = statusBar;
+    addTearDown(tester.view.reset);
+  }
+
+  void expectBrightnessAboveNavigation(WidgetTester tester, String key) {
     final slider = find.byKey(Key(key));
     final card = find.ancestor(of: slider, matching: find.byType(GlassCard));
     final viewport = find.ancestor(of: slider, matching: find.byType(SingleChildScrollView));
     expect(tester.getTopLeft(card).dy, greaterThanOrEqualTo(tester.getTopLeft(viewport).dy));
-    expect(tester.getBottomLeft(card).dy, lessThanOrEqualTo(tester.getBottomLeft(viewport).dy));
+    final nav = tester.widget<Scaffold>(find.byType(Scaffold)).bottomNavigationBar!;
+    final navTop = tester.getTopLeft(find.byWidget(nav)).dy;
+    final cardBottom = tester.getBottomLeft(card).dy;
+    debugPrint('$key: Brillo bottom=$cardBottom dp; navigation top=$navTop dp');
+    expect(cardBottom, lessThanOrEqualTo(navTop));
   }
 
   for (final width in [320.0, 412.0]) {
@@ -148,35 +162,36 @@ void main() {
   }
 
   testWidgets('Inicio fits the whole brightness card on the owner phone', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(411, 842));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    useOwnerPhoneView(tester);
     final c = await start(tester);
     expect(c.shortcuts, hasLength(2));
     expect(find.byTooltip(c.text('addShortcut')), findsNothing);
-    expectBrightnessInViewport(tester, 'brightness');
+    expectBrightnessAboveNavigation(tester, 'brightness');
     expect(find.byKey(const Key('speed')), findsNothing);
   });
 
   testWidgets('Color fijo fits the whole brightness card on the owner phone', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(411, 842));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    useOwnerPhoneView(tester);
+    await store.write('deleluz.app.favoritesOpen.color', '0');
     await start(tester);
     await tester.tap(find.text('Color').last);
     await tester.pumpAndSettle();
+    expect(find.byKey(const Key('favorite-plus')), findsNothing);
     final disc = tester.getSize(find.byKey(const Key('color-disc'))).width;
-    final slider = find.byKey(const Key('color-brightness'));
-    final card = find.ancestor(of: slider, matching: find.byType(GlassCard));
-    final viewport = find.ancestor(of: slider, matching: find.byType(SingleChildScrollView));
-    final bottom = tester.getBottomLeft(card).dy - tester.getTopLeft(viewport).dy;
-    debugPrint('Owner viewport: disc=$disc dp; Brillo bottom=$bottom dp');
+    debugPrint('Color fijo: disc=$disc dp');
+    expectBrightnessAboveNavigation(tester, 'color-brightness');
     final tones = ['Cálido', 'Neutro', 'Frío'].map((label) =>
       tester.getRect(find.widgetWithText(ChoiceChip, label))).toList();
     for (final tone in tones) {
       expect(tone.top, tones.first.top);
       expect(tone.shortestSide, greaterThanOrEqualTo(48));
     }
-    expect(disc, greaterThanOrEqualTo(216), reason: 'Disc: $disc dp; card bottom: $bottom dp; viewport: ${tester.getSize(viewport).height} dp');
-    expectBrightnessInViewport(tester, 'color-brightness');
+    expect(disc, greaterThanOrEqualTo(216));
+    expect(find.text('Blancos'), findsNothing);
+    expect(find.bySemanticsLabel('Blancos'), findsOneWidget);
+    for (var i = 1; i < tones.length; i++) {
+      expect(tones[i].left - tones[i - 1].right, closeTo(8, .01));
+    }
     await tester.tap(find.byKey(const Key('color-effects')));
     await tester.pumpAndSettle();
     expect(tester.getTopLeft(find.byKey(const Key('color-speed'))).dy,
@@ -704,6 +719,7 @@ void main() {
       expect(find.byKey(const Key('glow-sheet')), findsOneWidget);
       expect(shared, findsOneWidget);
       expect(tone(c.text('night')), findsNothing);
+      expect(find.text(c.text('whiteTones')), findsNothing);
       await tap(inside('color-favorites'));
       await tap(inside('favorite-#200400'));
       expect(ble.writes, hasLength(before));
@@ -741,6 +757,16 @@ void main() {
       await tap(find.text('Color').last);
       expect(shared, findsOneWidget);
       expect(tone(c.text('night')), findsNothing);
+      final whiteChips = ['whiteWarmTone', 'whiteNeutralTone', 'whiteCoolTone']
+          .map((key) => tester.getRect(tone(c.text(key)))).toList();
+      for (final chip in whiteChips) {
+        expect(chip.shortestSide, greaterThanOrEqualTo(48));
+        expect(chip.left, greaterThanOrEqualTo(glowScreenPadding.left));
+        expect(chip.right, lessThanOrEqualTo(width - glowScreenPadding.right));
+      }
+      if (width == 320) {
+        expect(whiteChips.last.top, greaterThanOrEqualTo(whiteChips.first.bottom));
+      }
       if (inside('favorite-#200400').evaluate().isEmpty) await tap(inside('color-favorites'));
       await tap(inside('favorite-#200400'));
       for (var i = 0; i < 3; i++) {

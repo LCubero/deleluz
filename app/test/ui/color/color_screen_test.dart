@@ -176,8 +176,19 @@ void main() {
       expect(find.text('Solo funciona con la app abierta y la tira conectada.'), findsOneWidget);
       expect(tester.widget<ChoiceChip>(keyed('app-auto-favorites')).onSelected, isNull);
       expect(find.text('Marca efectos con la estrella para usar Favoritos.'), findsOneWidget);
-      expect(tester.getRect(keyed('app-auto')).bottom,
-          lessThan(tester.getRect(keyed('effect-search')).top));
+      final catalog = find.byType(EffectList);
+      final list = find.descendant(of: catalog, matching: find.byType(ListView));
+      final auto = tester.getRect(keyed('app-auto'));
+      expect(tester.getRect(keyed('effect-auto')).bottom,
+          lessThan(tester.getRect(catalog).top));
+      expect(tester.getRect(keyed('effect-search')).bottom,
+          lessThan(tester.getRect(list).top));
+      expect(tester.getSize(list).height, 270);
+      expect(keyed('effect-row-210'), findsNothing);
+      expect(tester.getRect(catalog).bottom, lessThan(auto.top));
+      expect(auto.bottom, lessThan(tester.getRect(keyed('color-brightness')).top));
+      expect(tester.getRect(keyed('color-brightness')).bottom,
+          lessThan(tester.getRect(keyed('color-speed')).top));
       await tester.ensureVisible(keyed('app-auto-toggle'));
       await tester.tap(keyed('app-auto-toggle'));
       await flush(tester);

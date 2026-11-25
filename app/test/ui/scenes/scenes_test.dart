@@ -177,7 +177,10 @@ void main() {
       await tap(tester, 'scene-add-color');
       await tester.tap(key('color-disc'));
       await tester.pumpAndSettle();
-      expect(find.text(c.text('whiteTones')), findsOneWidget);
+      expect(find.text(c.text('whiteTones')), findsNothing);
+      for (final tone in ['whiteWarmTone', 'whiteNeutralTone', 'whiteCoolTone']) {
+        expect(find.widgetWithText(ChoiceChip, c.text(tone)), findsOneWidget);
+      }
       await tap(tester, 'scene-apply-step');
       await tap(tester, 'scene-add-effect');
       expect(key('glow-sheet'), findsOneWidget);
