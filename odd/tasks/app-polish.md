@@ -52,3 +52,5 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - L14 (2026-11-25): webapp work paused (T7b, T7c). T7b partial edits saved as `git stash` "T7b partial webapp work (paused: app first)". Next: T9/T10 on Android after the owner picks 08/09 and 10/11.
 - L15 (2026-11-25, owner, verbatim): "esq nunca te dije que hicieramos lo web, era fase 1, y todo es para el app de android, la web lo hacemos cuando ya la app de android esté con todo como quiero y probada, lol"
 - L16 (2026-11-25): scope corrected: phase 1 is Android only. T7a (2fbcecb) was out of scope; kept on the branch untouched for the later webapp phase unless the owner asks to revert it. T7b/T7c deferred to the webapp phase.
+- L17 (2026-11-25, owner, verbatim): "9 y 10"
+- L18 (2026-11-25, decision): quick actions use 09-acciones-rapidas-pasos (type tiles, then picker); Bluetooth-off uses 10-bluetooth-tarjeta (warning card on Inicio). 08 and 11 are alternatives.
