@@ -18,6 +18,13 @@ class DroppingReleaseBle extends FakeBle {
   }
 }
 
+class StalledReleaseBle extends FakeBle {
+  final release = Completer<void>();
+
+  @override
+  Future<void> disconnect(String id) => release.future;
+}
+
 class RefusingShortcutStore extends Store {
   @override
   Future<bool> write(String key, String? value) async {
@@ -104,9 +111,28 @@ void main() {
     await controller.connect(FakeBle.strip);
     await controller.disconnect();
     await tester.pump();
-    expect(controller.link.status, LinkStatus.lost);
+    expect(controller.link.status, LinkStatus.idle);
     expect(releasing.connections, [FakeBle.strip.id]);
   });
+
+  for (final forget in [false, true]) {
+    testWidgets('G2 late loss after ${forget ? 'forget' : 'disconnect'} timeout does not recover', (tester) async {
+      final stalled = StalledReleaseBle();
+      final controller = AppController(stalled, Store(), checkAccess: (_) async => null);
+      addTearDown(stalled.changes.close);
+      addTearDown(controller.dispose);
+      await controller.connect(FakeBle.strip);
+      final release = forget ? controller.forgetStrip(FakeBle.strip.id) : controller.disconnect();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      await release;
+      stalled.release.complete();
+      stalled.changes.add((FakeBle.strip.id, false));
+      await tester.pump();
+      expect(stalled.connections, [FakeBle.strip.id]);
+      expect(controller.link.status, LinkStatus.idle);
+    });
+  }
 
   testWidgets('F3 rapid repeated link loss needs manual recovery', (tester) async {
     final controller = AppController(ble, Store(), checkAccess: (_) async => null,
@@ -178,6 +204,17 @@ void main() {
     expect(ble.writes.where((bytes) => bytes.toString() == wire.power(true).toString()), hasLength(1));
     expect(ble.writes.last, wire.color(0, 255, 0));
     expect(ble.writes, isNot(contains(wire.color(255, 0, 0))));
+  });
+
+  testWidgets('G4 live draft and concurrent color share one ON', (tester) async {
+    await c.connect(FakeBle.strip);
+    final preview = c.playDraft([colors.first], 1000, c.brightness,
+        draft: () => (colors: [colors.first], interval: 1000, intensity: c.brightness));
+    final update = c.applyShortcut({'kind': 'color', 'rgb': colors.last});
+    await drain(tester);
+    await Future.wait([preview, update]);
+    expect(ble.writes.where((bytes) => bytes.toString() == wire.power(true).toString()), hasLength(1));
+    expect(ble.writes.last, wire.color(0, 255, 0));
   });
 
   testWidgets('F7 command error notifies once and clears after a good send', (tester) async {

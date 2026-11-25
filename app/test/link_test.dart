@@ -89,11 +89,15 @@ void main() {
     expect(saved, ['B']);
   });
 
-  testWidgets('F2 stalled write rejects so the next queued frame can send', (tester) async {
+  testWidgets('G1 stalled write drops the queued frame before late completion', (tester) async {
+    late Sender sender;
+    link = Link(ble, onChange: () {
+      if (!link.ready) sender.cancel();
+    });
+    var now = 0.0;
+    sender = Sender(write: link.write, now: () => now);
     await link.connect(const Strip('A', 'x'));
     final gate = ble.writeGate = Completer<void>();
-    var now = 0.0;
-    final sender = Sender(write: link.write, now: () => now);
     Object? failure;
     final writing = sender.send(Uint8List.fromList([1])).catchError((Object error) {
       failure = error;
@@ -105,9 +109,14 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
     expect(failure, isA<TimeoutException>());
     expect(await writing, 'failed');
-    expect(await next, 'sent');
-    expect(ble.written, ['A:2']);
+    final beforeLateWrite = List.of(ble.written);
     gate.complete();
+    await tester.pump();
+    expect(ble.written, ['A:1']);
+    expect(beforeLateWrite, isEmpty);
+    expect(await next, 'canceled');
+    expect(link.status, LinkStatus.lost);
+    expect(ble.open, isEmpty);
   });
 
   testWidgets('F2 stalled discovery releases the link without remembering it', (tester) async {
@@ -130,6 +139,23 @@ void main() {
     await link.connect(const Strip('A', 'x'));
     await link.dispose();
     expect(ble.open, isEmpty);
+  });
+
+  test('G3 disposal retries a timed-out deliberate release', () async {
+    await link.connect(const Strip('A', 'x'));
+    final gate = ble.disconnectGate = Completer<void>();
+    final releasing = expectLater(link.disconnect(), throwsA(isA<TimeoutException>()));
+    await Future<void>.delayed(Duration.zero);
+    final disposing = link.dispose();
+    ble.disconnectGate = null;
+    try {
+      await releasing;
+      await disposing;
+      expect(ble.open, isEmpty);
+      expect(ble.disconnected, ['A']);
+    } finally {
+      gate.complete();
+    }
   });
 
   test('F1 disposing during discovery releases the late open', () async {
@@ -198,7 +224,7 @@ void main() {
       await link.connect(a);
       ble.failDisconnect = true;
       await expectLater(switching ? link.connect(b) : link.disconnect(), throwsStateError);
-      expect(link.status, LinkStatus.connected);
+      expect(link.status, LinkStatus.idle);
       expect(link.strip, a);
       expect(ble.open, {'A'});
       expect(ble.connectCalls, 1);

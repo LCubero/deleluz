@@ -39,9 +39,11 @@ class Link {
   Link(this._ble, {this.retryDelay = const Duration(milliseconds: 300), this.onRemember, this.onChange}) {
     _sub = _ble.connectionChanges.listen((change) {
       final (id, up) = change;
-      if (up || id != strip?.id) return;
+      if (up) return;
+      if (id == _ownedId) _ownedId = null;
+      if (id != strip?.id || _releasing != null) return;
       if (status == LinkStatus.connected) _set(LinkStatus.lost);
-      if (status == LinkStatus.connecting || _releasing != null) _droppedWhileOpening = true;
+      if (status == LinkStatus.connecting) _droppedWhileOpening = true;
     });
   }
 
@@ -60,6 +62,8 @@ class Link {
   int _generation = 0;
   bool _disposed = false;
   bool _droppedWhileOpening = false;
+  // Keep native ownership until a release succeeds or the transport reports loss.
+  String? _ownedId;
   Future<void>? _releasing;
   Future<void>? _opening;
   LinkStatus? _cancelFallback;
@@ -100,24 +104,21 @@ class Link {
     final drained = Completer<void>();
     _opening = drained.future;
     _cancelFallback = fallback;
-    final wasReady = ready;
     _set(LinkStatus.connecting);
     try {
       // A canceled native open still owns the transport until its late result is cleaned up.
       if (previous != null) await previous;
+      if (_releasing != null) await _waitForRelease();
       if (generation != _generation) return;
-      if (wasReady || ready) {
-        if (strip?.id == target.id) {
-          _set(LinkStatus.connected);
-          return;
-        }
-        await _release();
-      }
+      if (_ownedId != null) await _release();
       if (generation != _generation) return;
       strip = target;
       await _open(generation, fallback);
     } catch (_) {
-      if (generation == _generation) rethrow;
+      if (generation == _generation) {
+        if (status == LinkStatus.connecting) _set(fallback);
+        rethrow;
+      }
     } finally {
       if (generation == _generation) _cancelFallback = null;
       if (identical(_opening, drained.future)) _opening = null;
@@ -147,6 +148,7 @@ class Link {
       if (!await _ble.hasWriteWithoutResponse(id).timeout(_openDeadline)) throw UnsupportedController();
       if (generation != _generation) return;
       if (_droppedWhileOpening) throw StateError('Link dropped while opening');
+      _ownedId = id;
       _set(LinkStatus.connected);
       onRemember?.call(id);
     } catch (_) {
@@ -182,34 +184,48 @@ class Link {
 
   Future<void> write(Uint8List bytes) async {
     if (!ready) throw StateError('Not connected');
-    await _ble.write(strip!.id, bytes).timeout(_ioDeadline);
+    final generation = _generation;
+    await _ble.write(strip!.id, bytes).timeout(_ioDeadline, onTimeout: () {
+      if (generation == _generation && ready) {
+        // Publish loss before the sender can drain another frame. Recovery
+        // waits for the bounded disconnect before opening a fresh session.
+        unawaited(_release(lost: true).catchError((Object _) {}));
+      }
+      throw TimeoutException('BLE write timed out', _ioDeadline);
+    });
   }
 
-  Future<void> _release() async {
-    final id = strip!.id;
-    _droppedWhileOpening = false;
-    final generation = _generation;
+  Future<void> _release({bool lost = false}) async {
+    final id = _ownedId!;
     final release = Future<void>.microtask(() => _ble.disconnect(id)).timeout(_ioDeadline);
     _releasing = release;
-    _set(LinkStatus.connecting);
+    _set(lost ? LinkStatus.lost : LinkStatus.connecting);
     try {
       await release;
-    } catch (_) {
-      if (generation == _generation) {
-        _set(_droppedWhileOpening ? LinkStatus.lost : LinkStatus.connected);
-      }
-      rethrow;
+      if (_ownedId == id) _ownedId = null;
     } finally {
       _releasing = null;
     }
   }
 
+  Future<void> _waitForRelease() async {
+    try {
+      await _releasing;
+    } catch (_) {
+      // Keep the owned id so the caller can retry cleanup.
+    }
+  }
+
   /// Releases the strip on purpose, so another phone or app can connect.
   Future<void> disconnect() async {
-    if (!ready) return;
+    if (status == LinkStatus.connecting || _ownedId == null) return;
     final generation = _generation;
-    await _release();
-    if (generation == _generation) _set(LinkStatus.idle);
+    try {
+      if (_releasing != null) await _waitForRelease();
+      if (generation == _generation && _ownedId != null) await _release();
+    } finally {
+      if (generation == _generation) _set(LinkStatus.idle);
+    }
   }
 
   Future<void> forget() async {
@@ -226,26 +242,23 @@ class Link {
   void radioOff() {
     _generation++;
     _cancelFallback = null;
+    _ownedId = null;
     _set(strip == null ? LinkStatus.idle : LinkStatus.lost);
   }
 
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
-    final owned = ready ? strip?.id : null;
     final opening = _opening;
-    final releasing = _releasing;
     _generation++;
     _cancelFallback = null;
     _set(LinkStatus.idle);
     await _sub.cancel();
-    try {
-      if (owned != null) await _releaseQuietly(owned);
-      if (releasing != null) await releasing;
-    } catch (_) {
-      // Disposal cannot recover a failed native release.
-    }
+    await _waitForRelease();
     if (opening != null) await opening;
+    final owned = _ownedId;
+    _ownedId = null;
+    if (owned != null) await _releaseQuietly(owned);
   }
 }
 

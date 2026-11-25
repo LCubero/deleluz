@@ -840,7 +840,7 @@ class AppController extends ChangeNotifier {
     final run = _playback;
     final liveDraft = preview && draft != null;
     if (liveDraft) {
-      if (sentPower != true && !await _sendPower(true)) return _stopCurrentPlayback(run);
+      if (sentPower != true && !await _preparePower()) return _stopCurrentPlayback(run);
       if (run != _playback || !canSend) return _stopCurrentPlayback(run);
       // Queue ahead of the first color, but don't await a frame that a drag can replace.
       final initialBrightness = draft().intensity;
