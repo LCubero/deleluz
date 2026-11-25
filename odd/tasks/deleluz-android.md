@@ -19,6 +19,8 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - S12 — Connection UI (L28): direction "03 Selector (Recomendado)" from design/deleluz-connection/03-selector-tiras.html; each remembered strip looks like the "Tiras cercanas nuevas" rows; "mmm creo que mejor que se vea como tiras cencanas nuevas, el botón conectar / desconectar es el mismo cambia segun estado, renombrar puede ser un lapiz y borrar un basurero.  dejar presionado sale el menu de conectar desconectar renombrar olvidar que tal ? y espacio horizontal entre card de dispositivo por dios, que se puede contrar o expandir mis tiras."
 - S13 — Strip selector polish (L30): "algo más, dentro de cambiar, con mis tiras al dar conectar y da error sale dentro de tiras cercanas nuevas, no se nota y no es natural, deberia notarse diferente, siento que esta seccion de elegir tira no respeta mucho el diseño del app, le falta detalles y los cudros de cada dispositivo guardado mejor dicho mis tiras, es muy alto el box, subir quinos de renombre y borrar arriba de conector nbotón y reducir, la idera era que si hay varios dispositivos no cance andar entre ellos y hace falta un buscar para poder encontrar facil"
 - S14 — Selector access and slider zones (L35): "genial me gusta mucho mejor. - me gustaría acceso a esa pagina en ajustes. - y donde hay selectores de velocidad, brillo, no deberia funcionar el slide entre pestañas, es decir la zona de ellos, como en inicio para velocidad, deberia ser siempre no solo si está desactivada, siempre para todos esos controles deslizables, para que no moleste"
+- S15 — Default sub-tab (L36): "y cuando entras a la pestaña color aparezca en color no en el ultimo usado, en escenas que entre en mis escenas." — entering Color opens «Color fijo»; entering Escenas opens «Mis escenas».
+- S16 — Editor details and color zones (L37): "el color de eliminar escena en secucia nueva o mis escenas deberia ser rojo o rojiso y con un poco mas de margen top. en donde se seleciona color tmb desactivar el slide, en todo lugar que hay selecotr de color esa zona sin slide. falta control de brillo en mis escenas en la ventana de la secuencia."
 
 ## Tasks
 
@@ -33,7 +35,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - T10 — S10, S11 — Home speed enabled only for effects; generic multicolor strip preview when connected and nothing sent — worker — done 2e9540c (92 tests, analyze clean)
 - T11 — S2, S12 — Several remembered strips with per-phone aliases and the «Elegir tira» selector; Inicio card with alias + Cambiar — worker — done b5f9bd8 (96 tests; card shows the name once without alias, chip right-aligned)
 - T12 — S12, S13 — Selector: errors on the strip row, compact rows with icons above the button, Glow Glass detail, search — worker — done cde2b77 (100 tests)
-- T13 — S14 — Ajustes entry to «Elegir tira»; every slider card blocks the tab swipe — worker — pending
+- T13 — S14, S15, S16 — Ajustes entry to «Elegir tira»; every slider card blocks the tab swipe — worker — pending
 - T9 — S7 — Docs: `app/README.md`, CHANGELOG, current state, roadmap — inline — pending
 
 ## Log
@@ -73,3 +75,5 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - L33 — 2026-11-25, parent phone screenshot of «Elegir tira» (cde2b77): the Conectar pill touched the card edge and the note was cut to «Solo una tira a la vez…». Fixed in 38d19b3: 6 dp inner margin, full sentence. Row height 88 dp (was 141), not 80, to keep 48 dp touch targets for the pencil and trash icons.
 - L34 — 2026-11-25, user: "y puedes hacer unb poco mas grandes los iconos de renombrar y borrar y conectar". Done in 505dfcb: icons 16 -> 22, pill 28 -> 34 dp tall with 15 px text; 48 dp touch targets kept; row 104 dp (was 141 at first). 100 tests, analyze clean.
 - L35 — 2026-11-25, user after the larger icons (505dfcb) and the disabled-slider fix (00e4aa1) on the phone: "genial me gusta mucho mejor. - me gustaría acceso a esa pagina en ajustes. - y donde hay selectores de velocidad, brillo, no deberia funcionar el slide entre pestañas, es decir la zona de ellos, como en inicio para velocidad, deberia ser siempre no solo si está desactivada, siempre para todos esos controles deslizables, para que no moleste"
+- L36 — 2026-11-25, user: "y cuando entras a la pestaña color aparezca en color no en el ultimo usado, en escenas que entre en mis escenas."
+- L37 — 2026-11-25, user: "el color de eliminar escena en secucia nueva o mis escenas deberia ser rojo o rojiso y con un poco mas de margen top. en donde se seleciona color tmb desactivar el slide, en todo lugar que hay selecotr de color esa zona sin slide. falta control de brillo en mis escenas en la ventana de la secuencia."
