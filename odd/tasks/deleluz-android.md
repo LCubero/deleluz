@@ -117,3 +117,4 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - L61 — 2026-11-25, published: main fast-forwarded to ece5729 and pushed; tag v1.0.0; GitHub release "DeleLuz 1.0.0" (latest) with DeleLuz-1.0.0.apk (52,556,663 bytes, SHA-256 63f22c27…5ba67de, versionCode 2004, signer CN=DeleLuz); the latest-download URL answers HTTP 200. Release notes in Spanish and English.
 - L62 — 2026-11-25, user after the release: "bien nada mas que la fig se ve muiy rara, mal los colores y calidad" — the showreel GIF (96 colours, 300 px) shows banding and poor quality.
 - L63 — 2026-11-25, showreel replaced by an animated WebP (420 px, full colour, 36 frames, ~740 KB) instead of the 96-colour GIF; README and app/README point to it.
+- L64 — 2026-11-25, user: "si se ve mejor" — WebP showreel approved and pushed.
