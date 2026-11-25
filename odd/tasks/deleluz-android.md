@@ -47,7 +47,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - T20 — S20 — Acerca de in Ajustes — worker — done 315e5b8 (145 tests)
 - T16 — S18, S6 — Screenshots for a showreel and README images — pending
 - T17 — S18 — Release build (version, signing, notes) for the user to test; publish only after the user's yes — pending
-- T21 — S6, S12 — Polish found during captures: selector row name twice without alias, Glow Glass rename dialog, disclosure chevron rotates when open, AUTO effect field without stray cursor — worker — pending
+- T21 — S6, S12 — Polish found during captures: selector row name twice without alias, Glow Glass rename dialog, disclosure chevron rotates when open, AUTO effect field without stray cursor — worker — done 31c7590 (147 tests)
 - T9 — S7 — Docs: `app/README.md`, CHANGELOG, current state, roadmap — inline — pending
 
 ## Log
@@ -108,3 +108,4 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - L54 — 2026-11-25, user after testing 1.0.0+2: "bien nada más que el color de cancelar deberia ser como gris o no sé pero diferente al de conectar. todo lo demás buenisimo".
 - L55 — 2026-11-25, grey Cancelar in c003368 (Inicio card and selector rows): no gradient or glow, grey glass with a close icon; RED observed with the old button, 145 tests pass, analyze clean; build 1.0.0+3.
 - L56 — 2026-11-25, T16 captures on the user phone (user said "ya"; the user touched the phone twice mid-run, and once the back key plus a tap opened the camera by mistake — that capture was deleted at once and nothing from it was kept). Nine screens and a 96-colour showreel GIF (~680 KB) are in docs/app-screens/, 540 px wide, without the system navigation bar; alias "Sala" only. Found during captures (T21): selector row repeats the Bluetooth name without an alias; rename dialog uses default Material styling; open disclosures keep a right chevron; AUTO shows an empty effect field with a cursor.
+- L57 — 2026-11-25, T21 in 31c7590: name once without alias in the selector, shared Glow Glass confirm dialog (rename, forget), rotating disclosure chevrons, AUTO shown in the effect field without focus. Parent verified 147 tests, analyze clean; build 1.0.0+4.
