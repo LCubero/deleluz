@@ -20,7 +20,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - T1 — S9, S7, S8 — Flutter project `app/` (package `com.deleluz.deleluz`, Flutter default from `--org com.deleluz`), Dart protocol port with the `protocol.test.mjs` vectors — inline — done 93add08 (6 tests, analyze clean)
 - T2 — S2, S5, S9 — BLE layer: scan by name, connect/discover, bounded retries, remember/switch/forget, 50 ms coalescing sender, Android 12+ permissions — inline — blocked: native review escalated after correction 3bf0ef8 (L7)
 - T3 — S1, S4 — State, local persistence and es/en strings — worker — done 8c85c20 (44 tests; Link.onRemember/restore wiring and browser-specific texts adapt in T4-T7)
-- T4 — S1, S3, S5 — Inicio: device card, power (disabled when disconnected), brightness, quick scenes, off timer, shortcuts — inline — pending
+- T4 — S1, S3, S5 — Inicio: device card, power (disabled when disconnected), brightness, quick scenes, off timer, shortcuts — worker — done 8494db4 (56 tests; shortcuts reorder via long-press menu, not drag; timer stops when the app leaves the foreground, no wake lock)
 - T5 — S1, S3 — Color: wheel, Favoritos, effects + AUTO, speed — inline — pending
 - T6 — S1, S3 — Escenas: included scenes, Mis escenas editor/player, Música — inline — pending
 - T7 — S1, S3, S4 — Ajustes: strip settings, language, help, privacy — inline — pending
