@@ -1201,7 +1201,7 @@ void main() {
   });
 
   for (final (problem, message) in [
-    ('permissionDenied', 'Permite el acceso a dispositivos cercanos para conectar.'),
+    ('permissionDenied', 'Permite el acceso a dispositivos cercanos (en Android 11 o anterior, a la ubicación) para conectar.'),
     ('bluetoothOff', 'Activa Bluetooth para conectar.'),
   ]) {
     testWidgets('Connect explains $problem without opening the link', (tester) async {
