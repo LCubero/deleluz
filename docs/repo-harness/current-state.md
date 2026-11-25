@@ -6,13 +6,13 @@
 
 <!-- doc-role:verified-state -->
 
-DeleLuz controls the stock LEDDMX-03 from a native Android app (`app/`, release 1.0.0 candidate) and from Android Chrome (`webapp/`). See [the protocol](../PROTOCOL.md), [the capability table](../CAPABILITIES.md), and the [lab log](../../odd/tasks/led-lab.md) for verified controls and limitations. Linux BlueZ can connect directly to the strip, while the Windows Bluetooth stack fails during characteristic discovery. This does not block building an Android app on Windows: the phone handles BLE.
+DeleLuz controls the stock LEDDMX-03 from a native Android app (`app/`, published as GitHub release v1.0.0) and from Android Chrome (`webapp/`). See [the protocol](../PROTOCOL.md), [the capability table](../CAPABILITIES.md), and the [lab log](../../odd/tasks/led-lab.md) for verified controls and limitations. Linux BlueZ can connect directly to the strip, while the Windows Bluetooth stack fails during characteristic discovery. This does not block building an Android app on Windows: the phone handles BLE.
 
 ## Recent Completed Work
 
 <!-- doc-role:recent-work -->
 
-- Built the native Android app 1.0.0 on branch `feat/android-app`, verified by the user on two phones and two strips; independent review and native risk reviews done (`odd/tasks/deleluz-android.md` L41-L56).
+- Published the native Android app v1.0.0 (one universal APK, `DeleLuz-1.0.0.apk`) on GitHub Releases; built on branch `feat/android-app`, merged to `main`, verified by the user on two phones and two strips; independent review and native risk reviews done (`odd/tasks/deleluz-android.md` L41-L56).
 - Added onboard-mic sensitivity to the webapp, verified on the strip by the user (`335d91c`; lab L59).
 - Recorded Linux BLE connection behavior, power-source observations, and GATT discovery (lab L55–L60).
 
@@ -26,4 +26,4 @@ See the [roadmap](roadmap.md). Firmware readback and a strip-side timer remain u
 
 <!-- doc-role:next-step -->
 
-User tests the final 1.0.0 APK; after the user's explicit yes: merge `feat/android-app`, push, and publish the GitHub release with the APKs. An iOS build needs macOS.
+Choose the next improvement from the roadmap follow-ups when the user asks. Keep the release keystore backup; raise the build number above 2004 for the next APK. An iOS build needs macOS.

@@ -26,7 +26,7 @@ This roadmap is the canonical lifecycle owner. Track only non-trivial work with 
 - Scene sequence editor: the step editor was rejected (L33); replaced by simple color-square sequences "Mis escenas" (L37-L62).
 - Webapp strip test session: quick scenes, Mis escenas, favorites, Música, effects + AUTO with speed 10 %/90 %, disconnect and link loss on the real strip (`odd/tasks/deleluz-webapp.md` L64).
 - Phone-mic music modes (host-driven color/brightness from the phone microphone): deferred by the user until the firmware path advances (L31).
-- Native Android app: 1.0.0 built and verified on two phones (`app/`, `odd/tasks/deleluz-android.md`); publishing waits for the user. Follow-ups: scenes and the off timer keep running under the notification shade; no notice when preferences fall back to session-only storage; no in-app update notice.
+- Native Android app: v1.0.0 published on GitHub Releases (`app/`, `odd/tasks/deleluz-android.md`). Follow-ups: scenes and the off timer keep running under the notification shade; no notice when preferences fall back to session-only storage; no in-app update notice.
 - Phone design: the webapp uses the approved Glow Glass design (`design/deleluz-webapp/`); earlier phone directions are archived locally in `_archive/` (still in Git history).
 
 ## Resolved Records

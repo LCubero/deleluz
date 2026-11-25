@@ -6,7 +6,7 @@ This file records meaningful completed changes in chronological order, newest fi
 
 ## 2026-11-25
 
-- Added the native Android app DeleLuz 1.0.0 (`app/`, Flutter, shared as a signed APK): connect, power, color, brightness, built-in effects 1-210 and Auto, scenes, music modes, several saved strips with per-phone aliases and per-strip setup, cancel a pending connection, and an About section. Verified on two phones and two strips; screenshots and a showreel are in `docs/app-screens/` (`odd/tasks/deleluz-android.md`).
+- Added the native Android app DeleLuz 1.0.0 (`app/`, Flutter, shared as a signed APK): connect, power, color, brightness, built-in effects 1-210 and Auto, scenes, music modes, several saved strips with per-phone aliases and per-strip setup, cancel a pending connection, and an About section. Verified on two phones and two strips and published as GitHub release v1.0.0 (`DeleLuz-1.0.0.apk`); screenshots and a showreel are in `docs/app-screens/` (`odd/tasks/deleluz-android.md`).
 
 ## 2026-11-24
 

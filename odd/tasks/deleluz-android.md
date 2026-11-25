@@ -47,7 +47,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - T19 — S19 — Cancel a pending connect/reconnect; circular swipe between saved strips on the Inicio device card — worker — done 101ce3c (140 tests)
 - T20 — S20 — Acerca de in Ajustes — worker — done 315e5b8 (145 tests)
 - T16 — S18, S6 — Screenshots for a showreel and README images — pending
-- T17 — S18 — Release build (version, signing, notes) for the user to test; publish only after the user's yes — pending
+- T17 — S18 — Release build (version, signing, notes) for the user to test; publish only after the user's yes — done v1.0.0
 - T21 — S6, S12 — Polish found during captures: selector row name twice without alias, Glow Glass rename dialog, disclosure chevron rotates when open, AUTO effect field without stray cursor — worker — done 31c7590 (147 tests)
 - T22 — S21 — docs/EFFECTS.md from the app catalog; README download section anyone understands — parent — done 4542a81
 - T9 — S7 — Docs: `app/README.md`, CHANGELOG, current state, roadmap — inline — pending
@@ -114,3 +114,4 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - L58 — 2026-11-25, user liked the showreel and README preview: "si me gusta, podemos agregar en docs o donde corresponda la lista de efectos integrados en orden con su numero y nombre como salen en el app, ademas quiero que dejes un link a esa lista de efectos integrados en el readme. recuerda el readme cognitivo que se entienda, que muestre donde descargar que apk es, me gustaria ser bien claro con el apk que sirve en cualquier cel o que, la gente normal no entiende que es x86 etc"
 - L59 — 2026-11-25, user choices: "Un solo APK para todos (Recomendado)" and "Español + inglés (Recomendado)". T22 in 4542a81: docs/EFFECTS.md (210 effects generated from the app catalog, kept in sync by app/test/effects_doc_test.dart), README with Descargar/Download first, effects link, developer links last. Universal release APK 1.0.0+2004: 50.1 MB, arm64-v8a + armeabi-v7a + x86_64, signer CN=DeleLuz, installed over 2003 on the user phone (versionCode 2004 verified). 148 tests.
 - L60 — 2026-11-25, user: "me gusta dale si dale" — explicit yes to publish v1.0.0: merge feat/android-app into main, push, GitHub release with DeleLuz-1.0.0.apk.
+- L61 — 2026-11-25, published: main fast-forwarded to ece5729 and pushed; tag v1.0.0; GitHub release "DeleLuz 1.0.0" (latest) with DeleLuz-1.0.0.apk (52,556,663 bytes, SHA-256 63f22c27…5ba67de, versionCode 2004, signer CN=DeleLuz); the latest-download URL answers HTTP 200. Release notes in Spanish and English.
