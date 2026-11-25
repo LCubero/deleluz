@@ -16,6 +16,10 @@ part 'scene_editor.dart';
 
 Color _rgb(List<int> rgb) => Color.fromARGB(255, rgb[0], rgb[1], rgb[2]);
 const _effectColors = [[236, 72, 153], [168, 85, 247], [34, 211, 238]];
+const _voiceColors = [
+  [[236, 72, 153], [168, 85, 247]], [[34, 211, 238], [59, 130, 246]],
+  [[34, 197, 94], [250, 204, 21]], [[249, 115, 22], [239, 68, 68]],
+];
 
 class ScenesScreen extends StatefulWidget {
   const ScenesScreen({super.key, required this.controller});
@@ -73,7 +77,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
           ...switch (_panel) {
             'mine' => _mine(),
             'music' => [_music()],
-            _ => _included(),
+            _ => [GlowGrid(columns: 2, children: _included())],
           },
         ],
       ));
@@ -82,7 +86,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
 
   List<Widget> _included() => [
     for (final entry in homePresets.entries)
-      _card('included-${entry.key}', c.text(entry.key), _representative(entry.value.colors),
+      _card('included-${entry.key}', c.text(entry.key), presetPreviewColors(entry.key),
         () => _applyPreset(entry.key),
         () => _preview(c.text(entry.key), entry.value.colors, entry.value.interval, (interval) {
           _transport.useShared({'kind': 'scene', 'preset': entry.key, 'interval': interval});
@@ -105,9 +109,6 @@ class _ScenesScreenState extends State<ScenesScreen> {
     unawaited(_transport.playEffect(effect));
   }
 
-  List<List<int>> _representative(List<List<int>> colors) => colors.length <= 8 ? colors :
-    List.generate(6, (i) => colors[i * colors.length ~/ 6]);
-
   Future<void> _preview(String title, List<List<int>> colors, int interval, ValueChanged<int> apply,
       {String? preset, int? effect}) async {
     final transport = _transport;
@@ -128,15 +129,17 @@ class _ScenesScreenState extends State<ScenesScreen> {
         onPressed: items.length < maxSequences ? () => _edit(null) : null)),
       const SizedBox(height: 12),
       if (items.isEmpty) Text(c.text('sequencesEmpty'), textAlign: TextAlign.center),
-      for (final item in items)
-        _card('scene-play-${item['id']}', item['name'] as String, item['colors'] as List<List<int>>,
-          () {
-            if (!_transport.ready) return _connectFirst();
-            _transport.useShared({'kind': 'sequence', 'id': item['id']});
-          }, () => _edit(item),
-          trailing: IconButton(key: Key('scene-edit-${item['id']}'),
-            tooltip: c.text('renameSequence'), icon: const Icon(Icons.edit_outlined),
-            onPressed: () => _edit(item))),
+      GlowGrid(columns: 2, children: [
+        for (final item in items)
+          _card('scene-play-${item['id']}', item['name'] as String, item['colors'] as List<List<int>>,
+            () {
+              if (!_transport.ready) return _connectFirst();
+              _transport.useShared({'kind': 'sequence', 'id': item['id']});
+            }, () => _edit(item),
+            trailing: IconButton(key: Key('scene-edit-${item['id']}'),
+              tooltip: c.text('renameSequence'), icon: const Icon(Icons.edit_outlined),
+              onPressed: () => _edit(item))),
+      ]),
     ];
   }
 
@@ -149,28 +152,15 @@ class _ScenesScreenState extends State<ScenesScreen> {
   }
 
   Widget _card(String key, String title, List<List<int>> colors, VoidCallback tap,
-      VoidCallback hold, {Widget? trailing}) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Material(color: glowGlass, shape: RoundedRectangleBorder(
-      side: const BorderSide(color: glowLine), borderRadius: BorderRadius.circular(16),
-    ), child: Padding(
-      // Match GlassCard's content inset, including its 1 dp border.
-      padding: const EdgeInsets.symmetric(horizontal: glassInset + 1),
-      child: Row(children: [
-        Expanded(child: InkWell(key: Key(key), onTap: tap, onLongPress: hold,
-          borderRadius: BorderRadius.circular(16), child: Container(
-            constraints: const BoxConstraints(minHeight: 72),
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Row(children: [
-              Expanded(child: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis)),
-              const SizedBox(width: 8),
-              SizedBox(width: 58, height: 10, child: _swatchStrip(colors)),
-            ]),
-          ),
-        )),
-        ?trailing,
-      ]),
-    )),
+      VoidCallback hold, {Widget? trailing}) => GlowTile(key: Key(key),
+    onTap: tap, onLongPress: hold, inset: glassInset + 1, minHeight: 92,
+    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
+      ConstrainedBox(constraints: BoxConstraints(minHeight: MediaQuery.textScalerOf(context).scale(15) * 2.6),
+        child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(height: 1.3),
+          maxLines: 2, overflow: TextOverflow.ellipsis)),
+      GlowStrip(colors: colors, dotted: false),
+      if (trailing != null) Align(alignment: AlignmentDirectional.centerEnd, child: trailing),
+    ]),
   );
 
   Widget _music() => GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -178,12 +168,15 @@ class _ScenesScreenState extends State<ScenesScreen> {
     const SizedBox(height: 8),
     Text(c.text('musicHint')),
     const SizedBox(height: 12),
-    Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [
+    GlowGrid(columns: 2, children: [
       for (var mode = 1; mode <= 4; mode++)
-        OutlinedButton(key: Key('scene-voice-$mode'), onPressed: () {
+        GlowTile(key: Key('scene-voice-$mode'), onTap: () {
           if (!_transport.ready) return _connectFirst();
           unawaited(_transport.playVoice(mode));
-        }, child: Text('${c.text('voiceModeWord')} $mode')),
+        }, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
+          Text('${c.text('voiceModeWord')} $mode', style: Theme.of(context).textTheme.titleMedium),
+          GlowStrip(colors: _voiceColors[mode - 1], dotted: false),
+        ])),
     ]),
     const SizedBox(height: 18),
     _SceneSlider(controller: c, id: 'scene-sensitivity', label: 'micSensitivity',
@@ -191,12 +184,6 @@ class _ScenesScreenState extends State<ScenesScreen> {
       onChangeEnd: (_) => c.saveSelection(), enabled: _transport.ready),
   ]));
 }
-
-Widget _swatchStrip(List<List<int>> colors) => ClipRRect(
-  borderRadius: BorderRadius.circular(6),
-  child: Row(children: [for (final rgb in colors) Expanded(child: ColoredBox(color: _rgb(rgb)))]),
-);
-
 
 class _LastSent extends StatelessWidget {
   const _LastSent({required this.transport});

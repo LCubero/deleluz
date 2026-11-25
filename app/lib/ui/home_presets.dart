@@ -13,6 +13,15 @@ List<List<int>> _cycle(List<List<int>> anchors, int steps) => [
       }),
 ];
 
+// Presentation-only stops from PRESET_SW in webapp/app.js; playback uses the frames below.
+List<List<int>> presetPreviewColors(String id) => switch (id) {
+  'christmas-moving' => const [[239, 68, 68], [34, 197, 94], [255, 247, 230]],
+  'police' => const [[239, 68, 68], [59, 130, 246]],
+  'rasta' => const [[34, 197, 94], [250, 204, 21], [239, 68, 68]],
+  'flashing' => const [[255, 255, 255]],
+  _ => const [[239, 68, 68], [79, 70, 229]],
+};
+
 final homePresets = <String, HomePreset>{
   'christmas-moving': (interval: 200, colors: _cycle([_red, _green, _warm], 8)),
   'christmas-glow': (interval: 300, colors: _cycle([

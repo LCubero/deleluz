@@ -1,9 +1,11 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../app_controller.dart';
+import '../link.dart';
 import '../model/models.dart';
 import '../model/timer.dart';
 import 'glow_glass.dart';
+import 'glow_icon.dart';
 import 'home_presets.dart';
 import 'hue_wheel.dart';
 
@@ -28,18 +30,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final on = c.sentPower == true;
+    final on = c.link.ready && c.sentPower == true;
+    final height = MediaQuery.sizeOf(context).height;
+    final diameter = height <= 720 ? (height * .09).clamp(48.0, 72.0).toDouble()
+      : height <= 820 ? (height * .12).clamp(72.0, 100.0).toDouble() : 120.0;
     final style = Theme.of(context).textTheme;
     final last = c.lastSentLabel;
     return ListView(padding: glowScreenPadding, children: [
-      GlowHeader(title: c.text('title'), controller: c,
-        leading: const Icon(Icons.light_mode_outlined, color: Color(0xffe3c2ff)), actions: [
+      GlowHeader(title: c.text('title'), controller: c, showStatus: false,
+        leading: const GlowIcon(GlowGlyph.wave), actions: [
         PopupMenuButton<String>(tooltip: c.text('settingsLanguage'),
           icon: const Icon(Icons.language), onSelected: c.setLanguage, itemBuilder: (_) => [
             PopupMenuItem(value: 'es', child: Text(c.text('spanish'))),
             PopupMenuItem(value: 'en', child: Text(c.text('english'))),
           ]),
-        IconButton(tooltip: c.text('offTimer'), icon: const Icon(Icons.timer_outlined),
+        IconButton(tooltip: c.text('offTimer'), icon: const GlowIcon(GlowGlyph.timer),
           onPressed: () => showDialog<void>(context: context,
             builder: (_) => _TimerDialog(controller: c))),
       ]),
@@ -47,54 +52,98 @@ class _HomeScreenState extends State<HomeScreen> {
         Text(c.text('offIn', {'time': formatRemaining(seconds)}), style: style.bodySmall),
       const SizedBox(height: 12),
       _device(context),
-      const SizedBox(height: 16),
-      Center(child: DecoratedBox(
-        decoration: BoxDecoration(shape: BoxShape.circle,
-          border: Border.all(color: glowLine),
-          gradient: const RadialGradient(center: Alignment(0, -.4), colors: [Color(0xff382952), Color(0xff1b1636)]),
-          boxShadow: on ? const [BoxShadow(color: Color(0x66ec4899), blurRadius: 32)] : null),
+      const SizedBox(height: 12),
+      Center(child: Opacity(opacity: c.ready ? 1 : .5, child: DecoratedBox(
+        decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xff1b1636),
+          border: Border.all(color: const Color(0x33ffffff)),
+          gradient: const RadialGradient(center: Alignment(0, -.3), stops: [0, .6],
+            colors: [Color(0x1fffffff), Color(0x08ffffff)]),
+          boxShadow: on ? const [BoxShadow(color: Color(0x2ea855f7), spreadRadius: 6),
+            BoxShadow(color: Color(0x73ec4899), blurRadius: 50)] : null),
         child: IconButton(key: const Key('power'), tooltip: c.text('power'),
-          isSelected: on, iconSize: 52, onPressed: c.ready ? () => c.setPower(!on) : null,
-          style: IconButton.styleFrom(fixedSize: const Size.square(116)),
-          icon: const Icon(Icons.power_settings_new)),
-      )),
-      const SizedBox(height: 10),
+          isSelected: on, onPressed: c.ready ? () => c.setPower(!on) : null,
+          style: IconButton.styleFrom(fixedSize: Size.square(diameter)),
+          icon: GlowIcon(GlowGlyph.power, size: height <= 720 ? 32 : 52,
+            color: on ? Colors.white : glowFaint)),
+      ))),
+      const SizedBox(height: 6),
+      Text(on ? (c.language == 'en' ? 'On' : c.text('power')) : c.text('off'),
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 6),
       Text(last == null ? c.text('noCommand') : c.text('lastSent', {'command': last}),
         textAlign: TextAlign.center, style: style.bodySmall),
-      const SizedBox(height: 16),
-      GlassCard(child: GlowDisclosure(
-        title: c.text('quickScenes'),
-        onExpansionChanged: (value) => setState(() => _quickOpen = value),
-        children: [
-          Align(alignment: AlignmentDirectional.centerStart,
-            child: TextButton(onPressed: widget.openScenes, child: Text(c.text('allScenes')))),
-          Align(alignment: AlignmentDirectional.centerStart, child: Wrap(spacing: 8, runSpacing: 8, children: [
-            for (var i = 0; i < c.shortcuts.length; i++)
-              OutlinedButton(onPressed: () {
-                if (c.ready) {
-                  c.applyShortcut(c.shortcuts[i]);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(c.text('connectFirst'))));
-                }
-              }, onLongPress: () => _editShortcut(i), child: Text(c.shortcutLabel(c.shortcuts[i]))),
-            if (c.shortcuts.length < maxShortcuts)
-              IconButton.outlined(tooltip: c.text('addShortcut'),
-                onPressed: () => _pickShortcut(), icon: const Icon(Icons.add)),
-          ])),
-        ],
-      )),
       const SizedBox(height: 12),
-      _slider(context, 'brightness', c.brightness, c.setBrightness),
+      _quick(context),
       if (!_quickOpen) ...[
         const SizedBox(height: 12),
-        _slider(context, 'speed', c.speed, c.setSpeed),
+        _slider('speed', c.speed, c.setSpeed),
+      ],
+      const SizedBox(height: 12),
+      _slider('brightness', c.brightness, c.setBrightness),
+    ]);
+  }
+
+  Widget _quick(BuildContext context) {
+    final count = c.shortcuts.length + (c.shortcuts.length < maxShortcuts ? 1 : 0);
+    final columns = count <= 3 ? count : count == 4 ? 2 : 3;
+    return Column(children: [
+      Row(spacing: 8, children: [
+        Expanded(child: Semantics(button: true, expanded: _quickOpen, child: InkWell(
+          onTap: () => setState(() => _quickOpen = !_quickOpen),
+          child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 44), child: Row(spacing: 8, children: [
+            Flexible(child: Text(c.text('quickScenes').toUpperCase(), style: const TextStyle(
+              color: glowMuted, fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 1.04))),
+            RotatedBox(quarterTurns: _quickOpen ? 1 : 0,
+              child: const GlowIcon(GlowGlyph.chevron, color: glowMuted, size: 18)),
+          ])),
+        ))),
+        Flexible(child: Align(alignment: AlignmentDirectional.centerEnd,
+          child: TextButton(onPressed: widget.openScenes,
+            style: TextButton.styleFrom(foregroundColor: glowLink, padding: EdgeInsets.zero,
+              textStyle: const TextStyle(fontSize: 13)),
+            child: Text(c.text('allScenes'), textAlign: TextAlign.end)))),
+      ]),
+      if (_quickOpen) ...[
+        const SizedBox(height: 10),
+        GlowGrid(columns: columns, children: [
+          for (var i = 0; i < c.shortcuts.length; i++) _shortcut(context, i),
+          if (c.shortcuts.length < maxShortcuts)
+            GlowTile(onTap: () => _pickShortcut(), minHeight: 60,
+              child: Tooltip(message: c.text('addShortcut'), child: const Center(child: Icon(Icons.add)))),
+        ]),
       ],
     ]);
   }
 
-  Widget _slider(BuildContext context, String label, int value, ValueChanged<int> change) =>
-    GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      GlowValueLabel(label: c.text(label), value: c.text('percent', {'value': value})),
+  Widget _shortcut(BuildContext context, int index) {
+    final item = c.shortcuts[index];
+    final colors = switch (item['kind']) {
+      'scene' => presetPreviewColors(item['preset'] as String),
+      'sequence' => c.models.loadSequences().where((scene) => scene['id'] == item['id'])
+        .firstOrNull?['colors'] as List<List<int>>?,
+      _ => [item['rgb'] as List<int>],
+    };
+    return GlowTile(minHeight: 60, onTap: () {
+      if (c.ready) {
+        c.applyShortcut(item);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(c.text('connectFirst'))));
+      }
+    }, onLongPress: () => _editShortcut(index), child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 6, children: [
+        GlowStrip(colors: colors ?? const [], height: 8, dotted: false),
+        Text(c.shortcutLabel(item), maxLines: 2, overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+      ],
+    ));
+  }
+
+  Widget _slider(String label, int value, ValueChanged<int> change) =>
+    GlassCard(verticalInset: 14, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      GlowValueLabel(label: c.text(label), value: c.text('percent', {'value': value}),
+        icon: label == 'brightness' ? const GlowIcon(GlowGlyph.sun, size: 20) : null),
+      const SizedBox(height: 10),
       Semantics(label: c.text(label), child: Slider(key: Key(label), value: value.toDouble(), max: 100,
         onChanged: c.ready ? (value) => change(value.round()) : null,
         onChangeEnd: (_) => c.saveSelection())),
@@ -105,21 +154,26 @@ class _HomeScreenState extends State<HomeScreen> {
     final preview = c.link.ready && c.sentPower == true && rgb != null
         ? Color.fromARGB(255, rgb[0], rgb[1], rgb[2]) : null;
     final strip = c.link.ready ? c.link.strip : c.remembered;
-    return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(strip?.name ?? c.text('device'), style: Theme.of(context).textTheme.titleMedium),
-      if (preview != null) ...[
-        const SizedBox(height: 14),
-        Semantics(label: c.text('stripPreview'), child: Container(height: 14,
-          decoration: BoxDecoration(color: preview, borderRadius: BorderRadius.circular(99),
-            boxShadow: [BoxShadow(color: preview.withAlpha(120), blurRadius: 16)]))),
-      ],
-      const SizedBox(height: 12),
-      Wrap(spacing: 8, runSpacing: 6, children: [
+    final previewColors = preview == null || rgb == null ? const <List<int>>[] : [rgb];
+    final theme = Theme.of(context).textTheme;
+    return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: [
+      Row(spacing: 12, children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(strip?.name ?? 'LEDDMX', style: theme.titleMedium),
+          Text(c.text(c.link.status == LinkStatus.lost ? 'keepsColor' : 'controller'), style: theme.bodySmall),
+        ])),
+        Flexible(child: ConnectionChip(controller: c)),
+      ]),
+      Semantics(container: true, image: true, label: c.text('stripPreview'), child: GlowStrip(
+        colors: previewColors, height: 14, glow: preview)),
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
         if (!c.link.ready && c.remembered != null)
-          FilledButton(onPressed: c.busy ? null : c.reconnect, child: Text(c.text('reconnect'))),
-        if (!_chooser)
-          FilledButton(onPressed: c.busy ? null : _scan, child: Text(c.text(c.remembered == null ? 'connect' : 'switchStrip')))
-        else
+          _connectButton(c.text('reconnect'), c.busy ? null : c.reconnect),
+        if (!_chooser && !c.link.ready && c.remembered == null)
+          _connectButton(c.text('connect'), c.busy ? null : _scan)
+        else if (!_chooser)
+          OutlinedButton(onPressed: c.busy ? null : _scan, child: Text(c.text('switchStrip')))
+        else if (_chooser)
           OutlinedButton(onPressed: () {
             c.stopScan();
             setState(() => _chooser = false);
@@ -147,6 +201,16 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     ]));
   }
+
+  Widget _connectButton(String label, VoidCallback? onPressed) => DecoratedBox(
+    decoration: BoxDecoration(gradient: onPressed == null ? null : glowStrongGradient,
+      borderRadius: BorderRadius.circular(14), boxShadow: onPressed == null ? null : const [
+        BoxShadow(color: Color(0x59ec4899), blurRadius: 24, offset: Offset(0, 8)),
+      ]),
+    child: FilledButton.icon(onPressed: onPressed,
+      style: FilledButton.styleFrom(backgroundColor: Colors.transparent),
+      icon: const GlowIcon(GlowGlyph.bluetooth, size: 20), label: Text(label)),
+  );
 
   Future<void> _editShortcut(int index) async {
     final action = await showDialog<String>(context: context, builder: (context) => SimpleDialog(

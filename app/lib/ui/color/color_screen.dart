@@ -184,7 +184,7 @@ class _ColorScreenState extends State<ColorScreen> {
             ]),
           const SizedBox(height: 16),
           if (_effects) _effectCard() else ...[
-            HueWheel(hue: HSVColor.fromColor(color).hue, label: c.text('hue'),
+            HueWheel(hue: HSVColor.fromColor(color).hue, color: color, label: c.text('hue'),
               onChanged: (hue) {
                 final selected = HSVColor.fromAHSV(1, hue, 1, 1).toColor().toARGB32();
                 _choose([(selected >> 16) & 255, (selected >> 8) & 255, selected & 255]);

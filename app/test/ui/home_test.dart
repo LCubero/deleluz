@@ -100,10 +100,23 @@ void main() {
         matching: find.text(tab)).hitTestable().last);
       await tester.pumpAndSettle();
       expect(find.descendant(of: header, matching: find.text(title)).hitTestable(), findsOneWidget);
+      expect(find.byType(ConnectionChip).hitTestable(), findsOneWidget);
       expect(find.descendant(of: header, matching: find.byType(ConnectionChip)).hitTestable(),
-        findsOneWidget);
+        tab == 'Inicio' ? findsNothing : findsOneWidget);
       expect(tester.takeException(), isNull);
     }
+  });
+
+  testWidgets('Home shows an inactive strip preview and web slider order', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(412, 915));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await start(tester);
+    expect(find.text('Apagado'), findsOneWidget);
+    expect(find.byWidgetPredicate((w) => w is Semantics && w.properties.label == 'Vista previa de la tira'),
+      findsOneWidget);
+    expect(find.text('Todas las escenas'), findsOneWidget);
+    expect(tester.getTopLeft(find.byKey(const Key('speed'))).dy,
+      lessThan(tester.getTopLeft(find.byKey(const Key('brightness'))).dy));
   });
 
   testWidgets('disconnected power cannot send', (tester) async {
@@ -229,9 +242,9 @@ void main() {
         await tester.binding.setSurfaceSize(null);
       });
       await start(tester);
-      final quick = find.text('Escenas rápidas');
+      final quick = find.text('ESCENAS RÁPIDAS');
       await tester.scrollUntilVisible(quick, 100);
-      await tester.dragFrom(Offset(size.width / 2, size.height / 2), const Offset(0, -160));
+      await tester.ensureVisible(quick);
       await tester.pumpAndSettle();
       await tester.tap(quick.hitTestable());
       await tester.pumpAndSettle();

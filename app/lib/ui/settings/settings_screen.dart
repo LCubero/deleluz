@@ -191,11 +191,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ));
   });
 
-  Widget _section(String key, List<Widget> children) => GlassCard(child: GlowDisclosure(
-    titleKey: ValueKey('settings-$key'),
-    title: _text(key),
-    children: [Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 12, children: children)],
-  ));
+  Widget _section(String key, List<Widget> children) => Material(color: glowGlass,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16),
+      side: const BorderSide(color: glowLine)),
+    clipBehavior: Clip.antiAlias,
+    child: GlowDisclosure(titleKey: ValueKey('settings-$key'), title: _text(key),
+      padding: const EdgeInsets.symmetric(horizontal: glassInset + 1),
+      children: [Padding(padding: const EdgeInsets.fromLTRB(glassInset + 1, 0, glassInset + 1, 14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 12, children: children))],
+    ),
+  );
 
   Widget _symptom(String key, List<String> steps) => GlowDisclosure(
     title: _text(key),

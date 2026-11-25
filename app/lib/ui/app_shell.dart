@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../app_controller.dart';
 import 'color/color_screen.dart';
 import 'glow_glass.dart';
+import 'glow_icon.dart';
 import 'home.dart';
 import 'scenes/scenes_screen.dart';
 import 'settings/settings_screen.dart';
@@ -17,8 +18,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   static const tabs = ['home', 'color', 'scenes', 'settings'];
-  static const icons = [Icons.home_outlined, Icons.palette_outlined,
-    Icons.auto_awesome_outlined, Icons.settings_outlined];
+  static const icons = [GlowGlyph.home, GlowGlyph.color, GlowGlyph.scenes, GlowGlyph.settings];
   int _tab = 0;
   double _travel = 0;
 
@@ -65,25 +65,37 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           ),
         ),
       ))),
-      bottomNavigationBar: Material(color: const Color(0xff17122c), child: SafeArea(
-        top: false,
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          for (var index = 0; index < tabs.length; index++)
-            Expanded(child: Semantics(selected: _tab == index, button: true,
-              child: InkWell(onTap: () => _show(index), child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 3),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(icons[index], color: index == _tab ? const Color(0xffedb7ff) : glowMuted),
-                  const SizedBox(height: 4),
-                  Text(controller.text(tabs[index]), textAlign: TextAlign.center,
-                    style: TextStyle(color: index == _tab ? glowInk : glowMuted,
-                      fontWeight: index == _tab ? FontWeight.w700 : FontWeight.w500,
-                      fontSize: 12)),
-                ]),
-              )),
-            )),
-        ]),
-      )),
+      bottomNavigationBar: _navigation(controller),
     ));
   }
+
+  Widget _navigation(AppController controller) => Material(
+    color: const Color(0xff0a0818),
+    child: DecoratedBox(
+      decoration: const BoxDecoration(border: Border(top: BorderSide(color: glowLine))),
+      child: SafeArea(top: false, child: Center(heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480, minHeight: 72),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Row(children: [
+              for (var index = 0; index < tabs.length; index++)
+                Expanded(child: Semantics(selected: _tab == index, button: true,
+                  child: InkWell(onTap: () => _show(index), child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 3),
+                    child: Column(mainAxisSize: MainAxisSize.min, spacing: 4, children: [
+                      GlowIcon(icons[index], color: index == _tab ? glowLink : glowFaint,
+                        highlight: index == _tab),
+                      Text(controller.text(tabs[index]), textAlign: TextAlign.center,
+                        style: TextStyle(color: index == _tab ? glowInk : glowFaint,
+                          fontWeight: FontWeight.w600, fontSize: 12)),
+                    ]),
+                  )),
+                )),
+            ]),
+          ),
+        ),
+      )),
+    ),
+  );
 }

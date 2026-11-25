@@ -124,7 +124,8 @@ class _ColorFavoritesState extends State<ColorFavorites> {
     final colors = _open ? c.models.loadPalette() : const <String>[];
     final trash = _dragging != null;
     final style = Theme.of(context).textTheme.bodySmall;
-    return GlassCard(child: GlowDisclosure(titleKey: const Key('color-favorites'),
+    return GlowDisclosure(titleKey: const Key('color-favorites'), minHeight: 44,
+      titleStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: glowMuted),
       title: c.text('favorites'), initiallyExpanded: _open, onExpansionChanged: (open) {
         setState(() => _open = open);
         unawaited(_persistOpen(open));
@@ -151,6 +152,6 @@ class _ColorFavoritesState extends State<ColorFavorites> {
           child: Semantics(liveRegion: true, child: Text(c.text(message),
             textAlign: TextAlign.center, style: style))),
       ],
-    ]));
+    ]);
   }
 }
