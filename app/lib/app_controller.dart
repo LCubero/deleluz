@@ -622,6 +622,7 @@ class AppController extends ChangeNotifier {
   }
 
   String shortcutLabel(Fields item) => switch (item['kind']) {
+    'effect' => effectName(item['effect'] as int) ?? text('effect'),
     'scene' => text(item['preset'] as String),
     'sequence' => _sequence(item['id'])?['name'] as String? ?? text('myScenes'),
     _ => item['name'] == null
@@ -650,6 +651,11 @@ class AppController extends ChangeNotifier {
 
   Future<void> applyShortcut(Fields item) async {
     if (!canSend) return;
+    if (item['kind'] == 'effect') {
+      final id = item['effect'];
+      if (id is int && id >= 1 && id <= 210) await setEffect(id);
+      return;
+    }
     final preset = homePresets[item['preset']];
     final sequence = _sequence(item['id']);
     final rgb = item['rgb'] as List<int>?;

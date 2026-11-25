@@ -29,6 +29,15 @@ void main() {
 
   List<int> effectFrame(int id) => [0x7b, 0xff, 3, id, 255, 255, 255, 255, 0xbf];
 
+  testWidgets('effect shortcut sends the selected built-in effect frame', (tester) async {
+    await c.connect(FakeBle.strip);
+    final sending = c.applyShortcut({'kind': 'effect', 'effect': 210});
+    await drain(tester);
+    await sending;
+    expect(ble.writes.lastOrNull, effectFrame(210));
+    expect(c.hasActiveEffect, isTrue);
+  });
+
   Future<void> advance(WidgetTester tester, int ms) async {
     now += ms;
     await tester.pump(Duration(milliseconds: ms));

@@ -393,7 +393,7 @@ void main() {
     expect(tester.getTopRight(find.byType(ConnectionChip)).dx, tester.getTopRight(preview).dx);
     expect(find.byWidgetPredicate((w) => w is Semantics && w.properties.label == 'Vista previa de la tira'),
       findsOneWidget);
-    expect(find.text('Todas las escenas'), findsOneWidget);
+    expect(find.text('Todas las escenas'), findsNothing);
     expect(tester.getTopLeft(find.byKey(const Key('speed'))).dy,
       lessThan(tester.getTopLeft(find.byKey(const Key('brightness'))).dy));
   });
@@ -411,6 +411,92 @@ void main() {
     await tester.tap(find.byTooltip('Volver a Inicio'));
     await tester.pumpAndSettle();
   });
+
+  for (final width in [320.0, 412.0]) {
+    testWidgets('quick actions two-step pickers and editing at $width dp', (tester) async {
+      await tester.binding.setSurfaceSize(Size(width, width == 320 ? 640 : 915));
+      tester.platformDispatcher.textScaleFactorTestValue = 1.4;
+      addTearDown(() async {
+        tester.platformDispatcher.clearTextScaleFactorTestValue();
+        await tester.binding.setSurfaceSize(null);
+      });
+      final models = Models(store, presetIds: {});
+      await models.saveSequences(createSequence([]));
+      await models.saveShortcuts([]);
+      final c = await start(tester);
+      c.toggleEffectFavorite(210);
+      Future<void> tap(Finder target) async {
+        await tester.ensureVisible(target);
+        await tester.pumpAndSettle();
+        expect(target.hitTestable(), findsOneWidget);
+        await tester.tap(target);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+      final title = find.text('Acciones rápidas');
+      await tester.scrollUntilVisible(title, 100);
+      await tap(title);
+      expect(tester.renderObject<RenderParagraph>(title).didExceedMaxLines, isFalse);
+      final add = find.byTooltip('Agregar acción rápida');
+      final confirm = find.widgetWithText(FilledButton, 'Agregar');
+      final first = find.text('Paso 1 de 2 · Elegir tipo');
+      final second = find.text('Paso 2 de 2 · Elegir opción');
+      final color = find.byKey(const Key('quick-type-color'));
+      await tap(add);
+      expect(first, findsOneWidget);
+      await tap(color);
+      expect(second, findsOneWidget);
+      await tap(find.byTooltip('Volver a los tipos'));
+      expect(first, findsOneWidget);
+      await tap(color);
+      expect(find.byKey(const Key('color-disc')), findsOneWidget);
+      await tap(find.widgetWithText(ChoiceChip, 'Cálido'));
+      await tap(confirm);
+      expect(c.shortcuts.single, defaultShortcuts.first);
+      await tap(add);
+      await tap(find.byKey(const Key('quick-type-effect')));
+      expect(find.text(c.text('favorites')), findsOneWidget);
+      expect(find.byKey(const Key('effect-row-210')), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('effect-search')), '210');
+      await tester.pumpAndSettle();
+      await tap(find.byKey(const Key('effect-row-210')));
+      await tap(confirm);
+      expect(c.shortcuts.last, {'kind': 'effect', 'effect': 210});
+      await tap(add);
+      await tap(find.byKey(const Key('quick-type-scene')));
+      await tap(find.text(c.text('rasta')));
+      await tap(confirm);
+      expect(c.shortcuts.last, {'kind': 'scene', 'preset': 'rasta'});
+      await tap(add);
+      await tap(find.byKey(const Key('quick-type-sequence')));
+      await tap(find.text(c.models.loadSequences().single['name'] as String));
+      await tap(confirm);
+      expect(c.shortcuts.last, {'kind': 'sequence', 'id': '1'});
+
+      final effect = find.text(c.shortcutLabel(c.shortcuts[1]));
+      Future<void> editEffect() async {
+        await tester.ensureVisible(effect);
+        await tester.pumpAndSettle();
+        await tester.longPress(effect);
+        await tester.pumpAndSettle();
+      }
+      await editEffect();
+      await tap(find.text(c.text('moveLeft')));
+      expect(c.shortcuts.first['kind'], 'effect');
+      await editEffect();
+      await tap(find.widgetWithText(SimpleDialogOption, c.text('changeShortcut')));
+      await tap(color);
+      await tap(find.widgetWithText(FilledButton, 'Cambiar'));
+      expect(c.shortcuts.first['kind'], 'color');
+      final scene = find.text(c.text('rasta'));
+      await tester.ensureVisible(scene);
+      await tester.pumpAndSettle();
+      await tester.longPress(scene);
+      await tester.pumpAndSettle();
+      await tap(find.text(c.text('removeShortcut')));
+      expect(c.shortcuts.map((item) => item['kind']), ['color', 'color', 'sequence']);
+    });
+  }
 
   final selectorScroll = find.descendant(of: find.byKey(const Key('strip-selector-list')),
     matching: find.byType(Scrollable), matchRoot: false).first;
@@ -1115,7 +1201,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(hint.hitTestable(), findsOneWidget);
       expect(tester.takeException(), isNull);
-      final quick = find.text('ESCENAS RÁPIDAS');
+      final quick = find.text('Acciones rápidas');
       await tester.scrollUntilVisible(quick, 100);
       await tester.ensureVisible(quick);
       await tester.pumpAndSettle();

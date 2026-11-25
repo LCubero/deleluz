@@ -6,8 +6,7 @@ import '../model/models.dart';
 import '../model/timer.dart';
 import 'glow_glass.dart';
 import 'glow_icon.dart';
-import 'home_presets.dart';
-import 'hue_wheel.dart';
+import 'quick_actions_sheet.dart';
 import 'strip_selector.dart';
 import 'timer_sheet.dart';
 
@@ -87,27 +86,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _quick(BuildContext context) {
     final count = c.shortcuts.length + (c.shortcuts.length < maxShortcuts ? 1 : 0);
-    final columns = count <= 3 ? count : count == 4 ? 2 : 3;
     return Column(children: [
-      Row(spacing: 8, children: [
-        Expanded(child: Semantics(button: true, expanded: _quickOpen, child: InkWell(
-          onTap: () => setState(() => _quickOpen = !_quickOpen),
-          child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 44), child: Row(spacing: 8, children: [
-            Flexible(child: Text(c.text('quickScenes').toUpperCase(), style: const TextStyle(
-              color: glowMuted, fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 1.04))),
-            RotatedBox(quarterTurns: _quickOpen ? 1 : 0,
-              child: const GlowIcon(GlowGlyph.chevron, color: glowMuted, size: 18)),
-          ])),
-        ))),
-        Flexible(child: Align(alignment: AlignmentDirectional.centerEnd,
-          child: TextButton(onPressed: widget.openScenes,
-            style: TextButton.styleFrom(foregroundColor: glowLink, padding: EdgeInsets.zero,
-              textStyle: const TextStyle(fontSize: 13)),
-            child: Text(c.text('allScenes'), textAlign: TextAlign.end)))),
-      ]),
+      Semantics(button: true, expanded: _quickOpen, child: InkWell(
+        onTap: () => setState(() => _quickOpen = !_quickOpen),
+        child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 44), child: Row(spacing: 8, children: [
+          Expanded(child: Text(c.text('quickActions'), style: const TextStyle(
+            color: glowMuted, fontSize: 16, fontWeight: FontWeight.w600))),
+          RotatedBox(quarterTurns: _quickOpen ? 1 : 0,
+            child: const GlowIcon(GlowGlyph.chevron, color: glowMuted, size: 18)),
+        ])),
+      )),
       if (_quickOpen) ...[
         const SizedBox(height: 10),
-        GlowGrid(columns: columns, children: [
+        GlowGrid(columns: count == 1 ? 1 : 2, children: [
           for (var i = 0; i < c.shortcuts.length; i++) _shortcut(context, i),
           if (c.shortcuts.length < maxShortcuts)
             GlowTile(onTap: () => _pickShortcut(), minHeight: 60,
@@ -119,12 +110,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _shortcut(BuildContext context, int index) {
     final item = c.shortcuts[index];
-    final colors = switch (item['kind']) {
-      'scene' => presetPreviewColors(item['preset'] as String),
-      'sequence' => c.models.loadSequences().where((scene) => scene['id'] == item['id'])
-        .firstOrNull?['colors'] as List<List<int>>?,
-      _ => [item['rgb'] as List<int>],
-    };
+    final kind = QuickActionKind.values.byName(item['kind'] as String);
+    final rgb = item['rgb'] as List<int>?;
     final tile = GlowTile(minHeight: 60, onTap: () {
       if (c.ready) {
         c.applyShortcut(item);
@@ -133,7 +120,12 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }, onLongPress: () => _editShortcut(index), child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 6, children: [
-        GlowStrip(colors: colors ?? const [], height: 8, dotted: false),
+        Row(spacing: 6, children: [
+          if (rgb != null) SizedBox(width: 14,
+            child: GlowStrip(colors: [rgb], height: 8, dotted: false))
+          else Icon(kind.icon, size: 14, color: glowLink),
+          Flexible(child: Text(c.text(kind.label), style: Theme.of(context).textTheme.bodySmall)),
+        ]),
         Text(c.shortcutLabel(item), maxLines: 2, overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
       ],
@@ -266,41 +258,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _pickShortcut([int? index]) async {
-    double hue = 0;
-    final item = await showDialog<Fields>(context: context, builder: (context) => StatefulBuilder(
-      builder: (context, setModalState) => AlertDialog(
-        title: Text(c.text(index == null ? 'addShortcut' : 'changeShortcut')),
-        scrollable: true,
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          ExpansionTile(title: Text(c.text('scenes')), children: [
-            for (final preset in homePresets.keys)
-              ListTile(title: Text(c.text(preset)), onTap: () => Navigator.pop(context, <String, Object?>{'kind': 'scene', 'preset': preset})),
-            for (final scene in c.models.loadSequences())
-              ListTile(title: Text(scene['name'] as String), onTap: () => Navigator.pop(context, <String, Object?>{'kind': 'sequence', 'id': scene['id']})),
-          ]),
-          ExpansionTile(title: Text(c.text('colors')), children: [
-            for (final item in [...defaultShortcuts, {'kind': 'color', 'name': 'night', 'rgb': [32, 4, 0]},
-              for (final hex in c.models.loadPalette()) {'kind': 'color', 'rgb': [
-                for (final offset in [1, 3, 5]) int.parse(hex.substring(offset, offset + 2), radix: 16),
-              ]}])
-              SliderZone(child: ListTile(leading: _swatch(item['rgb'] as List<int>),
-                title: Text(c.shortcutLabel(item)), onTap: () => Navigator.pop(context, item))),
-            const SizedBox(height: 12),
-            HueWheel(hue: hue, label: c.text('hue'),
-              onChanged: (value) => setModalState(() => hue = value)),
-            TextButton(onPressed: () {
-              final color = HSVColor.fromAHSV(1, hue, 1, 1).toColor().toARGB32();
-              Navigator.pop(context, <String, Object?>{'kind': 'color',
-                'rgb': [(color >> 16) & 255, (color >> 8) & 255, color & 255]});
-            }, child: Text(c.text('addThisColor'))),
-          ]),
-        ]),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(c.text('cancel')))],
-      ),
-    ));
+    final item = await QuickActionsSheet.open(context, c, replacing: index != null);
     if (!mounted || item == null) return;
     c.updateShortcuts(index == null ? addShortcut(c.shortcuts, item) : replaceShortcut(c.shortcuts, index, item));
   }
 
-  Widget _swatch(List<int> rgb) => CircleAvatar(radius: 12, backgroundColor: Color.fromARGB(255, rgb[0], rgb[1], rgb[2]));
 }

@@ -81,6 +81,26 @@ void main() {
   const red = {'kind': 'color', 'rgb': [255, 0, 0]};
   const scene = {'kind': 'scene', 'preset': 'rasta'};
   const sequence = {'kind': 'sequence', 'id': '1'};
+  test('v1 shortcut JSON loads without changing storage', () {
+    const fixture = '[{"kind":"color","rgb":[255,0,0],"name":"red"},{"kind":"scene","preset":"rasta"},{"kind":"sequence","id":"1"}]';
+    storage.values[Models.shortcutsKey] = fixture;
+    storage.values[Models.sequencesKey] = '[{"id":"1","name":"Cine","colors":[[1,2,3]],"interval":500,"bri":50}]';
+    final before = Map.of(storage.values);
+    expect(models.loadShortcuts(), [{...red, 'name': 'red'}, scene, sequence]);
+    expect(storage.values, before);
+  });
+
+  test('effect shortcuts round-trip and reject out-of-catalog targets', () async {
+    const effect = {'kind': 'effect', 'effect': 210};
+    expect(await models.saveShortcuts([red, effect]), isTrue);
+    expect(models.loadShortcuts(), [red, effect]);
+    final before = Map.of(storage.values);
+    for (final invalid in [null, 0, 211, 255, 2.5, '2']) {
+      expect(await models.saveShortcuts([{...effect, 'effect': invalid}]), isFalse);
+    }
+    expect(storage.values, before);
+  });
+
   test('shortcut defaults, malformed values, and intentional empty list', () async {
     expect(models.loadShortcuts(), defaultShortcuts);
     for (final raw in ['{', '{}', 'null']) {

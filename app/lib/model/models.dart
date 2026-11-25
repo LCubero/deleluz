@@ -236,6 +236,9 @@ class Models {
             result.add({'kind': 'color', 'rgb': rgb,
               if (name is String && name.isNotEmpty) 'name': name});
           }
+        case 'effect':
+          final effect = _integer(item['effect'], 1, 210);
+          if (effect != null) result.add({'kind': 'effect', 'effect': effect});
         case 'scene':
           if (presetIds.contains(item['preset'])) {
             result.add({'kind': 'scene', 'preset': item['preset']});
