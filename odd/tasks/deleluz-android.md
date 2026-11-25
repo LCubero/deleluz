@@ -44,7 +44,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - T15 — S18 — Full-app review against S1-S17 — done (L43); fixes in T18
 - T18 — S5, S8, S18 — Fix review findings B1, F1-F3 and minor strings — worker + parent — done 3985282 (132 tests)
 - T19 — S19 — Cancel a pending connect/reconnect; circular swipe between saved strips on the Inicio device card — worker — done 101ce3c (140 tests)
-- T20 — S20 — Acerca de in Ajustes — after T19 — pending
+- T20 — S20 — Acerca de in Ajustes — worker — done 315e5b8 (145 tests)
 - T16 — S18, S6 — Screenshots for a showreel and README images — pending
 - T17 — S18 — Release build (version, signing, notes) for the user to test; publish only after the user's yes — pending
 - T9 — S7 — Docs: `app/README.md`, CHANGELOG, current state, roadmap — inline — pending
@@ -103,3 +103,4 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - L50 — 2026-11-25, user choice for the About author: "LCubero (Recomendado)".
 - L51 — 2026-11-25, user on the About mock: "sin esto \" Sin cuentas ni internet. Tus tiras, escenas y ajustes se guardan solo en este teléfono.\" mejor \"Dele luz mae\" o algo asi, algo tico" — tagline «¡Dele luz, mae!», kept untranslated in English.
 - L52 — 2026-11-25, user: "asi: !Dele, enciandala mae! algo asi" — tagline «¡Dele, enciéndala, mae!» (spelling and accents normalized), untranslated in English.
+- L53 — 2026-11-25, T19 native review (Risk item 4) approved; its three findings were refuted. T20 About in 315e5b8; build number 1.0.0+2 so testers install over 1.0.0+1 without losing data. Parent verified 145 tests, analyze clean.
