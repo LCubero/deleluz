@@ -29,6 +29,10 @@ Phase 1 of `docs/PLAN.md`: white tones and saturation, effect list with search a
 - S20 (phone compatibility, last): "al final de todos los cambios cuando todo esté probado y revisado que funciona en mi celular, hay que revisar y asegurarse que funciona y se ve bien en cualquier dispositivo celular, es sdecir la mayoria de los celulares, tablets aun no"
 - S21 (cyan accent): "el color cyan ciento que se ve muy bien en algunas cosas en el app (no hay nada cyan ahorita mismo)"
 
+- S22 (fit regression): "el alto está mal antes cabia  en inicio el brillo, en color el brillo,   al emnos para mi samsung note 9 lite viejo (creo que es).  pero al final probamos en todos los tamaños, cuando ya tengamos todo listo (del app, ui)."
+- S23 (no speed on Inicio): "y quitemos velocidad del inicio, la verdad que no si si está que esté abajo de brillo."
+- S24 (robust error handling): "y revisa que si hay errores no se quede loop o bug, manejo de errores, cantidad de escensa, etc etc etc, porfa"
+
 Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect is running; no per-effect duration command exists; app-driven AUTO works only while the app is open and connected; white is plain RGB.
 
 ## Tasks
@@ -49,6 +53,8 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - T15 [S19, S18] Notices (Android): one notice style (icon + text, sized between body and caption, token colors, not intrusive) for every info/warning/error text; "Último comando enviado" on Inicio reserves a fixed height so nothing shifts. Route: worker. Commit: 436fefc [x]
 - T16 [S21, S18] Cyan accent: propose where cyan (#22d3ee, already a Glow Glass token) is used (e.g. selected/active states, progress, focus) in design/system.md and the rules skill; apply after the owner approves. Commit: -
 - T17 [S20] Final phone compatibility pass, only after the owner tests and approves on his phone: widget tests and screenshots across common phone sizes/densities, Android API levels, text scales and navigation modes; tablets out of scope. Commit: -
+- T18 [S22, S23, S18] Fit and polish (Android): remove Velocidad from Inicio (it stays in Color → Efectos integrados, below Brillo); Brillo fits on the first screen of Inicio and Color on the owner's phone again; fix build 2007 findings (tab check alignment, no check in the bottom nav, quick-action sheets use the same Glow Glass surface as the timer sheet). Commit: -
+- T19 [S24] Robustness audit and fixes (Android): error handling, no loops or stuck states, limits (scenes, steps, quick actions, favorites), storage and BLE failures. Commit: -
 - T7a [S1, S3, S4, S7] Webapp: color disc + whites, effect list with favorites, app-driven AUTO. Route: worker + parent visual check. Commit: 2fbcecb [x]
 - T7b [S2, S5, S7] Webapp: scene steps (stored-format change, backward compatible) and timer sheet. Commit: -
 - T7c [S8-S11] Webapp: quick actions and Bluetooth notice, after T9/T10. Commit: -
@@ -82,3 +88,4 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - L25 (2026-11-25, owner, verbatim): "me gusta la 2 pero la barra de progreso tiene que ser gradiente que ya tiene no cyan. es decir una combinacion entre la 1 y 2."
 - L26 (2026-11-25, decision): selected states use cyan (#22d3ee): tinted surface + cyan border + check; focus outline cyan. Progress bars and the timer ring keep the violet→magenta gradient. Primary buttons unchanged.
 - L27 (2026-11-25): T13+T16 committed (14c8ec3), flutter test 191/191, analyze clean (parent run). Build 2007 installed over 2006, data kept. Agent check via adb: cyan selection visible on chips, timer presets, effect picker row (check + border); Mi escena picker shows cards with step bars, count and seconds; timer ring gradient arc visible; Velocidad always on Inicio; scroll hint shown; notices with icon. Found: (a) segmented tabs put the check above the label, so the selected tab's text sits lower than its neighbours; (b) the bottom nav also shows a check next to the label, redundant with its highlight; (c) quick-action sheets use a grey surface while the timer sheet uses the purple Glow Glass gradient. Scene editor not opened in this pass. A 10 s timer test turned the strip off at the end; the strip was already off before.
+- L28 (2026-11-25, owner, verbatim): see S22-S24. Owner phone: Samsung SM-N770F (Galaxy Note10 Lite). S23 read as: remove Velocidad from Inicio; where it remains, it sits below Brillo.
