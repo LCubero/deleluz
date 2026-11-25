@@ -1,0 +1,49 @@
+{
+  "arrangement": "free",
+  "positions": {
+    "01-color-anillo-saturacion.html": {
+      "x": 0,
+      "y": 3
+    },
+    "02-color-disco-blancos.html": {
+      "x": 470,
+      "y": 3
+    },
+    "03-efectos-lista-buscar.html": {
+      "x": 940,
+      "y": 3
+    },
+    "04-efectos-favoritos-reproductor.html": {
+      "x": 1410,
+      "y": 3
+    },
+    "05-escena-pasos-efecto.html": {
+      "x": 1880,
+      "y": 3
+    },
+    "06-temporizador-anillo.html": {
+      "x": 2350,
+      "y": 3
+    },
+    "07-temporizador-rueda.html": {
+      "x": 2820,
+      "y": 3
+    },
+    "08-acciones-rapidas-pestanas.html": {
+      "x": 3290,
+      "y": 3
+    },
+    "09-acciones-rapidas-pasos.html": {
+      "x": 3772,
+      "y": 10
+    },
+    "10-bluetooth-tarjeta.html": {
+      "x": 4217,
+      "y": 0
+    },
+    "11-bluetooth-pantalla.html": {
+      "x": 4700,
+      "y": 3
+    }
+  }
+}
