@@ -25,6 +25,8 @@ class HueWheel extends StatelessWidget {
       }
 
       return Semantics(slider: true, label: label, value: '${hue.round()}°',
+        increasedValue: '${((hue + 15) % 360).round()}°',
+        decreasedValue: '${((hue - 15) % 360).round()}°',
         onIncrease: () => onChanged((hue + 15) % 360),
         onDecrease: () => onChanged((hue - 15) % 360),
         child: GestureDetector(

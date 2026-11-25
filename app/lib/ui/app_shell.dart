@@ -1,8 +1,11 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../app_controller.dart';
+import 'color/color_screen.dart';
 import 'glow_glass.dart';
 import 'home.dart';
+import 'scenes/scenes_screen.dart';
+import 'settings/settings_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.controller});
@@ -55,10 +58,9 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             },
             child: IndexedStack(index: _tab, sizing: StackFit.expand, children: [
               HomeScreen(controller: controller, openScenes: () => _show(2)),
-              for (final tab in tabs.skip(1))
-                Align(key: Key('placeholder-$tab'), alignment: Alignment.topCenter,
-                  child: Padding(padding: const EdgeInsets.all(18),
-                    child: ConnectionChip(controller: controller))),
+              ColorScreen(controller: controller),
+              ScenesScreen(controller: controller),
+              SettingsScreen(controller: controller),
             ]),
           ),
         ),

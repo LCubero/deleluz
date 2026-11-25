@@ -172,7 +172,7 @@ void main() {
     await start(tester);
     await tester.dragFrom(const Offset(250, 90), const Offset(180, 0));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('placeholder-settings')), findsOneWidget);
+    expect(find.byKey(const Key('settings-stripSettings')), findsOneWidget);
     await tester.dragFrom(const Offset(450, 90), const Offset(-180, 0));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('power')), findsOneWidget);

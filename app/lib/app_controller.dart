@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:universal_ble/universal_ble.dart';
 
 import 'link.dart';
+import 'model/effects.dart';
 import 'model/models.dart';
 import 'model/timer.dart';
 import 'protocol.dart' as wire;
@@ -62,7 +63,7 @@ class AppController extends ChangeNotifier {
     shortcuts = models.loadShortcuts();
     remembered = models.loadRemembered();
     link = Link(_ble, onChange: _linkChanged, onRemember: _remember);
-    sender = Sender(write: link.write, now: _now);
+    _sender = Sender(write: link.write, now: _now);
     final saved = remembered;
     if (saved != null) link.restore(saved);
   }
@@ -71,7 +72,7 @@ class AppController extends ChangeNotifier {
   final Models models;
   final Future<String?> Function(bool request) checkAccess;
   late final Link link;
-  late final Sender sender;
+  late final Sender _sender;
   late Fields _selection;
   late String language;
   late List<Fields> shortcuts;
@@ -99,6 +100,10 @@ class AppController extends ChangeNotifier {
   int? _fadeLevel;
   int _generation = 0;
   int _playback = 0;
+  bool _playing = false;
+  String? _playingSequence;
+  bool previewing = false;
+  bool _powerBeforePreview = false;
 
   bool? sentPower;
   int? sentBrightness;
@@ -108,7 +113,18 @@ class AppController extends ChangeNotifier {
   Map<String, Object?> lastValues = const {};
   int get brightness => _selection['bri'] as int;
   int get speed => _selection['speed'] as int;
+  int get effect => _selection['fx'] == 'AUTO' ? wire.autoEffect : _selection['fx'] as int;
+  int get sensitivity => _selection['micSens'] as int;
   bool get ready => link.ready && !busy;
+  bool get canSend => ready && _foreground && !_disposed;
+  String? get lastSentLabel => switch (lastCommand) {
+    null => null,
+    'brightness' || 'speed' || 'micSensitivity' =>
+        '${text(lastCommand!)} · ${text('percent', lastValues)}',
+    'color' => '${text('color')} · ${lastValues['hex']}',
+    'chipConfig' => '${lastValues['order']} · ${lastValues['pixels']} LEDs',
+    final key => text(key, lastValues),
+  };
   String text(String key, [Map<String, Object?> values = const {}]) =>
       translate(language, key, values);
 
@@ -134,7 +150,7 @@ class AppController extends ChangeNotifier {
   void _linkChanged() {
     if (!link.ready) {
       _generation++;
-      sender.cancel();
+      _sender.cancel();
       _stopPlayback();
       cancelTimer();
       sentPower = null;
@@ -263,10 +279,10 @@ class AppController extends ChangeNotifier {
     String? key, Map<String, Object?> values = const {},
     void Function()? onSent,
   }) async {
-    if (!ready || !_foreground) return false;
+    if (!canSend) return false;
     final generation = _generation;
     try {
-      if (await sender.send(frame, key: key) != 'sent' ||
+      if (await _sender.send(frame, key: key) != 'sent' ||
           generation != _generation || _disposed) {
         return false;
       }
@@ -290,9 +306,24 @@ class AppController extends ChangeNotifier {
     if (value) {
       final scene = _selection['scene'];
       final mode = _selection['mode'];
+      if (mode is Fields) {
+        if (mode['effect'] == 'AUTO') {
+          unawaited(setEffect(wire.autoEffect));
+          return;
+        }
+        if (mode['effect'] case final int id) {
+          unawaited(setEffect(id));
+          return;
+        }
+        if (mode['voice'] case final int id) {
+          unawaited(setVoiceMode(id));
+          return;
+        }
+      }
       final item = switch (mode) {
-        {'preset': final String preset} when homePresets.containsKey(preset) =>
-          <String, Object?>{'kind': 'scene', 'preset': preset},
+        {'preset': final String preset, 'interval': final int interval}
+            when homePresets.containsKey(preset) =>
+          <String, Object?>{'kind': 'scene', 'preset': preset, 'interval': interval},
         _ when scene is String && scene.startsWith('sequence:') =>
           <String, Object?>{'kind': 'sequence', 'id': scene.substring(9)},
         _ => <String, Object?>{'kind': 'color', 'rgb': _selection['rgb']},
@@ -314,7 +345,8 @@ class AppController extends ChangeNotifier {
       onSent: () => sentBrightness = value);
 
   void setBrightness(int value) {
-    if (!ready || value == brightness) return;
+    if (!canSend || value == brightness) return;
+    stopPlayback();
     _select({'bri': value}, save: false);
     unawaited(_sendBrightness(value));
   }
@@ -322,10 +354,68 @@ class AppController extends ChangeNotifier {
   void saveSelection() => unawaited(_save(models.saveState(_selection)));
 
   void setSpeed(int value) {
-    if (!ready || value == speed || value < 1) return;
+    if (!canSend || value == speed || value < 1 || value > 100) return;
+    stopPlayback();
     _select({'speed': value}, save: false);
     unawaited(_send(wire.speed(value), 'speed',
         key: 'speed', values: {'value': value}));
+  }
+
+  Future<bool> _prepare(int run, int intensity) async {
+    if (sentPower != true && !await _sendPower(true)) return false;
+    if (run != _playback) return false;
+    if (sentBrightness != intensity && !await _sendBrightness(intensity)) return false;
+    return run == _playback && canSend;
+  }
+
+  Future<void> setEffect(int id, {bool preview = false}) async {
+    if (!canSend || (id != wire.autoEffect && (id < 1 || id > 210))) return;
+    _beginPlayback(preview: preview);
+    final run = _playback;
+    if (!await _prepare(run, brightness)) return;
+    final label = id == wire.autoEffect ? 'autoCycle' : 'effectNamed';
+    if (await _send(wire.effect(id), label, key: 'effect',
+        values: {'id': id, 'name': effectName(id)}) && run == _playback && !preview) {
+      final fx = id == wire.autoEffect ? 'AUTO' : id;
+      _select({'on': true, 'fx': fx, 'scene': null,
+        'label': [label, {'id': id, 'name': effectName(id) ?? 'AUTO'}],
+        'mode': {'effect': fx}});
+    }
+  }
+
+  Future<void> setVoiceMode(int id) async {
+    if (!canSend || id < 1 || id > 4) return;
+    _beginPlayback();
+    final run = _playback;
+    if (!await _prepare(run, brightness)) return;
+    if (!await _send(wire.voiceMode(id), 'musicMode', key: 'voice', values: {'id': id}) ||
+        run != _playback) {
+      return;
+    }
+    _select({'on': true, 'scene': null, 'label': ['musicMode'], 'mode': {'voice': id}});
+    await _sendSensitivity(sensitivity);
+  }
+
+  Future<bool> _sendSensitivity(int value) => _send(wire.micSensitivity(value),
+      'micSensitivity', key: 'micSensitivity', values: {'value': value});
+
+  void setMicSensitivity(int value) {
+    if (!canSend || value < 0 || value > 100 || value == sensitivity) return;
+    stopPlayback();
+    _select({'micSens': value}, save: false);
+    unawaited(_sendSensitivity(value));
+  }
+
+  Future<bool> setChipConfig(String order, int pixels, {num? density, num? meters}) async {
+    if (!canSend || !wire.chipOrders.contains(order) || validPixels(pixels) == null) return false;
+    _beginPlayback();
+    final sent = await _send(wire.chipConfig(order, pixels), 'chipConfig',
+        values: {'order': order, 'pixels': pixels});
+    if (sent) {
+      await _save(models.saveStripSettings(order: order, pixels: pixels,
+          density: density, meters: meters));
+    }
+    return sent;
   }
 
   String shortcutLabel(Fields item) => switch (item['kind']) {
@@ -342,23 +432,22 @@ class AppController extends ChangeNotifier {
       'color', key: 'color', values: {'hex': rgbHex(rgb)}, onSent: () => sentColor = rgb);
 
   Future<void> applyShortcut(Fields item) async {
-    if (!ready) return;
-    _stopPlayback();
-    final run = _playback;
+    if (!canSend) return;
     final preset = homePresets[item['preset']];
     final sequence = _sequence(item['id']);
     final rgb = item['rgb'] as List<int>?;
     final colors = preset?.colors ?? sequence?['colors'] as List<List<int>>?;
     if (rgb == null && colors == null) return;
+    _beginPlayback(sequence: sequence?['id'] as String?, playing: colors != null);
+    final run = _playback;
     final intensity = preset != null ? 50 : sequence?['bri'] as int? ?? brightness;
-    if (sentPower != true && !await _sendPower(true)) return;
-    if (run != _playback) return;
-    if (sentBrightness != intensity && !await _sendBrightness(intensity)) return;
-    if (run != _playback) return;
+    if (!await _prepare(run, intensity)) return;
     if (rgb != null && await _sendColor(rgb) && run == _playback) {
       _select({...solidSelection(rgb), 'rgb': rgb, 'on': true});
     } else if (colors != null) {
-      final interval = preset?.interval ?? sequence!['interval'] as int;
+      final interval = preset != null
+          ? (item['interval'] as int?)?.clamp(150, 2000) ?? preset.interval
+          : sequence!['interval'] as int;
       var index = 0;
       Future<void> next() async {
         if (run != _playback || !_foreground) return;
@@ -380,8 +469,58 @@ class AppController extends ChangeNotifier {
     }
   }
 
+  Future<void> playDraft(List<List<int>> colors, int interval, int intensity,
+      {bool preview = true,
+      ({List<List<int>> colors, int interval, int intensity}) Function()? draft}) async {
+    if (!canSend || colors.isEmpty) return;
+    _beginPlayback(preview: preview, playing: true);
+    final run = _playback;
+    if (!await _prepare(run, intensity)) return;
+    var index = 0;
+    Future<void> next() async {
+      if (run != _playback || !canSend) return;
+      final step = draft?.call() ?? (colors: colors, interval: interval, intensity: intensity);
+      if (step.colors.isEmpty || !await _prepare(run, step.intensity)) return;
+      if (!await _sendColor(step.colors[index % step.colors.length]) || run != _playback) return;
+      index++;
+      _player = Timer(Duration(milliseconds: step.interval), () => unawaited(next()));
+    }
+    await next();
+  }
+
+  void stopDraftPreview({bool restore = true}) {
+    if (!previewing) return;
+    final wasOn = _powerBeforePreview;
+    stopPlayback();
+    if (restore) setPower(wasOn);
+  }
+
+  void stopSequence(String id) {
+    if (_playingSequence == id) stopPlayback();
+  }
+
+  void stopPlayback() {
+    final wasPlaying = _playing || previewing;
+    if (!wasPlaying) return;
+    _stopPlayback();
+    _refresh();
+  }
+
+  void _beginPlayback({bool preview = false, bool playing = false, String? sequence}) {
+    if (preview && !previewing) _powerBeforePreview = sentPower == true;
+    _stopPlayback();
+    previewing = preview;
+    _playing = playing;
+    _playingSequence = sequence;
+    if (preview) _refresh();
+  }
+
   void _stopPlayback() {
     _playback++;
+    if (_playing || previewing) _sender.cancel();
+    _playing = false;
+    _playingSequence = null;
+    previewing = false;
     _player?.cancel();
     _player = null;
   }
@@ -424,15 +563,17 @@ class AppController extends ChangeNotifier {
   }
 
   void setForeground(bool value) {
+    if (_foreground == value) return;
     _foreground = value;
     if (!value) {
       cancelTimer();
       _stopPlayback();
-      sender.cancel();
+      _sender.cancel();
       unawaited(stopScan());
     } else {
       _maybeRecover();
     }
+    _refresh();
   }
 
   @override

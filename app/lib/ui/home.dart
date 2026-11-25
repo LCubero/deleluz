@@ -30,12 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final on = c.sentPower == true;
     final style = Theme.of(context).textTheme;
-    final last = c.lastCommand;
-    final lastDetail = last == null ? '' : switch (last) {
-      'brightness' || 'speed' => ' · ${c.text('percent', c.lastValues)}',
-      'color' => ' · ${c.lastValues['hex']}',
-      _ => '',
-    };
+    final last = c.lastSentLabel;
     return ListView(padding: const EdgeInsets.fromLTRB(18, 10, 18, 18), children: [
       Row(children: [
         const Icon(Icons.light_mode_outlined, color: Color(0xffe3c2ff)),
@@ -66,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: const Icon(Icons.power_settings_new)),
       )),
       const SizedBox(height: 10),
-      Text(last == null ? c.text('noCommand') : c.text('lastSent', {'command': '${c.text(last)}$lastDetail'}),
+      Text(last == null ? c.text('noCommand') : c.text('lastSent', {'command': last}),
         textAlign: TextAlign.center, style: style.bodySmall),
       const SizedBox(height: 16),
       GlassCard(child: ExpansionTile(

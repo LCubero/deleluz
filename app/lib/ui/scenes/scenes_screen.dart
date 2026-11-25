@@ -1,0 +1,330 @@
+import 'dart:async';
+import 'dart:math';
+
+import 'package:material_ui/material_ui.dart';
+
+import '../../app_controller.dart';
+import '../../model/effects.dart';
+import '../../model/models.dart';
+import '../../protocol.dart' as wire;
+import '../glow_glass.dart';
+import '../home_presets.dart';
+import '../hue_wheel.dart';
+import 'scene_transport.dart';
+
+part 'scene_editor.dart';
+
+Color _rgb(List<int> rgb) => Color.fromARGB(255, rgb[0], rgb[1], rgb[2]);
+const _effectColors = [[236, 72, 153], [168, 85, 247], [34, 211, 238]];
+
+class ScenesScreen extends StatefulWidget {
+  const ScenesScreen({super.key, required this.controller});
+  final AppController controller;
+
+  @override
+  State<ScenesScreen> createState() => _ScenesScreenState();
+}
+
+class _ScenesScreenState extends State<ScenesScreen> {
+  AppController get c => widget.controller;
+  late SceneTransport _transport = SceneTransport(c);
+  String _panel = 'included';
+
+  @override
+  void didUpdateWidget(ScenesScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != c) {
+      _transport.dispose();
+      _transport = SceneTransport(c);
+    }
+  }
+
+  @override
+  void dispose() {
+    _transport.dispose();
+    super.dispose();
+  }
+
+  void _connectFirst() => ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(c.text('connectFirst'))),
+  );
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: _transport,
+    builder: (context, _) {
+      return SafeArea(bottom: false, child: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+        children: [
+          Center(child: ConnectionChip(controller: c)),
+          const SizedBox(height: 12),
+          _LastSent(transport: _transport),
+          if (_transport.failed)
+            Text(c.text('commandFailed'), textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 4, children: [
+            for (final (id, label) in const [('included', 'includedScenes'),
+              ('mine', 'myScenes'), ('music', 'music')])
+              ChoiceChip(key: Key('scenes-$id'), label: Text(c.text(label)),
+                selected: _panel == id, onSelected: (_) => setState(() => _panel = id)),
+          ]),
+          const SizedBox(height: 12),
+          ...switch (_panel) {
+            'mine' => _mine(),
+            'music' => [_music()],
+            _ => _included(),
+          },
+        ],
+      ));
+    },
+  );
+
+  List<Widget> _included() => [
+    for (final entry in homePresets.entries)
+      _card('included-${entry.key}', c.text(entry.key), _representative(entry.value.colors),
+        () => _applyPreset(entry.key),
+        () => _preview(c.text(entry.key), entry.value.colors, entry.value.interval, (interval) {
+          _transport.useShared({'kind': 'scene', 'preset': entry.key, 'interval': interval});
+        }, preset: entry.key)),
+    for (final id in const [wire.autoEffect, 1, 2])
+      _card('included-effect-$id', _effectName(id), _effectColors,
+        () => _applyEffect(id),
+        () => _preview(_effectName(id), _effectColors, 650, (_) => _applyEffect(id), effect: id)),
+  ];
+
+  String _effectName(int id) => id == wire.autoEffect ? c.text('autoCycle') : effectNames[id - 1];
+
+  void _applyPreset(String preset) {
+    if (!_transport.ready) return _connectFirst();
+    _transport.useShared({'kind': 'scene', 'preset': preset});
+  }
+
+  void _applyEffect(int effect) {
+    if (!_transport.ready) return _connectFirst();
+    unawaited(_transport.playEffect(effect));
+  }
+
+  List<List<int>> _representative(List<List<int>> colors) => colors.length <= 8 ? colors :
+    List.generate(6, (i) => colors[i * colors.length ~/ 6]);
+
+  Future<void> _preview(String title, List<List<int>> colors, int interval, ValueChanged<int> apply,
+      {String? preset, int? effect}) async {
+    final transport = _transport;
+    final confirmed = await showDialog<int>(context: context, builder: (_) => _IncludedPreview(
+      title: title, colors: colors, interval: interval, transport: transport,
+      preset: preset, effect: effect,
+    ));
+    if (!mounted || transport != _transport) return;
+    transport.stopPreview(restore: confirmed == null);
+    if (confirmed != null) apply(confirmed);
+  }
+
+  List<Widget> _mine() {
+    final items = c.models.loadSequences();
+    return [
+      Align(alignment: Alignment.center, child: FilledButton.icon(key: const Key('scene-new'),
+        icon: const Icon(Icons.add), label: Text(c.text('newSequence')),
+        onPressed: items.length < maxSequences ? () => _edit(null) : null)),
+      const SizedBox(height: 12),
+      if (items.isEmpty) Text(c.text('sequencesEmpty'), textAlign: TextAlign.center),
+      for (final item in items)
+        _card('scene-play-${item['id']}', item['name'] as String, item['colors'] as List<List<int>>,
+          () {
+            if (!_transport.ready) return _connectFirst();
+            _transport.useShared({'kind': 'sequence', 'id': item['id']});
+          }, () => _edit(item),
+          trailing: IconButton(key: Key('scene-edit-${item['id']}'),
+            tooltip: c.text('renameSequence'), icon: const Icon(Icons.edit_outlined),
+            onPressed: () => _edit(item))),
+    ];
+  }
+
+  Future<void> _edit(Fields? item) async {
+    final transport = _transport;
+    await showDialog<void>(context: context, builder: (_) => _SceneEditor(transport: transport, item: item));
+    if (!mounted || transport != _transport) return;
+    transport.stopPreview();
+    setState(() {});
+  }
+
+  Widget _card(String key, String title, List<List<int>> colors, VoidCallback tap,
+      VoidCallback hold, {Widget? trailing}) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Material(color: glowGlass, shape: RoundedRectangleBorder(
+      side: const BorderSide(color: glowLine), borderRadius: BorderRadius.circular(16),
+    ), child: Row(children: [
+      Expanded(child: InkWell(key: Key(key), onTap: tap, onLongPress: hold,
+        borderRadius: BorderRadius.circular(16), child: Container(
+          constraints: const BoxConstraints(minHeight: 72),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(children: [
+            Expanded(child: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis)),
+            const SizedBox(width: 8),
+            SizedBox(width: 58, height: 10, child: _swatchStrip(colors)),
+          ]),
+        ),
+      )),
+      ?trailing,
+    ])),
+  );
+
+  Widget _music() => GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    Text(c.text('musicTitle'), style: Theme.of(context).textTheme.titleLarge),
+    const SizedBox(height: 8),
+    Text(c.text('musicHint')),
+    const SizedBox(height: 12),
+    Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [
+      for (var mode = 1; mode <= 4; mode++)
+        OutlinedButton(key: Key('scene-voice-$mode'), onPressed: () {
+          if (!_transport.ready) return _connectFirst();
+          unawaited(_transport.playVoice(mode));
+        }, child: Text('${c.text('voiceModeWord')} $mode')),
+    ]),
+    const SizedBox(height: 18),
+    _SceneSlider(controller: c, id: 'scene-sensitivity', label: 'micSensitivity',
+      value: _transport.sensitivity, onChanged: _transport.changeSensitivity,
+      onChangeEnd: (_) => c.saveSelection(), enabled: _transport.ready),
+  ]));
+}
+
+Widget _swatchStrip(List<List<int>> colors) => ClipRRect(
+  borderRadius: BorderRadius.circular(6),
+  child: Row(children: [for (final rgb in colors) Expanded(child: ColoredBox(color: _rgb(rgb)))]),
+);
+
+
+class _LastSent extends StatelessWidget {
+  const _LastSent({required this.transport});
+  final SceneTransport transport;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = transport.controller;
+    final command = c.lastSentLabel;
+    return Text(command == null ? c.text('noCommand') : c.text('lastSent', {'command': command}),
+      textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall);
+  }
+}
+
+class _SceneSlider extends StatelessWidget {
+  const _SceneSlider({required this.controller, required this.id, required this.label,
+    required this.value, required this.onChanged, this.onChangeEnd, this.min = 0,
+    this.enabled = true});
+
+  final AppController controller;
+  final String id, label;
+  final int value, min;
+  final bool enabled;
+  final ValueChanged<int> onChanged;
+  final ValueChanged<double>? onChangeEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    String percent(int n) => controller.text('percent', {'value': n});
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text('${controller.text(label)} · ${percent(value)}'),
+      Semantics(label: controller.text(label), child: Slider(key: Key(id),
+        value: value.toDouble(), min: min.toDouble(), max: 100,
+        label: percent(value), semanticFormatterCallback: (value) => percent(value.round()),
+        onChanged: enabled ? (value) => onChanged(value.round()) : null, onChangeEnd: onChangeEnd)),
+    ]);
+  }
+}
+
+class _IncludedPreview extends StatefulWidget {
+  const _IncludedPreview({required this.title, required this.colors, required this.interval,
+    required this.transport, this.preset, this.effect});
+
+  final String title;
+  final List<List<int>> colors;
+  final int interval;
+  final SceneTransport transport;
+  final String? preset;
+  final int? effect;
+
+  @override
+  State<_IncludedPreview> createState() => _IncludedPreviewState();
+}
+
+class _IncludedPreviewState extends State<_IncludedPreview> with WidgetsBindingObserver {
+  Timer? _animation;
+  var _index = 0;
+  late int _interval = widget.interval;
+  AppController get c => widget.transport.controller;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _animate();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) => _animate();
+
+  void _animate() {
+    _animation?.cancel();
+    final state = WidgetsBinding.instance.lifecycleState;
+    if (MediaQuery.disableAnimationsOf(context) ||
+        (state != null && state != AppLifecycleState.resumed)) {
+      return;
+    }
+    _animation = Timer.periodic(Duration(milliseconds: _interval.clamp(350, 2000)), (_) {
+      setState(() => _index = (_index + 1) % widget.colors.length);
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _animation?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(listenable: widget.transport,
+    builder: (context, _) => AlertDialog(
+      title: Text(widget.title), scrollable: true,
+      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(c.text('screenPreview')),
+          const SizedBox(height: 10),
+          Container(height: 16, decoration: BoxDecoration(color: _rgb(widget.colors[_index]),
+            borderRadius: BorderRadius.circular(8))),
+          const SizedBox(height: 10),
+          if (widget.preset != null) ...[
+            Text('${c.text('stepInterval')} · $_interval ms'),
+            Semantics(label: c.text('stepInterval'), child: Slider(
+              min: 150, max: 2000, divisions: 185, value: _interval.toDouble(),
+              semanticFormatterCallback: (value) => '${value.round()} ms',
+              onChanged: (value) {
+                setState(() => _interval = value.round());
+                _animate();
+              },
+            )),
+            Text(c.text('foregroundPlaybackHint')),
+          ],
+          const SizedBox(height: 8),
+          _LastSent(transport: widget.transport),
+          if (widget.transport.failed) Text(c.text('commandFailed')),
+        ],
+      ),
+      actions: [
+        TextButton(key: const Key('scene-close'), onPressed: () => Navigator.pop(context), child: Text(c.text('close'))),
+        TextButton(onPressed: widget.transport.ready ? () {
+          if (widget.effect case final id?) {
+            unawaited(widget.transport.playEffect(id, preview: true));
+          } else {
+            unawaited(widget.transport.playColors(widget.colors, _interval, 50));
+          }
+        } : null, child: Text(c.text('tryScene'))),
+        FilledButton(onPressed: widget.transport.ready ? () => Navigator.pop(context, _interval) : null,
+          child: Text(c.text('apply'))),
+      ],
+    ));
+}
