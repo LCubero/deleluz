@@ -35,7 +35,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - T10 — S10, S11 — Home speed enabled only for effects; generic multicolor strip preview when connected and nothing sent — worker — done 2e9540c (92 tests, analyze clean)
 - T11 — S2, S12 — Several remembered strips with per-phone aliases and the «Elegir tira» selector; Inicio card with alias + Cambiar — worker — done b5f9bd8 (96 tests; card shows the name once without alias, chip right-aligned)
 - T12 — S12, S13 — Selector: errors on the strip row, compact rows with icons above the button, Glow Glass detail, search — worker — done cde2b77 (100 tests)
-- T13 — S14, S15, S16 — Ajustes entry to «Elegir tira»; every slider card blocks the tab swipe — worker — S14, S15 done 7272a8f (113 tests); S16 pending
+- T13 — S14, S15, S16 — Ajustes entry to «Elegir tira»; every slider card blocks the tab swipe — worker — S14, S15 done 7272a8f (113 tests); S16 done 865d438 (117 tests)
 - T9 — S7 — Docs: `app/README.md`, CHANGELOG, current state, roadmap — inline — pending
 
 ## Log
@@ -77,3 +77,4 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - L35 — 2026-11-25, user after the larger icons (505dfcb) and the disabled-slider fix (00e4aa1) on the phone: "genial me gusta mucho mejor. - me gustaría acceso a esa pagina en ajustes. - y donde hay selectores de velocidad, brillo, no deberia funcionar el slide entre pestañas, es decir la zona de ellos, como en inicio para velocidad, deberia ser siempre no solo si está desactivada, siempre para todos esos controles deslizables, para que no moleste"
 - L36 — 2026-11-25, user: "y cuando entras a la pestaña color aparezca en color no en el ultimo usado, en escenas que entre en mis escenas."
 - L37 — 2026-11-25, user: "el color de eliminar escena en secucia nueva o mis escenas deberia ser rojo o rojiso y con un poco mas de margen top. en donde se seleciona color tmb desactivar el slide, en todo lugar que hay selecotr de color esa zona sin slide. falta control de brillo en mis escenas en la ventana de la secuencia."
+- L38 — 2026-11-25, S16 in 865d438: Intensidad was already the scene brightness (playback sends it), relabelled Brillo with the sun icon and live keyed preview; red outlined delete with larger top gap; color zones reuse SliderZone. Parent verified 117 tests, analyze clean.
