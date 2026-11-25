@@ -58,8 +58,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             },
             child: IndexedStack(index: _tab, sizing: StackFit.expand, children: [
               HomeScreen(controller: controller, openScenes: () => _show(2)),
-              ColorScreen(controller: controller),
-              ScenesScreen(controller: controller),
+              ColorScreen(controller: controller, active: _tab == 1),
+              ScenesScreen(controller: controller, active: _tab == 2),
               SettingsScreen(controller: controller),
             ]),
           ),

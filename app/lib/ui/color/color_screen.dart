@@ -11,9 +11,10 @@ import '../hue_wheel.dart';
 import 'favorites.dart';
 
 class ColorScreen extends StatefulWidget {
-  const ColorScreen({super.key, required this.controller});
+  const ColorScreen({super.key, required this.controller, this.active = true});
 
   final AppController controller;
+  final bool active;
 
   @override
   State<ColorScreen> createState() => _ColorScreenState();
@@ -47,6 +48,12 @@ class _ColorScreenState extends State<ColorScreen> {
   @override
   void didUpdateWidget(ColorScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.active && !widget.active && _dirty) {
+      // Leaving the tab must not commit an unfinished effect number on blur.
+      _dirty = false;
+      _number.text = _auto ? '' : '$_effect';
+    }
+    if (!oldWidget.active && widget.active) _effects = false;
     if (!identical(oldWidget.controller, c)) {
       _dirty = false;
       _loadSelection();
@@ -144,15 +151,17 @@ class _ColorScreenState extends State<ColorScreen> {
 
   Widget _slider(String key, int value, ValueChanged<int> change) {
     final shown = value.clamp(1, 100);
-    return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      GlowValueLabel(label: c.text(key), value: c.text('percent', {'value': shown})),
-      Semantics(label: c.text(key), child: Slider(key: Key('color-$key'),
-        min: 1, max: 100, divisions: 99, value: shown.toDouble(),
-        semanticFormatterCallback: (value) => c.text('percent', {'value': value.round()}),
-        onChanged: (value) => change(value.round()),
-        onChangeEnd: (_) => c.saveSelection())),
-      if (key == 'brightness') Text(c.text('dragNote'), style: Theme.of(context).textTheme.bodySmall),
-    ]));
+    return SliderZone(child: GlassCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        GlowValueLabel(label: c.text(key), value: c.text('percent', {'value': shown})),
+        Semantics(label: c.text(key), child: Slider(key: Key('color-$key'),
+          min: 1, max: 100, divisions: 99, value: shown.toDouble(),
+          semanticFormatterCallback: (value) => c.text('percent', {'value': value.round()}),
+          onChanged: (value) => change(value.round()),
+          onChangeEnd: (_) => c.saveSelection())),
+        if (key == 'brightness') Text(c.text('dragNote'), style: Theme.of(context).textTheme.bodySmall),
+      ]),
+    ));
   }
 
   @override

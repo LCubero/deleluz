@@ -511,6 +511,151 @@ void main() {
     expect(controller.remaining, isNull);
   });
 
+  Future<void> tapKey(WidgetTester tester, String key) async {
+    await tester.tap(find.byKey(Key(key)));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> tapTab(WidgetTester tester, String name) async {
+    await tester.tap(find.descendant(of: find.byType(InkWell),
+      matching: find.text(name)).hitTestable().last);
+    await tester.pumpAndSettle();
+  }
+
+  Finder sliderLabel(AppController c, String key) => find.byWidgetPredicate(
+    (widget) => widget is GlowValueLabel && widget.label == c.text(key));
+
+  for (final (tab, panel, label, enabled) in [
+    ('Inicio', null, 'speed', false),
+    ('Inicio', null, 'speed', true),
+    ('Inicio', null, 'brightness', true),
+    ('Color', null, 'brightness', true),
+    ('Color', 'color-effects', 'speed', true),
+    ('Escenas', 'scenes-music', 'micSensitivity', true),
+    ('Escenas', 'scenes-mine', 'speed', true),
+    ('Escenas', 'scenes-mine', 'intensity', true),
+  ]) {
+    testWidgets('$tab $panel $label ($enabled) label drag stays in place', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(412, 915));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final c = await start(tester);
+      if (tab == 'Inicio' && label == 'speed' && enabled) {
+        await connect(tester);
+        await send(tester, () => c.setEffect(1));
+      }
+      if (tab != 'Inicio') await tapTab(tester, tab);
+      if (panel != null) await tapKey(tester, panel);
+      if (panel == 'scenes-mine') await tapKey(tester, 'scene-new');
+      final target = sliderLabel(c, label);
+      await tester.ensureVisible(target);
+      await tester.pumpAndSettle();
+      await tester.dragFrom(tester.getCenter(target.hitTestable()), const Offset(-180, 0));
+      await tester.pumpAndSettle();
+      expect(target.hitTestable(), findsOneWidget);
+      expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index,
+        ['Inicio', 'Color', 'Escenas'].indexOf(tab));
+      if (panel == 'scenes-mine') {
+        await tapKey(tester, 'scene-close');
+        expect(find.byKey(const Key('scene-new')).hitTestable(), findsOneWidget);
+      }
+    });
+  }
+
+  testWidgets('included scene interval label drag keeps the preview open', (tester) async {
+    final c = await start(tester);
+    await tapTab(tester, 'Escenas');
+    await tapKey(tester, 'scenes-included');
+    await tester.longPress(find.byKey(const Key('included-police')));
+    await tester.pumpAndSettle();
+    final target = sliderLabel(c, 'stepInterval');
+    final slider = find.descendant(of: find.byType(AlertDialog), matching: find.byType(Slider));
+    final value = tester.widget<Slider>(slider).value;
+    await tester.dragFrom(tester.getCenter(target.hitTestable()), const Offset(-180, 0));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Slider>(slider).value, value);
+    await tapKey(tester, 'scene-close');
+    expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 2);
+  });
+
+  testWidgets('track drag sends brightness and vertical drag on the label scrolls', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(412, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final c = await start(tester);
+    await connect(tester);
+    final track = find.byKey(const Key('brightness'));
+    final label = sliderLabel(c, 'brightness');
+    final scroll = tester.state<ScrollableState>(find.byType(Scrollable).hitTestable());
+    final beforeScroll = scroll.position.pixels;
+    await tester.dragFrom(tester.getCenter(sliderLabel(c, 'speed').hitTestable()), const Offset(0, -200));
+    await tester.pumpAndSettle();
+    expect(scroll.position.pixels, greaterThan(beforeScroll));
+    await tester.ensureVisible(track);
+    await tester.pumpAndSettle();
+    final beforeValue = c.brightness;
+    now += 60;
+    await tester.dragFrom(tester.getCenter(track.hitTestable()), const Offset(-100, 0));
+    for (var i = 0; i < 4; i++) {
+      now += 60;
+      await tester.pump(const Duration(milliseconds: 60));
+    }
+    expect(c.brightness, lessThan(beforeValue));
+    expect(ble.writes.last, orderedEquals(wire.brightness(c.brightness)));
+    expect(label.hitTestable(), findsOneWidget);
+  });
+
+  testWidgets('Settings Strips shows the alias and opens the shared selector', (tester) async {
+    await Models(store, presetIds: {}).saveRememberedStrips([
+      const RememberedStrip('fake', 'LEDDMX Test', alias: 'Rincón'),
+    ]);
+    final c = await start(tester);
+    await tapTab(tester, 'Ajustes');
+    expect(find.text('Rincón').hitTestable(), findsOneWidget);
+    await tester.tap(find.text('Tiras'));
+    await tester.pumpAndSettle();
+    expect(find.text('Elegir tira'), findsOneWidget);
+    await tester.tap(find.byTooltip('Volver a Ajustes'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tiras').hitTestable(), findsOneWidget);
+    c.setLanguage('en');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Strips'));
+    await tester.pumpAndSettle();
+    expect(find.text('Choose a strip'), findsOneWidget);
+  });
+
+  for (final (tab, panel, alternate, defaultPanel, selection) in [
+    ('Color', 'color-effects', 'color-speed', 'color-solid', false),
+    ('Escenas', 'scenes-music', 'scene-sensitivity', 'scenes-mine', 'mine'),
+  ]) {
+    testWidgets('$tab resets its segment on tap and swipe entry without sending', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(412, 915));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final c = await start(tester);
+      await connect(tester);
+      await send(tester, () => c.setEffect(1));
+      final writes = ble.writes.length;
+      await tapTab(tester, tab);
+      await tapKey(tester, panel);
+      expect(find.byKey(Key(alternate)), findsOneWidget);
+      await tapTab(tester, 'Inicio');
+      await tapTab(tester, tab);
+      expect(find.byKey(Key(alternate)), findsNothing);
+      final segments = find.ancestor(of: find.byKey(Key(defaultPanel)),
+        matching: find.byWidgetPredicate((widget) => widget is GlowSegments));
+      expect(tester.widget<GlowSegments>(segments).selected, selection);
+      await tapKey(tester, panel);
+      if (tab == 'Color') await tester.enterText(find.byKey(const Key('effect-number')), '42');
+      await tapTab(tester, tab == 'Color' ? 'Inicio' : 'Ajustes');
+      final header = tester.getRect(find.byType(GlowHeader));
+      final dx = tab == 'Color' ? -180.0 : 180.0;
+      await tester.dragFrom(header.bottomCenter + const Offset(0, 5), Offset(dx, 0));
+      await tester.pumpAndSettle();
+      expect(tester.widget<GlowSegments>(segments).selected, selection);
+      expect(ble.writes, hasLength(writes));
+      expect(c.hasActiveEffect, isTrue);
+    });
+  }
+
   testWidgets('right swipe from Inicio wraps to Ajustes', (tester) async {
     await start(tester);
     await tester.dragFrom(const Offset(250, 90), const Offset(180, 0));

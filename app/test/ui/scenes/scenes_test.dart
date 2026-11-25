@@ -46,6 +46,7 @@ void main() {
   testWidgets('included gallery previews offline and applies a foreground sequence', (tester) async {
     await start(tester, connected: true);
     expect(find.byType(ConnectionChip), findsOneWidget);
+    await tap(tester, 'scenes-included');
     await tester.longPress(key('included-police'));
     await tester.pumpAndSettle();
     expect(find.text(c.text('screenPreview')), findsOneWidget);
@@ -196,6 +197,7 @@ void main() {
 
   testWidgets('disconnected strip actions do not write and drafts can be discarded', (tester) async {
     await start(tester);
+    await tap(tester, 'scenes-included');
     await tap(tester, 'included-police');
     expect(find.text(c.text('connectFirst')), findsOneWidget);
     await tap(tester, 'scenes-music');

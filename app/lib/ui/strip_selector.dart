@@ -6,8 +6,17 @@ import '../model/models.dart';
 import 'glow_glass.dart';
 
 class StripSelector extends StatefulWidget {
-  const StripSelector({super.key, required this.controller});
+  const StripSelector({super.key, required this.controller, this.backLabel = 'backToHome'});
   final AppController controller;
+  final String backLabel;
+
+  static Future<void> open(BuildContext context, AppController controller,
+      {String backLabel = 'backToHome'}) async {
+    await Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => StripSelector(controller: controller, backLabel: backLabel),
+    ));
+    await controller.stopScan();
+  }
 
   @override
   State<StripSelector> createState() => _StripSelectorState();
@@ -76,7 +85,7 @@ class _StripSelectorState extends State<StripSelector> {
     final header = Row(spacing: 10, children: [
           Material(color: glowGlass, shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14), side: const BorderSide(color: glowLine)),
-            child: IconButton(tooltip: c.text('backToHome'), icon: const BackButtonIcon(),
+            child: IconButton(tooltip: c.text(widget.backLabel), icon: const BackButtonIcon(),
               onPressed: () => Navigator.of(context).pop())),
           Expanded(child: Text(c.text('chooseStrip'), style: theme.titleLarge)),
     ]);

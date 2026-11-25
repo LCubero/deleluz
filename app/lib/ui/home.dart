@@ -23,12 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   AppController get c => widget.controller;
   bool _quickOpen = false;
 
-  Future<void> _chooseStrip() async {
-    await Navigator.of(context).push<void>(MaterialPageRoute(
-      builder: (_) => StripSelector(controller: c),
-    ));
-    await c.stopScan();
-  }
+  Future<void> _chooseStrip() => StripSelector.open(context, c);
 
   @override
   Widget build(BuildContext context) {
@@ -143,18 +138,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _slider(String label, int value, ValueChanged<int>? change, {String? hint}) =>
-    GlassCard(verticalInset: 14, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      GlowValueLabel(label: c.text(label), value: c.text('percent', {'value': value}),
-        icon: label == 'brightness' ? const GlowIcon(GlowGlyph.sun, size: 20) : null),
-      const SizedBox(height: 10),
-      // A disabled slider ignores drags; claim them here so they never turn into a tab swipe.
-      GestureDetector(behavior: HitTestBehavior.opaque,
-        onHorizontalDragStart: change == null ? (_) {} : null,
-        child: Semantics(label: c.text(label), child: Slider(key: Key(label), value: value.toDouble(), max: 100,
+    SliderZone(child: GlassCard(verticalInset: 14,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        GlowValueLabel(label: c.text(label), value: c.text('percent', {'value': value}),
+          icon: label == 'brightness' ? const GlowIcon(GlowGlyph.sun, size: 20) : null),
+        const SizedBox(height: 10),
+        Semantics(label: c.text(label), child: Slider(key: Key(label), value: value.toDouble(), max: 100,
           onChanged: change == null ? null : (value) => change(value.round()),
-          onChangeEnd: change == null ? null : (_) => c.saveSelection()))),
-      if (hint != null) Text(hint, style: const TextStyle(color: glowMuted, fontSize: 13)),
-    ]));
+          onChangeEnd: change == null ? null : (_) => c.saveSelection())),
+        if (hint != null) Text(hint, style: const TextStyle(color: glowMuted, fontSize: 13)),
+      ]),
+    ));
 
   Widget _device(BuildContext context) {
     final connected = c.link.ready;

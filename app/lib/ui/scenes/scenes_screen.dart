@@ -21,7 +21,8 @@ const _voiceColors = [
 ];
 
 class ScenesScreen extends StatefulWidget {
-  const ScenesScreen({super.key, required this.controller});
+  const ScenesScreen({super.key, required this.controller, this.active = true});
+  final bool active;
   final AppController controller;
 
   @override
@@ -31,11 +32,12 @@ class ScenesScreen extends StatefulWidget {
 class _ScenesScreenState extends State<ScenesScreen> {
   AppController get c => widget.controller;
   late SceneTransport _transport = SceneTransport(c);
-  String _panel = 'included';
+  String _panel = 'mine';
 
   @override
   void didUpdateWidget(ScenesScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!oldWidget.active && widget.active) _panel = 'mine';
     if (oldWidget.controller != c) {
       _transport.dispose();
       _transport = SceneTransport(c);
@@ -160,7 +162,8 @@ class _ScenesScreenState extends State<ScenesScreen> {
     ]),
   );
 
-  Widget _music() => GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+  Widget _music() => SliderZone(child: GlassCard(
+    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
     Text(c.text('musicTitle'), style: Theme.of(context).textTheme.titleLarge),
     const SizedBox(height: 8),
     Text(c.text('musicHint')),
@@ -179,7 +182,8 @@ class _ScenesScreenState extends State<ScenesScreen> {
     _SceneSlider(controller: c, id: 'scene-sensitivity', label: 'micSensitivity',
       value: _transport.sensitivity, onChanged: _transport.changeSensitivity,
       onChangeEnd: (_) => c.saveSelection()),
-  ]));
+    ]),
+  ));
 }
 
 class _LastSent extends StatelessWidget {
@@ -285,15 +289,17 @@ class _IncludedPreviewState extends State<_IncludedPreview> with WidgetsBindingO
             borderRadius: BorderRadius.circular(8))),
           const SizedBox(height: 10),
           if (widget.preset != null) ...[
-            GlowValueLabel(label: c.text('stepInterval'), value: '$_interval ms'),
-            Semantics(label: c.text('stepInterval'), child: Slider(
-              min: 150, max: 2000, divisions: 185, value: _interval.toDouble(),
-              semanticFormatterCallback: (value) => '${value.round()} ms',
-              onChanged: (value) {
-                setState(() => _interval = value.round());
-                _animate();
-              },
-            )),
+            SliderZone(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              GlowValueLabel(label: c.text('stepInterval'), value: '$_interval ms'),
+              Semantics(label: c.text('stepInterval'), child: Slider(
+                min: 150, max: 2000, divisions: 185, value: _interval.toDouble(),
+                semanticFormatterCallback: (value) => '${value.round()} ms',
+                onChanged: (value) {
+                  setState(() => _interval = value.round());
+                  _animate();
+                },
+              )),
+            ])),
             Text(c.text('foregroundPlaybackHint')),
           ],
           const SizedBox(height: 8),

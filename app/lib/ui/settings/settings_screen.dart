@@ -6,6 +6,7 @@ import '../../app_controller.dart';
 import '../../model/models.dart';
 import '../../protocol.dart' show chipOrders;
 import '../glow_glass.dart';
+import '../strip_selector.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key, required this.controller});
@@ -145,6 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         constraints: const BoxConstraints(maxWidth: 560),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 12, children: [
           GlowHeader(title: _text('settings'), controller: c),
+          _stripsRow(),
           _section('stripSettings', [
             Text(_text('stripOrder')),
             DropdownButton<String>(
@@ -191,11 +193,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ));
   });
 
-  Widget _section(String key, List<Widget> children) => Material(color: glowGlass,
+  Widget _stripsRow() {
+    final alias = c.remembered?.alias;
+    return _row(ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: glassInset + 1),
+      title: Text(_text('strips'), style: const TextStyle(
+        fontSize: 15, fontWeight: FontWeight.w600, color: glowInk)),
+      subtitle: alias == null ? null : Text(alias, maxLines: 2, overflow: TextOverflow.ellipsis),
+      trailing: const Icon(Icons.chevron_right, size: 18),
+      onTap: () => StripSelector.open(context, c, backLabel: 'backToSettings'),
+    ));
+  }
+
+  Widget _row(Widget child) => Material(color: glowGlass,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16),
       side: const BorderSide(color: glowLine)),
     clipBehavior: Clip.antiAlias,
-    child: GlowDisclosure(titleKey: ValueKey('settings-$key'), title: _text(key), smallChevron: true,
+    child: child,
+  );
+
+  Widget _section(String key, List<Widget> children) => _row(
+    GlowDisclosure(titleKey: ValueKey('settings-$key'), title: _text(key), smallChevron: true,
       padding: const EdgeInsets.symmetric(horizontal: glassInset + 1),
       children: [Padding(padding: const EdgeInsets.fromLTRB(glassInset + 1, 0, glassInset + 1, 14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 12, children: children))],

@@ -124,6 +124,21 @@ class _BackdropPainter extends CustomPainter {
   bool shouldRepaint(_BackdropPainter oldDelegate) => false;
 }
 
+/// Keeps a drag that starts on a slider's label, track or padding in its zone.
+class SliderZone extends StatelessWidget {
+  const SliderZone({super.key, required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    excludeFromSemantics: true,
+    // The slider can win on its track; a vertical scroll can still win anywhere.
+    onHorizontalDragStart: (_) {},
+    child: child,
+  );
+}
+
 class GlassCard extends StatelessWidget {
   const GlassCard({super.key, required this.child, this.verticalInset = glassInset});
   final Widget child;

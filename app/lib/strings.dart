@@ -10,6 +10,8 @@ const _strings = <String, (String, String)>{
   'changeStrip': ('Cambiar', 'Change'),
   'chooseStrip': ('Elegir tira', 'Choose a strip'),
   'backToHome': ('Volver a Inicio', 'Back to Home'),
+  'backToSettings': ('Volver a Ajustes', 'Back to Settings'),
+  'strips': ('Tiras', 'Strips'),
   'oneStrip': ('Solo una tira a la vez. Al conectar otra, se desconecta la actual.', 'One strip at a time. Connecting another disconnects the current one.'),
   'myStrips': ('Mis tiras · {count}', 'My strips · {count}'),
   'newNearbyStrips': ('Tiras cercanas nuevas', 'New nearby strips'),
