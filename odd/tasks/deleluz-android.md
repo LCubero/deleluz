@@ -22,6 +22,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - S15 — Default sub-tab (L36): "y cuando entras a la pestaña color aparezca en color no en el ultimo usado, en escenas que entre en mis escenas." — entering Color opens «Color fijo»; entering Escenas opens «Mis escenas».
 - S16 — Editor details and color zones (L37): "el color de eliminar escena en secucia nueva o mis escenas deberia ser rojo o rojiso y con un poco mas de margen top. en donde se seleciona color tmb desactivar el slide, en todo lugar que hay selecotr de color esa zona sin slide. falta control de brillo en mis escenas en la ventana de la secuencia."
 - S17 — Per-device setup and labels (L39): "centra el eliminar escena en settings cambia el nombre de tiras por dispositivos y el de tira por Config. Dispositivo. o lo que mejor vaya. y al guardar dispositivos guardamos esa configuracion ? xq eso deberia ser, xqw hay tiras de 5 y 10 metros entre otras" — centered «Eliminar escena»; Ajustes «Dispositivos» / «Configuración del dispositivo»; color order and LED count saved per remembered device.
+- S18 — First release (L41): "bien, no le veo nada malo ya ni algo proximo a cambiar, ya cumple y luego la podemos mejorar. quiero que revises, no sé si juicio al app completa y que tomes scrennshots que igual van a servir pára hacer un showreel con las screenshots que tomes para que se vea fluido y bien, y unas imagenes para el readme tmb o gif no sé. y preparemos el primer release y me lo das pruebo y te doy el si para publicarlo y todo"
 
 ## Tasks
 
@@ -38,6 +39,9 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - T12 — S12, S13 — Selector: errors on the strip row, compact rows with icons above the button, Glow Glass detail, search — worker — done cde2b77 (100 tests)
 - T13 — S14, S15, S16 — Ajustes entry to «Elegir tira»; every slider card blocks the tab swipe — worker — S14, S15 done 7272a8f (113 tests); S16 done 865d438 (117 tests)
 - T14 — S17 — Per-device strip setup, Ajustes labels, centered delete — worker — done 61335e7 (121 tests)
+- T15 — S18 — Full-app review against S1-S17 — pending
+- T16 — S18, S6 — Screenshots for a showreel and README images — pending
+- T17 — S18 — Release build (version, signing, notes) for the user to test; publish only after the user's yes — pending
 - T9 — S7 — Docs: `app/README.md`, CHANGELOG, current state, roadmap — inline — pending
 
 ## Log
@@ -82,3 +86,4 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - L38 — 2026-11-25, S16 in 865d438: Intensidad was already the scene brightness (playback sends it), relabelled Brillo with the sun icon and live keyed preview; red outlined delete with larger top gap; color zones reuse SliderZone. Parent verified 117 tests, analyze clean.
 - L39 — 2026-11-25, user: "centra el eliminar escena en settings cambia el nombre de tiras por dispositivos y el de tira por Config. Dispositivo. o lo que mejor vaya. y al guardar dispositivos guardamos esa configuracion ? xq eso deberia ser, xqw hay tiras de 5 y 10 metros entre otras" Checked: strip setup (color order, LED count) is stored once for the whole app (`deleluz.app.stripSettings` in app/lib/model/models.dart), not per device.
 - L40 — 2026-11-25, S17 in 61335e7: per-device color order and LED count (one-time copy of the old global setup, forget removes it, never auto-sent), Ajustes «Dispositivos» and «Configuración del dispositivo», centered delete. Parent verified 121 tests, analyze clean. Risk: none — the stored setup is two values the user can retype, and the migration keeps the old key as default.
+- L41 — 2026-11-25, user after testing 61335e7 (T14 verified by the user): "bien, no le veo nada malo ya ni algo proximo a cambiar, ya cumple y luego la podemos mejorar. quiero que revises, no sé si juicio al app completa y que tomes scrennshots que igual van a servir pára hacer un showreel con las screenshots que tomes para que se vea fluido y bien, y unas imagenes para el readme tmb o gif no sé. y preparemos el primer release y me lo das pruebo y te doy el si para publicarlo y todo"
