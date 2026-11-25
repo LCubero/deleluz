@@ -31,7 +31,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - T8 — S6 — Visual review at small to large phone widths; real-strip session with the user; debug APK build — inline + user — pending
 - T10 — S10, S11 — Home speed enabled only for effects; generic multicolor strip preview when connected and nothing sent — worker — done 2e9540c (92 tests, analyze clean)
 - T11 — S2, S12 — Several remembered strips with per-phone aliases and the «Elegir tira» selector; Inicio card with alias + Cambiar — worker — done b5f9bd8 (96 tests; card shows the name once without alias, chip right-aligned)
-- T12 — S12, S13 — Selector: errors on the strip row, compact rows with icons above the button, Glow Glass detail, search — worker — pending
+- T12 — S12, S13 — Selector: errors on the strip row, compact rows with icons above the button, Glow Glass detail, search — worker — done cde2b77 (100 tests)
 - T9 — S7 — Docs: `app/README.md`, CHANGELOG, current state, roadmap — inline — pending
 
 ## Log
@@ -67,3 +67,4 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - L29 — 2026-11-25, parent screenshot while the user used the phone: after a music command with the strip on, the Inicio preview was dark although its color is unknown (S11). Fixed in 434677f: on with no known color shows the calm gradient; off stays dark (96 tests; the new assertion was added after the fix, so RED was not observed).
 - L30 — 2026-11-25, user after testing «Elegir tira» on the phone: "algo más, dentro de cambiar, con mis tiras al dar conectar y da error sale dentro de tiras cercanas nuevas, no se nota y no es natural, deberia notarse diferente, siento que esta seccion de elegir tira no respeta mucho el diseño del app, le falta detalles y los cudros de cada dispositivo guardado mejor dicho mis tiras, es muy alto el box, subir quinos de renombre y borrar arriba de conector nbotón y reducir, la idera era que si hay varios dispositivos no cance andar entre ellos y hace falta un buscar para poder encontrar facil"
 - L31 — 2026-11-25, user: "cuando intento mover el control de velocidad al estar desactivado me paso a la siguiente pentaña o seccion, no deberia en esa zona funciona el slide" — a horizontal drag on the disabled Speed slider falls through to the tab swipe.
+- L32 — 2026-11-25, disabled-slider swipe fixed in 00e4aa1 (RED observed: the tab changed; regression test lives in cde2b77 with the T12 tests). T12 in cde2b77: row-local errors with Reintentar, rows <= 80 dp with pencil/trash above the pill, search from 4 strips (case- and accent-insensitive). 100 tests, analyze clean.
