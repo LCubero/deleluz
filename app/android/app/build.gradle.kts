@@ -38,6 +38,16 @@ android {
         versionName = flutter.versionName
     }
 
+    // Single-ABI release APKs (`flutter build apk --target-platform android-arm64`) must not carry
+    // plugin libraries for other ABIs, or Android may pick an ABI that has no libflutter.so.
+    // Flutter resets ndk.abiFilters, so drop the other ABIs at packaging time instead.
+    val abiByPlatform = mapOf("android-arm" to "armeabi-v7a", "android-arm64" to "arm64-v8a", "android-x64" to "x86_64")
+    val targetAbis = (project.findProperty("target-platform") as String?)
+        ?.split(",")?.mapNotNull { abiByPlatform[it.trim()] }.orEmpty()
+    if (targetAbis.isNotEmpty()) {
+        packaging { jniLibs { excludes += (abiByPlatform.values - targetAbis.toSet()).map { "lib/$it/**" } } }
+    }
+
     signingConfigs {
         if (keystoreProperties.containsKey("storeFile")) {
             create("release") {
