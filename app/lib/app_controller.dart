@@ -333,15 +333,24 @@ class AppController extends ChangeNotifier {
     }
   }
 
+  void _deviceNotice(String? key) {
+    // Keep the timer retry available through automatic and manual reconnects.
+    if (message == 'timerOffFailed') {
+      if (key == null) _refresh();
+      return;
+    }
+    _notice(key);
+  }
+
   Future<void> _deviceAction(Future<void> Function() action, String failure,
       {void Function(String)? onFailure, String? targetId, bool scan = false}) async {
-    final report = onFailure ?? _notice;
+    final report = onFailure ?? _deviceNotice;
     if (busy || _disposed) return;
     final generation = ++_deviceGeneration;
     connectingId = targetId;
     _scanRequested = scan;
     busy = true;
-    _notice(null);
+    _deviceNotice(null);
     try {
       await action();
     } on UnsupportedController {
@@ -449,7 +458,7 @@ class AppController extends ChangeNotifier {
     if (recovery || !_devices.containsKey(target.id)) {
       final problem = await checkAccess(request);
       if (!active()) return;
-      if (problem != null) return (onFailure ?? _notice)(problem);
+      if (problem != null) return (onFailure ?? _deviceNotice)(problem);
     }
     await stopScan(silent: true);
     if (!active()) return;
@@ -507,7 +516,7 @@ class AppController extends ChangeNotifier {
   Future<bool> _send(Uint8List frame, String label, {
     String? key, Map<String, Object?> values = const {},
     void Function()? onSent, void Function()? onWriteError,
-    String failure = 'commandFailed',
+    bool reportFailure = true,
   }) async {
     if (!canSend) return false;
     final generation = _generation;
@@ -525,7 +534,7 @@ class AppController extends ChangeNotifier {
       return true;
     } catch (_) {
       if (generation == _generation) {
-        _notice(failure);
+        if (reportFailure) _notice('commandFailed');
         onWriteError?.call();
       }
       return false;
@@ -533,7 +542,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<bool> _sendPower(bool value, {bool fromTimer = false}) => _send(wire.power(value),
-      value ? 'power' : 'off', failure: fromTimer ? 'timerOffFailed' : 'commandFailed', onSent: () {
+      value ? 'power' : 'off', reportFailure: !fromTimer, onSent: () {
         if (message == 'timerOffFailed') message = null;
         sentPower = value;
         if (!value) _sentEffect = null;
@@ -575,7 +584,12 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> _powerOff({bool fromTimer = false}) async {
-    if (await _sendPower(false, fromTimer: fromTimer)) _select({'on': false});
+    if (await _sendPower(false, fromTimer: fromTimer)) {
+      _select({'on': false});
+    } else if (fromTimer && !_disposed) {
+      // A lost session invalidates the send, not the timer's OFF obligation.
+      _notice('timerOffFailed');
+    }
   }
 
   bool _retryingTimerOff = false;

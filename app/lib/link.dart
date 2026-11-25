@@ -253,7 +253,11 @@ class Link {
     _generation++;
     _cancelFallback = null;
     _set(LinkStatus.idle);
-    await _sub.cancel();
+    try {
+      await _sub.cancel();
+    } catch (_) {
+      // Subscription cleanup must not prevent releasing the owned link.
+    }
     await _waitForRelease();
     if (opening != null) await opening;
     final owned = _ownedId;

@@ -60,6 +60,14 @@ class FakeBle implements BleApi {
   Future<void> stopScan() async {}
 }
 
+class ThrowingCancelBle extends FakeBle {
+  final throwingChanges = StreamController<(String, bool)>(
+      onCancel: () => throw StateError('Subscription cancellation failed'));
+
+  @override
+  Stream<(String, bool)> get connectionChanges => throwingChanges.stream;
+}
+
 void main() {
   late FakeBle ble;
   late Link link;
@@ -156,6 +164,15 @@ void main() {
     } finally {
       gate.complete();
     }
+  });
+
+  test('dispose releases the owned link even when subscription cancellation throws', () async {
+    final transport = ThrowingCancelBle();
+    final owned = Link(transport);
+    await owned.connect(const Strip('A', 'x'));
+    await owned.dispose();
+    expect(transport.open, isEmpty);
+    expect(transport.disconnected, ['A']);
   });
 
   test('F1 disposing during discovery releases the late open', () async {

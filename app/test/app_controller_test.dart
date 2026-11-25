@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:deleluz/app_controller.dart';
 import 'package:deleluz/link.dart' show LinkStatus;
@@ -23,6 +24,19 @@ class StalledReleaseBle extends FakeBle {
 
   @override
   Future<void> disconnect(String id) => release.future;
+}
+
+class StalledTimerOffBle extends FakeBle {
+  final stalled = Completer<void>();
+  int offAttempts = 0;
+
+  @override
+  Future<void> write(String id, Uint8List bytes) {
+    if (bytes.toString() == wire.power(false).toString() && ++offAttempts == 1) {
+      return stalled.future;
+    }
+    return super.write(id, bytes);
+  }
 }
 
 class RefusingShortcutStore extends Store {
@@ -195,6 +209,55 @@ void main() {
     expect(c.message, isNull);
     expect(c.remaining, isNull);
   });
+
+  for (final dropBeforeTimeout in [false, true]) {
+    testWidgets('final timer OFF ${dropBeforeTimeout ? 'loses link' : 'times out'}; retry after reconnect sends OFF once', (tester) async {
+      final transport = StalledTimerOffBle();
+      final automaticAccess = Completer<String?>();
+      final controller = AppController(transport, Store(),
+          checkAccess: (request) async => request ? null : automaticAccess.future,
+          now: () => now);
+      addTearDown(transport.changes.close);
+      addTearDown(controller.dispose);
+      await controller.connect(FakeBle.strip);
+      var warnings = 0;
+      String? previous;
+      controller.addListener(() {
+        if (controller.message == 'timerOffFailed' && previous != controller.message) warnings++;
+        previous = controller.message;
+      });
+      controller.startTimer(1, fade: false);
+      await advance(tester, 1000);
+      expect(transport.offAttempts, 1);
+      if (dropBeforeTimeout) {
+        transport.changes.add((FakeBle.strip.id, false));
+        await tester.pump();
+        transport.stalled.complete();
+        await tester.pump();
+      } else {
+        await advance(tester, 2000);
+        transport.stalled.complete();
+      }
+      expect(controller.message, 'timerOffFailed');
+      expect(controller.remaining, isNull);
+      expect(controller.canRetryTimerOff, isFalse);
+      await controller.retryTimerOff();
+      expect(transport.offAttempts, 1);
+      automaticAccess.complete('connectFailed');
+      await tester.pump();
+      await controller.reconnect();
+      expect(controller.canRetryTimerOff, isTrue);
+      final retry = controller.retryTimerOff();
+      expect(controller.canRetryTimerOff, isFalse);
+      await controller.retryTimerOff();
+      await drain(tester);
+      await retry;
+      expect(transport.offAttempts, 2);
+      expect(transport.writes, [wire.power(false)]);
+      expect(controller.message, isNull);
+      expect(warnings, 1);
+    });
+  }
 
   testWidgets('F6 rapid colors share power preparation and send the latest color', (tester) async {
     await c.connect(FakeBle.strip);
