@@ -162,7 +162,7 @@ class _StripSelectorState extends State<StripSelector> {
     final pending = c.connectingId == strip.id;
     final failure = connected || pending ? null : _failures[strip.id];
     final error = Theme.of(context).colorScheme.error;
-    final primary = !connected && failure == null;
+    final primary = !connected && failure == null && !pending; // Cancelar stays grey (L54).
     final pill = FilledButton(
       style: FilledButton.styleFrom(
         minimumSize: const Size(0, 34),

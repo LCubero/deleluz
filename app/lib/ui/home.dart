@@ -219,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: GlowStrip(colors: previewColors, height: 14, glow: glow)),
       Row(spacing: 8, children: [
         Expanded(child: _connectButton(c.text(pending ? 'cancel' : connected ? 'disconnect'
-            : strip != null && previewIndex < 0 ? 'reconnect' : 'connect'),
+            : strip != null && previewIndex < 0 ? 'reconnect' : 'connect'), neutral: pending,
           pending ? c.cancelConnection : c.busy ? null : connected ? c.disconnect
             : strip == null ? _chooseStrip : showingRemembered ? c.reconnect : () => c.connect(strip))),
         TextButton(onPressed: c.busy ? null : _chooseStrip,
@@ -233,14 +233,18 @@ class _HomeScreenState extends State<HomeScreen> {
     ]));
   }
 
-  Widget _connectButton(String label, VoidCallback? onPressed) => DecoratedBox(
-    decoration: BoxDecoration(gradient: onPressed == null ? null : glowStrongGradient,
-      borderRadius: BorderRadius.circular(14), boxShadow: onPressed == null ? null : const [
+  // neutral: grey glass for Cancelar, so it never looks like Conectar (L54).
+  Widget _connectButton(String label, VoidCallback? onPressed, {bool neutral = false}) => DecoratedBox(
+    decoration: BoxDecoration(gradient: onPressed == null || neutral ? null : glowStrongGradient,
+      color: neutral ? glowGlassSelected : null,
+      border: neutral ? Border.all(color: glowLine) : null,
+      borderRadius: BorderRadius.circular(14), boxShadow: onPressed == null || neutral ? null : const [
         BoxShadow(color: Color(0x59ec4899), blurRadius: 24, offset: Offset(0, 8)),
       ]),
     child: FilledButton.icon(onPressed: onPressed,
       style: FilledButton.styleFrom(backgroundColor: Colors.transparent),
-      icon: const GlowIcon(GlowGlyph.bluetooth, size: 20), label: Text(label)),
+      icon: neutral ? const Icon(Icons.close, size: 20) : const GlowIcon(GlowGlyph.bluetooth, size: 20),
+      label: Text(label)),
   );
 
   Future<void> _editShortcut(int index) async {

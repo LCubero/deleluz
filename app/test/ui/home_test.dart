@@ -161,6 +161,11 @@ void main() {
     await tester.tap(find.text('Reconectar'));
     await tester.pump();
     expect(ble.connections, [FakeBle.strip.id]);
+    // Cancelar is grey glass, never the Conectar gradient (L54).
+    final cancelBox = tester.widget<DecoratedBox>(find.ancestor(of: find.text('Cancelar'),
+      matching: find.byType(DecoratedBox)).first).decoration as BoxDecoration;
+    expect(cancelBox.gradient, isNull);
+    expect(cancelBox.color, isNotNull);
     await tester.tap(find.text('Cancelar'));
     await tester.pump(const Duration(seconds: 2));
     expect(ble.connections, [FakeBle.strip.id]);
