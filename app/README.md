@@ -6,7 +6,7 @@ Native Android app (Flutter) for the LEDDMX-03 LED strip controller, with the Gl
 
 ## Install
 
-1. Download `app-arm64-v8a-release.apk` from the [Releases](https://github.com/LCubero/deleluz/releases) page. Older 32-bit phones use `app-armeabi-v7a-release.apk`.
+1. Download `DeleLuz-1.0.0.apk` from the [Releases](https://github.com/LCubero/deleluz/releases/latest) page. It is one file for every Android phone with Android 7.0 or newer.
 2. Open it on the phone and allow installing apps from that source. Google Play Protect may warn because the app is not from the store.
 3. Updates install over the previous version and keep your data.
 
@@ -43,7 +43,7 @@ From `app/`, with the Flutter SDK in `../_tools/flutter` (not on `PATH`):
 
 ```sh
 ../_tools/flutter/bin/flutter test
-../_tools/flutter/bin/flutter build apk --release --split-per-abi   # build/app/outputs/flutter-apk/
+../_tools/flutter/bin/flutter build apk --release   # build/app/outputs/flutter-apk/app-release.apk, published as DeleLuz-<version>.apk
 ```
 
 Release signing reads `android/key.properties`, which points to a keystore under `android/release/`. Both are git-ignored; keep a private backup, because updates must be signed with the same key. Without `key.properties`, release builds fall back to the debug key, which is only for local testing. `key.properties` format:
@@ -55,6 +55,8 @@ keyAlias=deleluz
 storeFile=../release/deleluz-release.jks
 ```
 
-Raise the build number in `pubspec.yaml` (`version: 1.0.0+N`) for every APK you share, and keep `lib/version.dart` in sync with the version name (a test checks it).
+Raise the build number in `pubspec.yaml` (`version: 1.0.0+N`) for every APK you share; Android only installs an update over a lower number. It starts at 2004 because earlier test builds were split per ABI and used codes up to 2003. Keep `lib/version.dart` in sync with the version name (a test checks it).
+
+On Windows the release build sometimes fails with `stableIds.txt ... The device does not recognize the command`; delete `build/app/intermediates/stable_resource_ids_file` and build again.
 
 On Windows, Kotlin incremental compilation is turned off in `android/gradle.properties` because plugin sources in the pub cache live on another drive.
