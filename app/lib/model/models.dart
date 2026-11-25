@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/widgets.dart' show StringCharacters;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../link.dart';
@@ -86,6 +88,28 @@ bool _validLabel(Object? label) => label is String ||
         (label.length == 1 || (label.length == 2 && label[1] is Fields &&
             (label[1] as Fields).values.every((v) => v is String || (v is num && v.isFinite)))));
 
+const maxStripAlias = 24;
+
+class RememberedStrip extends Strip {
+  const RememberedStrip(super.id, super.name, {this.alias});
+
+  final String? alias;
+  String get label => alias ?? name;
+
+  static String? normalizeAlias(String value) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed.characters.take(maxStripAlias).toString().trimRight();
+  }
+
+  static List<RememberedStrip> remember(List<RememberedStrip> strips, Strip strip) => [
+    RememberedStrip(strip.id, strip.name,
+      alias: strips.where((item) => item.id == strip.id).firstOrNull?.alias),
+    ...strips.where((item) => item.id != strip.id),
+  ];
+
+  RememberedStrip renamed(String value) => RememberedStrip(id, name, alias: normalizeAlias(value));
+}
+
 /// Local snapshots represent the last selection, not live controller state.
 /// Callers own in-memory edits and decide whether a failed save is retryable.
 class Models {
@@ -103,6 +127,8 @@ class Models {
   static const stripSettingsKey = 'deleluz.app.stripSettings';
   static const languageKey = 'deleluz.app.language';
   static const rememberedKey = 'deleluz.app.rememberedStrip';
+  static const rememberedStripsKey = 'deleluz.app.rememberedStrips';
+  static const stripsExpandedKey = 'deleluz.app.stripsExpanded';
 
   Object? _readJson(String key) {
     try {
@@ -282,6 +308,43 @@ class Models {
 
   Future<bool> saveLanguage(String language) async =>
       (language == 'es' || language == 'en') && await _write(languageKey, language);
+
+  /// List order is most recently connected first. An empty list is authoritative,
+  /// so forgetting every strip cannot resurrect a legacy entry.
+  List<RememberedStrip> loadRememberedStrips() {
+    try {
+      final raw = storage.read(rememberedStripsKey);
+      if (raw == null) {
+        final legacy = loadRemembered();
+        if (legacy == null) return [];
+        final migrated = RememberedStrip.remember([], legacy);
+        unawaited(saveRememberedStrips(migrated));
+        return migrated;
+      }
+      final saved = jsonDecode(raw);
+      if (saved is! List) return [];
+      final seen = <String>{};
+      return [
+        for (final row in saved)
+          if (row is Fields && _text(row['id']) && _text(row['name']) && seen.add(row['id'] as String))
+            RememberedStrip(row['id'] as String, row['name'] as String,
+              alias: row['alias'] is String ? RememberedStrip.normalizeAlias(row['alias'] as String) : null),
+      ];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<bool> saveRememberedStrips(List<RememberedStrip> strips) =>
+    _write(rememberedStripsKey, jsonEncode([
+      for (final strip in strips) {
+        'id': strip.id, 'name': strip.name,
+        if (strip.alias != null) 'alias': RememberedStrip.normalizeAlias(strip.alias!),
+      },
+    ]));
+
+  bool loadStripsExpanded() => _readJson(stripsExpandedKey) != false;
+  Future<bool> saveStripsExpanded(bool expanded) => _write(stripsExpandedKey, jsonEncode(expanded));
 
   Strip? loadRemembered() {
     final saved = _readJson(rememberedKey);

@@ -61,7 +61,8 @@ class AppController extends ChangeNotifier {
     _selection = models.loadState();
     language = models.loadLanguage();
     shortcuts = models.loadShortcuts();
-    remembered = models.loadRemembered();
+    _rememberedStrips = models.loadRememberedStrips();
+    stripsExpanded = models.loadStripsExpanded();
     link = Link(_ble, onChange: _linkChanged, onRemember: _remember);
     _sender = Sender(write: link.write, now: _now);
     final saved = remembered;
@@ -76,7 +77,12 @@ class AppController extends ChangeNotifier {
   late Fields _selection;
   late String language;
   late List<Fields> shortcuts;
-  Strip? remembered;
+  late List<RememberedStrip> _rememberedStrips;
+  List<RememberedStrip> get rememberedStrips => List.unmodifiable(_rememberedStrips);
+  RememberedStrip? get remembered => _rememberedStrips.firstOrNull;
+  late bool stripsExpanded;
+  bool scanCompleted = false;
+  int _scanGeneration = 0;
   String? message;
   bool busy = false;
   bool scanning = false;
@@ -144,8 +150,24 @@ class AppController extends ChangeNotifier {
   }
 
   void _remember(String? id) {
-    remembered = id == null ? null : link.strip;
-    unawaited(_save(models.saveRemembered(remembered)));
+    final strip = link.strip;
+    if (id == null || strip == null) return;
+    _setRemembered(RememberedStrip.remember(_rememberedStrips, strip));
+  }
+
+  void _setRemembered(List<RememberedStrip> strips) {
+    _rememberedStrips = strips;
+    unawaited(_save(models.saveRememberedStrips(strips)));
+    _refresh();
+  }
+
+  void renameStrip(String id, String alias) => _setRemembered([
+    for (final strip in _rememberedStrips) strip.id == id ? strip.renamed(alias) : strip,
+  ]);
+
+  void toggleStripsExpanded() {
+    stripsExpanded = !stripsExpanded;
+    unawaited(_save(models.saveStripsExpanded(stripsExpanded)));
     _refresh();
   }
 
@@ -198,10 +220,12 @@ class AppController extends ChangeNotifier {
 
   Future<void> startScan() => _deviceAction(() async {
     if (scanning) return;
+    final generation = ++_scanGeneration;
     _devices.clear();
+    scanCompleted = false;
     final problem = await checkAccess(true);
+    if (!_foreground || _disposed || generation != _scanGeneration) return;
     if (problem != null) return _notice(problem);
-    if (!_foreground || _disposed) return;
     scanning = true;
     _scan = _ble.scan().listen((strip) {
       if (strip.name.startsWith(namePrefix)) {
@@ -211,11 +235,18 @@ class AppController extends ChangeNotifier {
     }, onError: (Object _) {
       _notice('scanFailed');
       unawaited(stopScan());
-    });
-    _scanTimeout = Timer(const Duration(seconds: 10), () => unawaited(stopScan()));
+    }, onDone: () => _finishScan(generation));
+    _scanTimeout = Timer(const Duration(seconds: 10), () => _finishScan(generation));
   }, 'scanFailed');
 
+  void _finishScan(int generation) {
+    if (generation != _scanGeneration) return;
+    scanCompleted = true;
+    unawaited(stopScan());
+  }
+
   Future<void> stopScan() async {
+    _scanGeneration++;
     if (!scanning) return;
     scanning = false;
     _scanTimeout?.cancel();
@@ -231,6 +262,10 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> connect(Strip target) => _deviceAction(() async {
+    if (!_devices.containsKey(target.id)) {
+      final problem = await checkAccess(true);
+      if (problem != null) return _notice(problem);
+    }
     await stopScan();
     if (!_foreground || _disposed) return;
     try {
@@ -254,10 +289,16 @@ class AppController extends ChangeNotifier {
   }, 'connectFailed');
 
   Future<void> disconnect() => _deviceAction(link.disconnect, 'disconnectFailed');
-  Future<void> forget() => _deviceAction(() async {
-    await link.forget();
-    lastCommand = null;
-    _sentDeviceId = null;
+  Future<void> forgetStrip(String id) => _deviceAction(() async {
+    if (link.strip?.id == id) {
+      await link.disconnect();
+      await link.forget();
+      lastCommand = null;
+      _sentDeviceId = null;
+    }
+    _setRemembered(_rememberedStrips.where((strip) => strip.id != id).toList());
+    final next = remembered;
+    if (link.strip == null && next != null) link.restore(next);
   }, 'disconnectFailed');
 
   void setLanguage(String value) {

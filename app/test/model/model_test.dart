@@ -293,6 +293,39 @@ void main() {
     expect(models.loadRemembered(), isNull);
   });
 
+  test('remembered strips migrate once and persist aliases, recency and forgetting', () async {
+    await models.saveRemembered(const Strip('old', 'LEDDMX Legacy'));
+    final migrated = models.loadRememberedStrips();
+    expect(migrated.single.id, 'old');
+    expect(storage.values[Models.rememberedStripsKey], contains('LEDDMX Legacy'));
+    final renamed = migrated.single.renamed('  ${'a' * 30}   ');
+    expect(renamed.alias, 'a' * 24);
+    expect(renamed.renamed('   ').alias, isNull);
+    final added = RememberedStrip.remember([renamed], const Strip('new', 'LEDDMX New'));
+    expect(added.map((strip) => strip.id), ['new', 'old']);
+    final recent = RememberedStrip.remember(added, const Strip('old', 'LEDDMX Updated'));
+    await models.saveRememberedStrips(recent);
+    final restored = models.loadRememberedStrips();
+    expect(restored.map((strip) => strip.id), ['old', 'new']);
+    expect(restored.first.alias, renamed.alias);
+    expect(restored.first.name, 'LEDDMX Updated');
+    await models.saveRememberedStrips([]);
+    expect(models.loadRememberedStrips(), isEmpty);
+  });
+
+  test('invalid saved lists fall back safely without resurrecting legacy strips', () async {
+    await models.saveRemembered(const Strip('old', 'LEDDMX Legacy'));
+    for (final invalid in ['{broken', 'null', '{}']) {
+      storage.values[Models.rememberedStripsKey] = invalid;
+      expect(models.loadRememberedStrips(), isEmpty);
+    }
+    storage.values[Models.rememberedStripsKey] = '[42,{"id":"valid","name":"Demo","alias":42},'
+      '{"id":"valid","name":"Duplicate"},{"id":" ","name":"Invalid"}]';
+    final valid = models.loadRememberedStrips().single;
+    expect(valid.label, 'Demo');
+    expect(valid.alias, isNull);
+  });
+
   test('custom timer accepts whole fields from one second to 720 minutes only', () {
     expect(parseTimerDuration('', ' 01 '), 1);
     expect(parseTimerDuration('720', ''), 43200);

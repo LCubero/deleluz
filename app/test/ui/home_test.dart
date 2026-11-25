@@ -28,19 +28,19 @@ class Store implements LocalStore {
 class FakeBle implements BleApi {
   static const strip = Strip('fake', 'LEDDMX Test');
   final connections = <String>[];
+  final disconnects = <String>[];
+  List<Strip> results = [strip];
   final writes = <Uint8List>[];
   final changes = StreamController<(String, bool)>.broadcast();
   @override
   Future<void> connect(String id) async => connections.add(id);
   @override
-  Future<void> disconnect(String id) async {}
+  Future<void> disconnect(String id) async => disconnects.add(id);
   @override
   Future<bool> hasWriteWithoutResponse(String id) async => true;
   @override
   Stream<Strip> scan() {
-    final results = StreamController<Strip>();
-    results.add(strip);
-    return results.stream;
+    return Stream.fromIterable(results);
   }
   @override
   Future<void> stopScan() async {}
@@ -78,9 +78,10 @@ void main() {
   Future<void> connect(WidgetTester tester) async {
     await tester.tap(find.text('Conectar'));
     await tester.pumpAndSettle();
-    final tile = find.widgetWithText(ListTile, FakeBle.strip.name);
-    expect(tester.widget<ListTile>(tile).enabled, isTrue);
-    await tester.tap(tile);
+    final row = find.byKey(ValueKey(FakeBle.strip.id));
+    await tester.tap(find.descendant(of: row, matching: find.text('Conectar')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Volver a Inicio'));
     await tester.pumpAndSettle();
     expect(find.text('Buscando tiras…'), findsNothing);
     expect(find.text('No se pudo conectar.'), findsNothing);
@@ -213,6 +214,127 @@ void main() {
       lessThan(tester.getTopLeft(find.byKey(const Key('brightness'))).dy));
   });
 
+  testWidgets('Home connection card stays compact and Cambiar opens the selector', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(412, 915));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await start(tester);
+    final card = find.byType(GlassCard).first;
+    // Measured at 412×915 on the previous disconnected Inicio card.
+    expect(tester.getSize(card).height, lessThanOrEqualTo(181));
+    await tester.tap(find.text('Cambiar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Elegir tira'), findsOneWidget);
+    await tester.tap(find.byTooltip('Volver a Inicio'));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('selector states, management actions and expansion persist', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(412, 915));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final saved = [
+      for (var i = 1; i <= 4; i++) RememberedStrip('$i', 'LEDDMX $i', alias: 'Tira $i'),
+    ];
+    final models = Models(store, presetIds: {});
+    await models.saveRememberedStrips(saved);
+    ble.results = [saved[1], saved[2], FakeBle.strip];
+    final c = await start(tester);
+    await c.reconnect();
+    await tester.pumpAndSettle();
+    expect(find.text('Desconectar'), findsOneWidget);
+    await tester.tap(find.text('Cambiar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Mis tiras · 4'), findsOneWidget);
+    Finder row(String id) => find.byKey(ValueKey(id));
+    Finder within(String id, Finder child) => find.descendant(of: row(id), matching: child);
+    expect(within('1', find.text('Conectado')), findsOneWidget);
+    expect(within('2', find.text('Recordada')), findsOneWidget);
+    expect(within('3', find.text('Recordada')), findsOneWidget);
+    expect(within('4', find.text('Fuera de alcance')), findsOneWidget);
+    final firstCard = tester.getRect(within('1', find.byType(Material)).first);
+    final secondCard = tester.getRect(within('2', find.byType(Material)).first);
+    expect(secondCard.top - firstCard.bottom, greaterThanOrEqualTo(10));
+    expect(firstCard.left, greaterThanOrEqualTo(18));
+    expect(412 - firstCard.right, greaterThanOrEqualTo(18));
+    await tester.scrollUntilVisible(row('fake'), 140);
+    expect(within('fake', find.text('Conectar')), findsOneWidget);
+    await tester.scrollUntilVisible(row('1'), -140);
+    await tester.ensureVisible(within('1', find.byTooltip('Renombrar')));
+    await tester.tap(within('1', find.byTooltip('Renombrar')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), '  Sala  ');
+    await tester.tap(find.text('Guardar'));
+    await tester.pumpAndSettle();
+    expect(within('1', find.text('Sala')), findsOneWidget);
+    await tester.tap(find.byTooltip('Volver a Inicio'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sala'), findsOneWidget);
+    await tester.tap(find.text('Cambiar'));
+    await tester.pumpAndSettle();
+
+    Future<void> menu(String name) async {
+      await tester.longPress(find.text(name));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(SimpleDialogOption, 'Renombrar'), findsOneWidget);
+      expect(find.widgetWithText(SimpleDialogOption, 'Olvidar'), findsOneWidget);
+    }
+    await menu('Sala');
+    await tester.tap(find.widgetWithText(SimpleDialogOption, 'Renombrar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Renombrar tira'), findsOneWidget);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    await menu('Sala');
+    await tester.tap(find.widgetWithText(SimpleDialogOption, 'Olvidar'));
+    await tester.pumpAndSettle();
+    expect(find.text('¿Olvidar Sala en este teléfono?'), findsOneWidget);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    await menu('Sala');
+    await tester.tap(find.widgetWithText(SimpleDialogOption, 'Desconectar'));
+    await tester.pumpAndSettle();
+    expect(within('1', find.text('Conectar')), findsOneWidget);
+    await menu('Sala');
+    await tester.tap(find.widgetWithText(SimpleDialogOption, 'Conectar'));
+    await tester.pumpAndSettle();
+    expect(within('1', find.text('Desconectar')), findsOneWidget);
+    await tester.tap(within('2', find.text('Conectar')));
+    await tester.pumpAndSettle();
+    expect(ble.disconnects, ['1', '1']);
+    expect(c.remembered?.id, '2');
+    expect(within('2', find.text('Desconectar')), findsOneWidget);
+
+    await tester.tap(within('1', find.byTooltip('Olvidar')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(row('1'), findsOneWidget);
+    await tester.tap(within('1', find.byTooltip('Olvidar')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Olvidar'));
+    await tester.pumpAndSettle();
+    expect(row('1'), findsNothing);
+    expect(c.link.strip?.id, '2');
+    expect(c.link.ready, isTrue);
+    expect(models.loadRememberedStrips().map((strip) => strip.id), ['2', '3', '4']);
+
+    final section = find.text('Mis tiras · 3');
+    await tester.tap(section);
+    await tester.pumpAndSettle();
+    expect(row('2'), findsNothing);
+    await tester.tap(find.byTooltip('Volver a Inicio'));
+    await tester.pumpAndSettle();
+    await start(tester);
+    await tester.tap(find.text('Cambiar'));
+    await tester.pumpAndSettle();
+    expect(row('2'), findsNothing);
+    await tester.tap(section);
+    await tester.pumpAndSettle();
+    expect(row('2'), findsOneWidget);
+    expect(models.loadStripsExpanded(), isTrue);
+    await tester.tap(find.byTooltip('Volver a Inicio'));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('disconnected power cannot send', (tester) async {
     await start(tester);
     final button = tester.widget<IconButton>(find.byKey(const Key('power')));
@@ -227,7 +349,7 @@ void main() {
     expect(accessChecks, [true]);
     expect(ble.connections, ['fake']);
     expect(find.text('Conectado'), findsOneWidget);
-    expect(store.read(Models.rememberedKey), contains(FakeBle.strip.name));
+    expect(store.read(Models.rememberedStripsKey), contains(FakeBle.strip.name));
   });
 
   testWidgets('a drop recovers the remembered strip without requesting permissions', (tester) async {
@@ -327,7 +449,9 @@ void main() {
   testWidgets('restores remembered device without opening Bluetooth', (tester) async {
     await Models(store, presetIds: {}).saveRemembered(FakeBle.strip);
     await start(tester);
+    // Without an alias the name shows once, with a short description below.
     expect(find.text(FakeBle.strip.name), findsOneWidget);
+    expect(find.text('Controlador de tira LED'), findsOneWidget);
     expect(find.text('Reconectar'), findsOneWidget);
     expect(accessChecks, isEmpty);
     expect(ble.connections, isEmpty);
@@ -341,7 +465,18 @@ void main() {
         tester.platformDispatcher.clearTextScaleFactorTestValue();
         await tester.binding.setSurfaceSize(null);
       });
+      final models = Models(store, presetIds: {});
+      await models.saveRememberedStrips([
+        for (var i = 0; i < 4; i++) RememberedStrip('$i', 'LEDDMX-03-LONG-NAME-$i', alias: 'Alias largo de la tira $i'),
+      ]);
       await start(tester);
+      await tester.tap(find.text('Cambiar'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('Buscar de nuevo'), 160);
+      expect(find.text('Buscar de nuevo').hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.byTooltip('Volver a Inicio'));
+      await tester.pumpAndSettle();
       final hint = find.text('La velocidad aplica a efectos');
       await tester.scrollUntilVisible(hint, 100);
       await tester.ensureVisible(hint);

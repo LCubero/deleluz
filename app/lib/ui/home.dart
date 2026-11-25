@@ -8,6 +8,7 @@ import 'glow_glass.dart';
 import 'glow_icon.dart';
 import 'home_presets.dart';
 import 'hue_wheel.dart';
+import 'strip_selector.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.controller, required this.openScenes});
@@ -20,12 +21,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   AppController get c => widget.controller;
-  bool _chooser = false;
   bool _quickOpen = false;
 
-  Future<void> _scan() async {
-    await c.startScan();
-    if (mounted) setState(() => _chooser = c.scanning || c.devices.isNotEmpty);
+  Future<void> _chooseStrip() async {
+    await Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => StripSelector(controller: c),
+    ));
+    await c.stopScan();
   }
 
   @override
@@ -163,49 +165,32 @@ class _HomeScreenState extends State<HomeScreen> {
       _ => const <List<int>>[],
     };
     final glow = rgb == null ? null : Color.fromARGB(255, rgb[0], rgb[1], rgb[2]);
-    final strip = connected ? c.link.strip : c.remembered;
+    final strip = c.remembered;
     final theme = Theme.of(context).textTheme;
     return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: [
       Row(spacing: 12, crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(strip?.name ?? 'LEDDMX', style: theme.titleMedium),
-          Text(c.text(c.link.status == LinkStatus.lost ? 'keepsColor' : 'controller'), style: theme.bodySmall),
+          Text(strip?.label ?? 'LEDDMX', style: theme.titleMedium,
+            maxLines: 1, overflow: TextOverflow.ellipsis),
+          // Second line: the Bluetooth name under an alias; otherwise a short description, never the name twice.
+          Text(strip != null && strip.label != strip.name ? strip.name
+              : c.text(c.link.status == LinkStatus.lost ? 'keepsColor' : 'controller'),
+            style: theme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
         ])),
-        Flexible(child: Align(alignment: AlignmentDirectional.topEnd,
-          widthFactor: 1, heightFactor: 1, child: ConnectionChip(controller: c))),
+        // Flexible keeps large text from overflowing; Align without widthFactor pins the chip right.
+        Flexible(child: Align(alignment: AlignmentDirectional.topEnd, heightFactor: 1,
+          child: ConnectionChip(controller: c))),
       ]),
       Semantics(container: true, image: true,
         label: c.text(unknown ? 'stripPreviewUnknown' : 'stripPreview'),
         child: GlowStrip(colors: previewColors, height: 14, glow: glow)),
-      Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
-        if (!c.link.ready && c.remembered != null)
-          _connectButton(c.text('reconnect'), c.busy ? null : c.reconnect),
-        if (!_chooser && !c.link.ready && c.remembered == null)
-          _connectButton(c.text('connect'), c.busy ? null : _scan)
-        else if (!_chooser)
-          OutlinedButton(onPressed: c.busy ? null : _scan, child: Text(c.text('switchStrip')))
-        else if (_chooser)
-          OutlinedButton(onPressed: () {
-            c.stopScan();
-            setState(() => _chooser = false);
-          }, child: Text(c.text('close'))),
-        if (c.link.ready)
-          OutlinedButton(onPressed: c.busy ? null : c.disconnect, child: Text(c.text('disconnect'))),
-        if (c.remembered != null)
-          TextButton(onPressed: c.busy ? null : c.forget, child: Text(c.text('forgetStrip'))),
+      Row(spacing: 8, children: [
+        Expanded(child: _connectButton(c.text(connected ? 'disconnect' : strip != null ? 'reconnect' : 'connect'),
+          c.busy ? null : connected ? c.disconnect : strip != null ? c.reconnect : _chooseStrip)),
+        TextButton(onPressed: c.busy ? null : _chooseStrip,
+          style: TextButton.styleFrom(foregroundColor: glowLink,
+            padding: const EdgeInsets.symmetric(horizontal: 8)), child: Text(c.text('changeStrip'))),
       ]),
-      if (_chooser) ...[
-        const SizedBox(height: 8),
-        if (c.scanning) Text(c.text('scanning')),
-        if (!c.scanning && c.devices.isEmpty) Text(c.text('noStrips')),
-        for (final device in c.devices)
-          ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.bluetooth),
-            title: Text(device.name), enabled: !c.busy && !(c.link.ready && c.link.strip?.id == device.id),
-            onTap: () {
-              setState(() => _chooser = false);
-              c.connect(device);
-            }),
-      ],
       if (c.message case final key?) ...[
         const SizedBox(height: 8),
         Semantics(liveRegion: true, child: Text(c.text(key), style: const TextStyle(color: Color(0xffffb4ba)))),
