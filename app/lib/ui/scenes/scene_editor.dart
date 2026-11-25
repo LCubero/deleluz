@@ -9,20 +9,12 @@ class _SceneEditor extends StatefulWidget {
   State<_SceneEditor> createState() => _SceneEditorState();
 }
 
-class _Frame {
-  _Frame(this.rgb);
-  List<int> rgb;
-}
-
 class _SceneEditorState extends State<_SceneEditor> {
   AppController get c => widget.transport.controller;
   late final String? _id = widget.item?['id'] as String?;
   late final Fields _initial = widget.item ?? createSequence(c.models.loadSequences(),
     nameFor: (n) => c.text('sequenceName', {'number': n})).last;
-  late final List<_Frame> _frames = (_initial['colors'] as List<List<int>>).map(_Frame.new).toList();
-  late _Frame _selected = _frames.first;
-  late int _speed = speedPercent(_interval);
-  late int _interval = _initial['interval'] as int;
+  late final List<Fields> _steps = sceneSteps(_initial);
   late int _intensity = _initial['bri'] as int;
   late final TextEditingController _name = TextEditingController(text: _initial['name'] as String);
   late bool _renaming = _id == null;
@@ -44,8 +36,7 @@ class _SceneEditorState extends State<_SceneEditor> {
       return;
     }
     final draft = <String, Object?>{
-      'name': name, 'colors': [for (final frame in _frames) frame.rgb],
-      'interval': _interval, 'bri': _intensity,
+      'name': name, 'steps': _steps, 'bri': _intensity,
     };
     final random = Random.secure();
     final next = _id == null ? [...items, {
@@ -91,51 +82,49 @@ class _SceneEditorState extends State<_SceneEditor> {
     }
   }
 
-  void _reorder(_Frame from, _Frame to) {
-    final index = _frames.indexOf(to);
-    setState(() { _frames.remove(from); _frames.insert(index, from); });
+  String _duration(int ms) => ms % 1000 == 0 ? '${ms ~/ 1000} s' : '$ms ms';
+
+  Future<void> _pick({required bool effect, int? index}) async {
+    final step = await showModalBottomSheet<Fields>(context: context,
+      isScrollControlled: true, useSafeArea: true,
+      builder: (context) => _StepPicker(controller: c, effect: effect,
+        initial: index == null ? null : _steps[index]));
+    if (step == null || !mounted) return;
+    setState(() {
+      if (index == null) {
+        _steps.add(step);
+      } else {
+        _steps[index] = step;
+      }
+    });
   }
 
-  Widget _square(int index, _Frame frame) {
-    final description = c.text('sequenceFrame', {'number': index + 1, 'hex': rgbHex(frame.rgb)});
-    final selected = frame == _selected;
-    Widget paint({required bool outline}) => Container(width: 48, height: 48,
-      decoration: BoxDecoration(color: _rgb(frame.rgb), borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: outline ? glowInk : glowLine, width: outline ? 3 : 1)),
-    );
-    return DragTarget<_Frame>(key: ObjectKey(frame),
-      onWillAcceptWithDetails: (details) => !_busy && details.data != frame,
-      onAcceptWithDetails: (details) => _reorder(details.data, frame),
-      builder: (context, candidate, _) => LongPressDraggable<_Frame>(
-        maxSimultaneousDrags: _busy ? 0 : 1, data: frame,
-        feedback: paint(outline: true),
-        child: Semantics(button: true, selected: selected, label: description,
-          child: Tooltip(message: description, triggerMode: TooltipTriggerMode.manual,
-            child: InkWell(key: Key('scene-frame-$index'), borderRadius: BorderRadius.circular(10),
-              onTap: _busy ? null : () => setState(() => _selected = frame),
-              child: paint(outline: selected || candidate.isNotEmpty),
-            ),
-          ),
+  Widget _row(int index, Fields step) {
+    final rgb = step['rgb'] as List<int>?;
+    final label = rgb == null ? effectName(step['effect'] as int)! : rgbHex(rgb);
+    final marker = rgb == null ? const Icon(Icons.auto_awesome) :
+        Icon(Icons.circle, color: _rgb(rgb));
+    return DragTarget<Fields>(key: ObjectKey(step),
+      onWillAcceptWithDetails: (details) => !_busy && details.data != step,
+      onAcceptWithDetails: (details) => setState(() {
+        _steps.remove(details.data);
+        _steps.insert(index, details.data);
+      }),
+      builder: (context, candidates, _) => LongPressDraggable<Fields>(
+        data: step, maxSimultaneousDrags: _busy ? 0 : 1,
+        feedback: Material(shape: const CircleBorder(), child: Padding(
+          padding: const EdgeInsets.all(12), child: marker)),
+        child: ListTile(key: Key('scene-frame-$index'), contentPadding: EdgeInsets.zero,
+          selected: candidates.isNotEmpty, leading: marker,
+          title: Text(label),
+          subtitle: Text('${c.text(rgb == null ? 'sceneEffectStep' : 'sceneColorStep')} · '
+            '${_duration(step['durationMs'] as int)}'),
+          onTap: _busy ? null : () => _pick(effect: rgb == null, index: index),
+          trailing: IconButton(key: Key('scene-remove-step-$index'),
+            tooltip: c.text('sceneRemoveStep'), icon: const Icon(Icons.remove_circle_outline),
+            onPressed: _busy || _steps.length == 1 ? null : () => setState(() => _steps.removeAt(index))),
         ),
       ),
-    );
-  }
-
-  void _setColor(List<int> rgb) => setState(() => _selected.rgb = rgb);
-
-  Widget _wheel() {
-    final hue = HSVColor.fromColor(_rgb(_selected.rgb)).hue;
-    void select(double next) {
-      final argb = HSVColor.fromAHSV(1, next, 1, 1).toColor().toARGB32();
-      _setColor([(argb >> 16) & 255, (argb >> 8) & 255, argb & 255]);
-    }
-    String degrees(double value) => '${value.round()}°';
-    return Semantics(slider: true, label: c.text('hue'), value: degrees(hue),
-      increasedValue: degrees((hue + 15) % 360), decreasedValue: degrees((hue - 15) % 360),
-      onIncrease: _busy ? null : () => select((hue + 15) % 360),
-      onDecrease: _busy ? null : () => select((hue - 15) % 360),
-      child: ExcludeSemantics(child: IgnorePointer(ignoring: _busy,
-        child: HueWheel(hue: hue, label: c.text('hue'), onChanged: select))),
     );
   }
 
@@ -160,43 +149,23 @@ class _SceneEditorState extends State<_SceneEditor> {
           c.text(_error!, {'max': maxSequenceName}), style: TextStyle(color: Theme.of(context).colorScheme.error),
         )),
         const SizedBox(height: 12),
-        Text(c.text('sequenceFrames'), style: Theme.of(context).textTheme.titleMedium),
-        Text(c.text('sequenceEditHint')),
-        const SizedBox(height: 8),
-        SliderZone(child: Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [
-          for (final (index, frame) in _frames.indexed) _square(index, frame),
+        Text(c.text('sceneSteps'), style: Theme.of(context).textTheme.titleMedium),
+        Text(c.text('sceneTotal', {'duration': _duration(
+          _steps.fold(0, (sum, step) => sum + (step['durationMs'] as int)))})),
+        SliderZone(child: Column(children: [
+          for (final (index, step) in _steps.indexed) ...[_row(index, step), const Divider(height: 1)],
         ])),
         const SizedBox(height: 8),
         Text(c.text('sequenceReorderHint'), style: Theme.of(context).textTheme.bodySmall),
-        const SizedBox(height: 8),
         Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 4, children: [
           OutlinedButton(key: const Key('scene-add-color'),
-            onPressed: _busy || _frames.length >= maxColors ? null : () => setState(() {
-              _selected = _Frame(_frames.last.rgb);
-              _frames.add(_selected);
-            }), child: Text(c.text('addColor'))),
-          OutlinedButton(key: const Key('scene-remove-color'),
-            onPressed: _busy || _frames.length <= 1 ? null : () => setState(() {
-              final index = _frames.indexOf(_selected);
-              _frames.removeAt(index);
-              _selected = _frames[index.clamp(0, _frames.length - 1)];
-            }), child: Text(c.text('removeColor'))),
+            onPressed: _busy || _steps.length >= maxColors ? null : () => _pick(effect: false),
+            child: Text(c.text('sceneAddColor'))),
+          OutlinedButton(key: const Key('scene-add-effect'),
+            onPressed: _busy || _steps.length >= maxColors ? null : () => _pick(effect: true),
+            child: Text(c.text('sceneAddEffect'))),
         ]),
         const SizedBox(height: 14),
-        _wheel(),
-        const SizedBox(height: 8),
-        GlowDisclosure(title: c.text('favorites'), minHeight: 44, inlineChevron: true, children: [
-          SliderZone(child: Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [
-            for (final hex in c.models.loadPalette())
-              IconButton.outlined(tooltip: c.text('paletteColorHex', {'hex': hex.toUpperCase()}),
-                onPressed: _busy ? null : () => _setColor([
-                  for (var i = 1; i < 7; i += 2) int.parse(hex.substring(i, i + 2), radix: 16),
-                ]), icon: Icon(Icons.circle, color: Color(0xff000000 | int.parse(hex.substring(1), radix: 16)))),
-          ])),
-        ]),
-        const SizedBox(height: 14),
-        SliderZone(child: _SceneSlider(controller: c, id: 'scene-speed', label: 'speed', value: _speed,
-          onChanged: (value) => setState(() { _speed = value; _interval = intervalFromSpeed(value); }))),
         SliderZone(child: _SceneSlider(controller: c, id: 'scene-intensity', label: 'brightness', min: 1,
           icon: const GlowIcon(GlowGlyph.sun, size: 20), value: _intensity, onChanged: (value) {
             setState(() => _intensity = value);
@@ -219,9 +188,7 @@ class _SceneEditorState extends State<_SceneEditor> {
         TextButton(key: const Key('scene-close'), onPressed: _busy ? null : () => Navigator.pop(context),
           child: Text(c.text('close'))),
         TextButton(key: const Key('scene-start'), onPressed: !_busy && widget.transport.ready ? () {
-          List<List<int>> colors() => [for (final frame in _frames) frame.rgb];
-          unawaited(widget.transport.playColors(colors(), _interval, _intensity,
-            draft: () => (colors: colors(), interval: _interval, intensity: _intensity)));
+          unawaited(c.playSteps(_steps, _intensity, draft: () => (steps: _steps, intensity: _intensity)));
         } : null, child: Text(c.text('playSequence'))),
         TextButton(key: const Key('scene-stop'), onPressed: widget.transport.previewing
           ? widget.transport.stopPreview : null, child: Text(c.text('stopSequence'))),
@@ -230,4 +197,92 @@ class _SceneEditorState extends State<_SceneEditor> {
       ])),
       ])),
     ));
+}
+
+class _StepPicker extends StatefulWidget {
+  const _StepPicker({required this.controller, required this.effect, this.initial});
+
+  final AppController controller;
+  final bool effect;
+  final Fields? initial;
+
+  @override
+  State<_StepPicker> createState() => _StepPickerState();
+}
+
+class _StepPickerState extends State<_StepPicker> {
+  AppController get c => widget.controller;
+  late List<int> _color = (widget.initial?['rgb'] as List<int>?) ?? [255, 255, 255];
+  late int? _effect = widget.initial?['effect'] as int?;
+  late int? _duration = widget.initial?['durationMs'] as int? ?? (widget.effect ? 30000 : 500);
+  late final String _initialDuration = widget.effect
+      ? (_duration! % 1000 == 0 ? '${_duration! ~/ 1000}' : '${_duration! / 1000}')
+      : '$_duration';
+
+  void _changeDuration(String text) {
+    final value = widget.effect && RegExp(r'^\d{1,3}([.,]\d{1,3})?$').hasMatch(text)
+        ? (double.parse(text.replaceAll(',', '.')) * 1000).round()
+        : widget.effect ? null : int.tryParse(text);
+    final min = widget.effect ? 1000 : 150;
+    final max = widget.effect ? 600000 : 2000;
+    setState(() => _duration = value != null && value >= min && value <= max ? value : null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = [
+      ('whiteWarmTone', defaultShortcuts[0]['rgb'] as List<int>),
+      ('whiteNeutralTone', const [255, 228, 196]),
+      ('whiteCoolTone', defaultShortcuts[1]['rgb'] as List<int>),
+    ];
+    final enabled = _duration != null && (!widget.effect || _effect != null);
+    return Padding(padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SafeArea(top: false, child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16), child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
+          if (widget.effect) ...[
+            ListenableBuilder(listenable: c, builder: (context, _) => EffectList(
+              favorites: c.effectFavorites, text: c.text, onFavorite: c.toggleEffectFavorite,
+              selected: _effect, onSelected: (id) => setState(() => _effect = id))),
+            if (_effect != null) Text(effectName(_effect!)!),
+          ] else ...[
+            ColorDisc(color: _rgb(_color), label: c.text('colorDiscLabel'), onChanged: (hsv) {
+              final argb = hsv.toColor().toARGB32();
+              setState(() => _color = [(argb >> 16) & 255, (argb >> 8) & 255, argb & 255]);
+            }),
+            Text(c.text('colorDiscHint'), textAlign: TextAlign.center),
+            Text(c.text('whiteTones')),
+            Wrap(spacing: 8, runSpacing: 4, children: [
+              for (final (label, rgb) in colors) ChoiceChip(
+                avatar: CircleAvatar(backgroundColor: _rgb(rgb)), label: Text(c.text(label)),
+                selected: rgbHex(_color) == rgbHex(rgb),
+                onSelected: (_) => setState(() => _color = rgb),
+              ),
+            ]),
+            Wrap(spacing: 4, children: [
+              for (final hex in c.models.loadPalette()) IconButton.outlined(
+                tooltip: c.text('paletteColorHex', {'hex': hex.toUpperCase()}),
+                icon: Icon(Icons.circle, color: Color(0xff000000 | int.parse(hex.substring(1), radix: 16))),
+                onPressed: () => setState(() => _color = [
+                  for (var i = 1; i < 7; i += 2) int.parse(hex.substring(i, i + 2), radix: 16),
+                ])),
+            ]),
+          ],
+          TextFormField(key: const Key('scene-step-duration'), initialValue: _initialDuration,
+            keyboardType: TextInputType.numberWithOptions(decimal: widget.effect),
+            decoration: InputDecoration(
+              labelText: c.text(widget.effect ? 'sceneDurationSeconds' : 'sceneDurationMillis'),
+              helperText: widget.effect ? '1–600 s' : '150–2000 ms',
+              errorText: _duration == null ? c.text('sceneInvalidDuration') : null),
+            onChanged: _changeDuration),
+          FilledButton(key: const Key('scene-apply-step'), onPressed: !enabled ? null : () {
+            Navigator.pop(context, <String, Object?>{
+              if (widget.effect) 'effect': _effect else 'rgb': _color,
+              'durationMs': _duration,
+            });
+          }, child: Text(c.text(widget.initial == null ? 'sceneAddStep' : 'sceneUpdateStep'))),
+        ]),
+      )),
+    );
+  }
 }

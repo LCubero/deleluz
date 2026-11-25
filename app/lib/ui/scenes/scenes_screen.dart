@@ -10,7 +10,8 @@ import '../../protocol.dart' as wire;
 import '../glow_glass.dart';
 import '../glow_icon.dart';
 import '../home_presets.dart';
-import '../hue_wheel.dart';
+import '../color_disc.dart';
+import '../effect_list.dart';
 import 'scene_transport.dart';
 
 part 'scene_editor.dart';

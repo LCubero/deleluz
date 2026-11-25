@@ -501,11 +501,7 @@ class AppController extends ChangeNotifier {
     final run = _playback;
     if (!await _prepare(run, brightness)) return;
     final label = id == wire.autoEffect ? 'autoCycle' : 'effectNamed';
-    if (await _send(wire.effect(id), label, key: 'effect',
-        values: {'id': id, 'name': effectName(id)}, onSent: () {
-          _sentEffect = id;
-          sentColor = null;
-        }) && run == _playback && !preview) {
+    if (await _sendEffect(id, label) && run == _playback && !preview) {
       final fx = id == wire.autoEffect ? 'AUTO' : id;
       _select({'on': true, 'fx': fx, 'scene': null,
         'label': [label, {'id': id, 'name': effectName(id) ?? 'AUTO'}],
@@ -572,30 +568,42 @@ class AppController extends ChangeNotifier {
         sentColor = rgb;
       });
 
+  Future<bool> _sendEffect(int id, String label) => _send(wire.effect(id), label,
+      key: 'effect', values: {'id': id, 'name': effectName(id)}, onSent: () {
+        _sentEffect = id;
+        sentColor = null;
+      });
+
+  Future<bool> _sendStep(Fields step) {
+    final effect = step['effect'] as int?;
+    return effect == null ? _sendColor(step['rgb'] as List<int>) : _sendEffect(effect, 'effectNamed');
+  }
+
   Future<void> applyShortcut(Fields item) async {
     if (!canSend) return;
     final preset = homePresets[item['preset']];
     final sequence = _sequence(item['id']);
     final rgb = item['rgb'] as List<int>?;
-    final colors = preset?.colors ?? sequence?['colors'] as List<List<int>>?;
-    if (rgb == null && colors == null) return;
-    _beginPlayback(sequence: sequence?['id'] as String?, playing: colors != null);
+    final interval = preset == null ? null
+        : (item['interval'] as int?)?.clamp(150, 2000) ?? preset.interval;
+    final steps = preset != null ? colorSteps(preset.colors, interval!)
+        : sequence?['steps'] as List<Fields>?;
+    if (rgb == null && steps == null) return;
+    _beginPlayback(sequence: sequence?['id'] as String?, playing: steps != null);
     final run = _playback;
     final intensity = preset != null ? 50 : sequence?['bri'] as int? ?? brightness;
     if (!await _prepare(run, intensity)) return _stopCurrentPlayback(run);
     if (rgb != null && await _sendColor(rgb) && run == _playback) {
       _select({...solidSelection(rgb), 'rgb': rgb, 'on': true});
-    } else if (colors != null) {
-      final interval = preset != null
-          ? (item['interval'] as int?)?.clamp(150, 2000) ?? preset.interval
-          : sequence!['interval'] as int;
+    } else if (steps != null) {
       var index = 0;
       Future<void> next() async {
         if (run != _playback || !_foreground) return;
-        final sent = await _sendColor(colors[index]);
+        final step = steps[index];
+        final sent = await _sendStep(step);
         if (!sent || run != _playback) return _stopCurrentPlayback(run);
-        index = (index + 1) % colors.length;
-        _player = Timer(Duration(milliseconds: interval), () => unawaited(next()));
+        index = (index + 1) % steps.length;
+        _player = Timer(Duration(milliseconds: step['durationMs'] as int), () => unawaited(next()));
       }
       await next();
       if (_player != null && run == _playback) {
@@ -604,7 +612,7 @@ class AppController extends ChangeNotifier {
           'scene': preset != null ? item['preset'] : 'sequence:${item['id']}',
           'label': preset != null ? [item['preset']] : sequence!['name'],
           'mode': preset != null ? {'preset': item['preset'], 'interval': interval}
-              : {'colors': colors, 'interval': interval},
+              : {'steps': steps},
         });
       }
     }
@@ -617,8 +625,16 @@ class AppController extends ChangeNotifier {
 
   Future<void> playDraft(List<List<int>> colors, int interval, int intensity,
       {bool preview = true,
-      ({List<List<int>> colors, int interval, int intensity}) Function()? draft}) async {
-    if (!canSend || colors.isEmpty) return;
+      ({List<List<int>> colors, int interval, int intensity}) Function()? draft}) =>
+    playSteps(colorSteps(colors, interval), intensity, preview: preview,
+      draft: draft == null ? null : () {
+        final live = draft();
+        return (steps: colorSteps(live.colors, live.interval), intensity: live.intensity);
+      });
+
+  Future<void> playSteps(List<Fields> steps, int intensity, {bool preview = true,
+      ({List<Fields> steps, int intensity}) Function()? draft}) async {
+    if (!canSend || steps.isEmpty) return;
     _beginPlayback(preview: preview, playing: true);
     final run = _playback;
     final liveDraft = preview && draft != null;
@@ -636,11 +652,12 @@ class AppController extends ChangeNotifier {
     var index = 0;
     Future<void> next() async {
       if (run != _playback || !canSend) return _stopCurrentPlayback(run);
-      final step = draft?.call() ?? (colors: colors, interval: interval, intensity: intensity);
-      if (step.colors.isEmpty || (!liveDraft && !await _prepare(run, step.intensity))) return _stopCurrentPlayback(run);
-      if (!await _sendColor(step.colors[index % step.colors.length]) || run != _playback) return _stopCurrentPlayback(run);
+      final live = draft?.call() ?? (steps: steps, intensity: intensity);
+      if (live.steps.isEmpty || (!liveDraft && !await _prepare(run, live.intensity))) return _stopCurrentPlayback(run);
+      final step = live.steps[index % live.steps.length];
+      if (!await _sendStep(step) || run != _playback) return _stopCurrentPlayback(run);
       index++;
-      _player = Timer(Duration(milliseconds: step.interval), () => unawaited(next()));
+      _player = Timer(Duration(milliseconds: step['durationMs'] as int), () => unawaited(next()));
     }
     await next();
   }

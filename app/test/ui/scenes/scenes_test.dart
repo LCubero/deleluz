@@ -1,4 +1,5 @@
 import 'package:deleluz/app_controller.dart';
+import 'package:deleluz/model/models.dart';
 import 'package:deleluz/ui/glow_glass.dart';
 import 'package:deleluz/ui/scenes/scenes_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +11,7 @@ void main() {
   late FakeBle ble;
   late AppController c;
   late double now;
+  late Store store;
 
   Future<void> start(WidgetTester tester, {bool connected = false,
       Size size = const Size(412, 915), double scale = 1}) async {
@@ -19,7 +21,8 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     ble = FakeBle();
     now = 0;
-    c = AppController(ble, Store(), checkAccess: (_) async => null, now: () => now);
+    store = Store();
+    c = AppController(ble, store, checkAccess: (_) async => null, now: () => now);
     addTearDown(c.dispose);
     if (connected) await c.connect(FakeBle.strip);
     const screenKey = Key('screen');
@@ -41,6 +44,72 @@ void main() {
   Future<void> tick(WidgetTester tester, [int ms = 50]) async {
     now += ms;
     await tester.pump(Duration(milliseconds: ms));
+  }
+
+  for (final mixed in [false, true]) {
+    testWidgets('${mixed ? 'mixed' : 'legacy'} stored scene sends timed exact frames', (tester) async {
+      await start(tester, connected: true);
+      store.values[Models.sequencesKey] = mixed
+          ? '[{"id":"1","name":"Mixed","bri":80,"steps":[{"rgb":[0,255,0],"durationMs":150},{"effect":210,"durationMs":1000},{"rgb":[255,0,0],"durationMs":450}]}]'
+          : '[{"id":"1","name":"Secuencia 1","colors":[[0,255,0],[255,200,0],[255,0,0]],"interval":500,"bri":80}]';
+      c.applyShortcut({'kind': 'sequence', 'id': '1'});
+      await tick(tester);
+      await tick(tester);
+      List<List<int>> frames() => ble.writes.where((w) => w[2] == 7 || w[2] == 3).toList();
+      const green = [123, 255, 7, 0, 255, 0, 0, 255, 191];
+      const red = [123, 255, 7, 255, 0, 0, 0, 255, 191];
+      final second = mixed ? [123, 255, 3, 210, 255, 255, 255, 255, 191]
+          : [123, 255, 7, 255, 200, 0, 0, 255, 191];
+      expect(frames(), [green]);
+      await tick(tester, mixed ? 149 : 499);
+      expect(frames(), [green]);
+      await tick(tester, 1);
+      expect(frames(), [green, second]);
+      await tick(tester, mixed ? 999 : 499);
+      expect(frames(), [green, second]);
+      await tick(tester, 1);
+      expect(frames(), [green, second, red]);
+      await tick(tester, mixed ? 449 : 499);
+      expect(frames(), [green, second, red]);
+      await tick(tester, 1);
+      expect(frames(), [green, second, red, green]);
+      c.setForeground(false);
+      await tick(tester, 3000);
+      expect(frames(), [green, second, red, green]);
+    });
+  }
+
+  for (final width in [320.0, 412.0]) {
+    testWidgets('color and effect sheets fit and save at $width dp with large text', (tester) async {
+      await start(tester, size: Size(width, 640), scale: 1.5);
+      c.toggleEffectFavorite(210);
+      await tap(tester, 'scene-new');
+      await tap(tester, 'scene-add-color');
+      await tester.tap(key('color-disc'));
+      await tester.pumpAndSettle();
+      expect(find.text(c.text('whiteTones')), findsOneWidget);
+      await tap(tester, 'scene-apply-step');
+      await tap(tester, 'scene-add-effect');
+      expect(key('effect-row-210'), findsOneWidget);
+      await tester.enterText(key('effect-search'), '210');
+      await tester.pumpAndSettle();
+      await tap(tester, 'effect-row-210');
+      await tester.ensureVisible(key('scene-step-duration'));
+      await tester.enterText(key('scene-step-duration'), '601');
+      await tester.pumpAndSettle();
+      expect(tester.widget<FilledButton>(key('scene-apply-step')).onPressed, isNull);
+      await tester.enterText(key('scene-step-duration'), '5');
+      await tester.pumpAndSettle();
+      expect(tester.widget<FilledButton>(key('scene-apply-step')).onPressed, isNotNull);
+      await tap(tester, 'scene-apply-step');
+      expect(find.text(c.text('sceneTotal', {'duration': '7 s'})), findsOneWidget);
+      await tap(tester, 'scene-save');
+      expect(sceneSteps(c.models.loadSequences().single).skip(3), [
+        {'rgb': [255, 255, 255], 'durationMs': 500},
+        {'effect': 210, 'durationMs': 5000},
+      ]);
+      expect(tester.takeException(), isNull);
+    });
   }
 
   testWidgets('included gallery previews offline and applies a foreground sequence', (tester) async {
@@ -76,12 +145,13 @@ void main() {
     await tester.enterText(key('scene-name'), ' ${'a' * 24} ');
     for (var i = 3; i < 8; i++) {
       await tap(tester, 'scene-add-color');
+      await tap(tester, 'scene-apply-step');
     }
     expect(tester.widget<OutlinedButton>(key('scene-add-color')).onPressed, isNull);
     for (var i = 8; i > 1; i--) {
-      await tap(tester, 'scene-remove-color');
+      await tap(tester, 'scene-remove-step-${i - 1}');
     }
-    expect(tester.widget<OutlinedButton>(key('scene-remove-color')).onPressed, isNull);
+    expect(tester.widget<IconButton>(key('scene-remove-step-0')).onPressed, isNull);
     await tap(tester, 'scene-save');
     final saved = c.models.loadSequences().single;
     expect(saved['name'], 'a' * 24);
@@ -197,12 +267,17 @@ void main() {
     await gesture.up();
     await tester.pumpAndSettle();
     expect(c.models.loadSequences(), isEmpty);
-    for (final (id, value) in [('scene-speed', 100.0), ('scene-intensity', 1.0)]) {
-      final slider = key(id);
-      await tester.ensureVisible(slider);
-      tester.widget<Slider>(slider).onChanged!(value);
-      await tester.pumpAndSettle();
+    Future<void> changeDuration(int index, String value) async {
+      await tap(tester, 'scene-frame-$index');
+      await tester.ensureVisible(key('scene-step-duration'));
+      await tester.enterText(key('scene-step-duration'), value);
+      await tap(tester, 'scene-apply-step');
     }
+    for (var i = 0; i < 3; i++) {
+      await changeDuration(i, '150');
+    }
+    tester.widget<Slider>(key('scene-intensity')).onChanged!(1);
+    await tester.pumpAndSettle();
     await tap(tester, 'scene-start');
     await tick(tester);
     await tick(tester);
@@ -216,18 +291,16 @@ void main() {
     expect(tester.widget<TextButton>(key('scene-stop')).onPressed, isNull);
     await tap(tester, 'scene-save');
     final item = c.models.loadSequences().single;
-    expect(item['interval'], 150);
+    expect(sceneSteps(item).map((step) => step['durationMs']), [150, 150, 150]);
     expect(item['bri'], 1);
     expect(item['colors'], [[255, 200, 0], [255, 0, 0], [0, 255, 0]]);
     await tap(tester, 'scene-edit-${item['id']}');
     await tap(tester, 'scene-rename');
     await tester.enterText(key('scene-name'), ' Revised ');
-    await tester.ensureVisible(key('scene-speed'));
-    tester.widget<Slider>(key('scene-speed')).onChanged!(0);
-    await tester.pumpAndSettle();
+    await changeDuration(0, '2000');
     await tap(tester, 'scene-save');
     expect(c.models.loadSequences().single['name'], 'Revised');
-    expect(c.models.loadSequences().single['interval'], 2000);
+    expect(sceneSteps(c.models.loadSequences().single).first['durationMs'], 2000);
     await tap(tester, 'scene-play-${item['id']}');
     for (var i = 0; i < 3; i++) {
       await tick(tester);

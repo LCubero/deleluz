@@ -170,10 +170,11 @@ class Models {
     }
     final mode = saved['mode'];
     if (scene is String && scene.startsWith('sequence:')) {
-      final colors = mode is Fields ? _colors(mode['colors']) : null;
-      final interval = mode is Fields ? _integer(mode['interval'], 150, 2000) : null;
-      if (colors != null && interval != null && _sequenceIds().contains(scene.substring(9))) {
-        accepted['mode'] = {'colors': colors, 'interval': interval};
+      final steps = mode is Fields ? sceneSteps(mode) : const <Fields>[];
+      if (steps.isNotEmpty && _sequenceIds().contains(scene.substring(9))) {
+        accepted['mode'] = mode is Fields && mode.containsKey('steps')
+            ? {'steps': steps}
+            : {'colors': _colors((mode as Fields)['colors']), 'interval': mode['interval']};
       } else if (recover) {
         accepted.addAll(solidSelection(rgb ?? defaultState['rgb'] as List<int>));
       } else {
@@ -208,7 +209,13 @@ class Models {
         await _write(stateKey, jsonEncode(accepted));
   }
 
-  List<Fields> loadSequences() => _sequenceList(_readJson(sequencesKey));
+  List<Fields> loadSequences() => [
+    for (final scene in _sequenceList(_readJson(sequencesKey))) {
+      ...scene,
+      // Read-only swatch projection for the existing Home shortcut tiles.
+      'colors': (scene['steps'] as List<Fields>).map((step) => step['rgb']).whereType<List<int>>().toList(),
+    },
+  ];
 
   Future<bool> saveSequences(List<Fields> items) async {
     final accepted = _sequenceList(items);
@@ -430,16 +437,44 @@ int gridColumns(int cells) => cells <= 3 ? cells.clamp(1, 3) : cells == 4 ? 2 : 
 int speedPercent(num interval) => ((2000 - interval) * 100 / 1850).clamp(0, 100).round();
 int intervalFromSpeed(num percent) => (2000 - percent.clamp(0, 100) * 1850 / 100).round();
 
+List<Fields> colorSteps(List<List<int>> colors, int interval) => [
+  for (final rgb in colors) {'rgb': rgb, 'durationMs': interval},
+];
+
+List<Fields> sceneSteps(Fields item) {
+  if (!item.containsKey('steps')) {
+    final colors = _colors(item['colors']);
+    final interval = _integer(item['interval'], 150, 2000);
+    return colors == null || interval == null ? [] : colorSteps(colors, interval);
+  }
+  final raw = item['steps'];
+  if (raw is! List) return [];
+  final steps = <Fields>[];
+  for (final step in raw.whereType<Fields>()) {
+    if (step.containsKey('effect') == step.containsKey('rgb')) continue;
+    if (step.containsKey('effect')) {
+      final effect = _integer(step['effect'], 1, 210);
+      final duration = _integer(step['durationMs'], 1000, 600000);
+      if (effect != null && duration != null) steps.add({'effect': effect, 'durationMs': duration});
+    } else {
+      final rgb = _rgb(step['rgb']);
+      final duration = _integer(step['durationMs'], 150, 2000);
+      if (rgb != null && duration != null) steps.add({'rgb': rgb, 'durationMs': duration});
+    }
+    if (steps.length == maxColors) break;
+  }
+  return steps;
+}
+
 Fields? _sequence(Fields item) {
   final id = item['id'];
   final name = item['name'];
-  final colors = _colors(item['colors']);
-  final interval = _integer(item['interval'], 150, 2000);
+  final steps = sceneSteps(item);
   final bri = _integer(item['bri'], 1, 100);
-  if (!_text(id) || !_text(name) || colors == null || interval == null || bri == null) return null;
+  if (!_text(id) || !_text(name) || steps.isEmpty || bri == null) return null;
   final trimmed = (name as String).trim();
   if (trimmed.length > maxSequenceName) return null;
-  return {'id': id, 'name': trimmed, 'colors': colors, 'interval': interval, 'bri': bri};
+  return {'id': id, 'name': trimmed, 'bri': bri, 'steps': steps};
 }
 
 List<Fields> _sequenceList(Object? raw) {
@@ -483,8 +518,7 @@ List<Fields> createSequence(List<Fields> items, {String Function(int)? nameFor})
     if (error == 'sequenceNameDuplicate') continue;
     if (error != null) break;
     return [...items, {'id': '$id', 'name': name.trim(),
-      'colors': <List<int>>[[0, 255, 0], [255, 200, 0], [255, 0, 0]],
-      'interval': 500, 'bri': 80}];
+      'steps': colorSteps([[0, 255, 0], [255, 200, 0], [255, 0, 0]], 500), 'bri': 80}];
   }
   return items;
 }

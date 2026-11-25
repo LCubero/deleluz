@@ -130,10 +130,11 @@ void main() {
 
   test('creates independent sequence defaults and first free ID/name up to twelve', () {
     final first = createSequence([]);
-    expect(first.single, {'id': '1', 'name': 'Secuencia 1', 'colors': [[0, 255, 0], [255, 200, 0], [255, 0, 0]], 'interval': 500, 'bri': 80});
+    expect(first.single, {'id': '1', 'name': 'Secuencia 1', 'steps':
+      colorSteps([[0, 255, 0], [255, 200, 0], [255, 0, 0]], 500), 'bri': 80});
     final second = createSequence(first);
     expect(second.last['name'], 'Secuencia 2');
-    expect(identical(first.first['colors'], second.last['colors']), isFalse);
+    expect(identical(first.first['steps'], second.last['steps']), isFalse);
     expect(createSequence(removeSequence(second, '1')).last['id'], '1');
     expect(createSequence([], nameFor: (n) => 'Sequence $n').single['name'], 'Sequence 1');
     var list = second;
@@ -160,8 +161,41 @@ void main() {
     expect(createSequence(list, nameFor: (n) => ' secuencia $n ').last['name'], 'secuencia 3');
   });
 
+  test('legacy scene fixture migrates and mixed steps round-trip', () async {
+    const fixture = '[{"id":"1","name":"Secuencia 1","colors":[[0,255,0],[255,200,0],[255,0,0]],"interval":500,"bri":80}]';
+    storage.values[Models.sequencesKey] = fixture;
+    final scene = models.loadSequences().single;
+    final steps = [
+      {'rgb': [0, 255, 0], 'durationMs': 500},
+      {'rgb': [255, 200, 0], 'durationMs': 500},
+      {'rgb': [255, 0, 0], 'durationMs': 500},
+    ];
+    expect(scene['steps'], steps);
+    expect(storage.values[Models.sequencesKey], fixture);
+    final mixed = [steps.first, {'effect': 210, 'durationMs': 600000}];
+    expect(await models.saveSequences([{...scene, 'steps': mixed}]), isTrue);
+    expect(jsonDecode(storage.values[Models.sequencesKey]!), [
+      {'id': '1', 'name': 'Secuencia 1', 'bri': 80, 'steps': mixed},
+    ]);
+    expect(models.loadSequences().single['steps'], mixed);
+    final invalid = [
+      {'effect': 0, 'durationMs': 1000}, {'effect': 211, 'durationMs': 1000},
+      {'effect': 'AUTO', 'durationMs': 1000},
+      {'effect': 1, 'durationMs': 999}, {'effect': 1, 'durationMs': 600001},
+      {'rgb': [0, 0, 0], 'durationMs': 2001},
+    ];
+    storage.values[Models.sequencesKey] = jsonEncode([
+      {...scene, 'steps': [...invalid, ...mixed]},
+      {...scene, 'id': '2', 'name': 'Invalid', 'steps': invalid},
+    ]);
+    expect(models.loadSequences().single['steps'], mixed);
+  });
+
+  const legacy = <String, Object?>{'id': '1', 'name': 'Secuencia 1',
+    'colors': <List<int>>[[0, 255, 0], [255, 200, 0], [255, 0, 0]], 'interval': 500, 'bri': 80};
+
   test('sequence storage rejects invalid entries and caps the salvaged list', () async {
-    final scene = createSequence([]).single;
+    const scene = legacy;
     final invalid = [
       {...scene, 'id': ''}, {...scene, 'colors': []}, {...scene, 'colors': List.filled(9, [0, 0, 0])},
       {...scene, 'colors': [[0, 0, 256]]}, {...scene, 'interval': 149}, {...scene, 'interval': 2001},
@@ -170,7 +204,7 @@ void main() {
     storage.values[Models.sequencesKey] = jsonEncode([null, ...invalid, scene, scene,
       ...List.generate(13, (i) => {...scene, 'id': 'a$i', 'name': 'Escena $i'})]);
     expect(models.loadSequences(), hasLength(12));
-    expect(models.loadSequences().first, scene);
+    expect(models.loadSequences().first['steps'], sceneSteps(scene));
     final before = Map.of(storage.values);
     for (final item in invalid) {
       expect(await models.saveSequences([item]), isFalse);
@@ -178,12 +212,12 @@ void main() {
     expect(storage.values, before);
     final updated = updateSequence([scene], '1', {'interval': 2000, 'bri': 1});
     expect(await models.saveSequences(updated), isTrue);
-    expect(models.loadSequences(), updated);
-    expect(updateSequence(updated, '1', {'bri': 100, 'interval': 150}).first['bri'], 100);
+    expect(models.loadSequences().single['steps'], colorSteps(scene['colors'] as List<List<int>>, 2000));
+    expect(updateSequence(updated, '1', {'bri': 100}).first['bri'], 100);
   });
 
-  test('scene color edits are immutable and enforce indices and 1–8 colors', () {
-    final scene = createSequence([]).single;
+  test('legacy scene color edits are immutable and enforce indices and 1–8 colors', () {
+    const scene = legacy;
     final rgb = [0, 42, 255];
     final changed = setColor(scene, 1, rgb);
     rgb[0] = 123;

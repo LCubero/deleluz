@@ -8,7 +8,6 @@ import 'package:deleluz/model/models.dart';
 import 'package:deleluz/protocol.dart' as wire;
 import 'package:deleluz/ui/glow_glass.dart';
 import 'package:deleluz/ui/color_disc.dart';
-import 'package:deleluz/ui/hue_wheel.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -732,7 +731,6 @@ void main() {
     ('Color', null, 'brightness', true),
     ('Color', 'color-effects', 'speed', true),
     ('Escenas', 'scenes-music', 'micSensitivity', true),
-    ('Escenas', 'scenes-mine', 'speed', true),
     ('Escenas', 'scenes-mine', 'brightness', true),
   ]) {
     testWidgets('$tab $panel $label ($enabled) label drag stays in place', (tester) async {
@@ -908,7 +906,7 @@ void main() {
     expect(find.byKey(const Key('scenes-mine')), findsOneWidget);
   });
 
-  testWidgets('editor frame swipes stay in their zone and frame taps select', (tester) async {
+  testWidgets('editor step swipes stay in their zone and taps open the color picker', (tester) async {
     await start(tester);
     await tapTab(tester, 'Escenas');
     await tapKey(tester, 'scene-new');
@@ -919,7 +917,7 @@ void main() {
     expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 2);
     await tester.tap(frame);
     await tester.pumpAndSettle();
-    expect(tester.widget<HueWheel>(find.byType(HueWheel)).hue, closeTo(47, 1));
+    expect(tester.widget<ColorDisc>(find.byType(ColorDisc)).color, const Color(0xffffc800));
   });
 
   testWidgets('right swipe from Inicio wraps to Ajustes', (tester) async {
