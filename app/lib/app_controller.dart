@@ -94,6 +94,11 @@ class AppController extends ChangeNotifier {
   String? message;
   bool busy = false;
   bool scanning = false;
+  int _deviceGeneration = 0;
+  String? connectingId;
+  bool _scanRequested = false;
+  bool get canCancelScan => _scanRequested || scanning;
+  Future<void>? _stoppingScan;
   bool _foreground = true;
   int _foregroundGeneration = 0;
   bool _disposed = false;
@@ -211,44 +216,72 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> _deviceAction(Future<void> Function() action, String failure,
-      {void Function(String)? onFailure}) async {
+      {void Function(String)? onFailure, String? targetId, bool scan = false}) async {
     final report = onFailure ?? _notice;
     if (busy || _disposed) return;
+    final generation = ++_deviceGeneration;
+    connectingId = targetId;
+    _scanRequested = scan;
     busy = true;
     _notice(null);
     try {
       await action();
     } on UnsupportedController {
-      report('controllerUnsupported');
+      if (generation == _deviceGeneration) report('controllerUnsupported');
     } catch (_) {
-      report(failure);
+      if (generation == _deviceGeneration) report(failure);
     } finally {
-      busy = false;
-      _refresh();
-      _maybeRecover();
+      if (generation == _deviceGeneration) _finishDeviceAction();
     }
   }
 
-  Future<void> startScan() => _deviceAction(() async {
+  void _finishDeviceAction() {
+    connectingId = null;
+    _scanRequested = false;
+    busy = false;
+    _refresh();
+    _maybeRecover();
+  }
+
+  void cancelConnection() {
+    if (connectingId == null) return;
+    _deviceGeneration++;
+    link.cancelConnect();
+    _finishDeviceAction();
+  }
+
+  void cancelScan() {
+    if (!canCancelScan) return;
+    final pending = _scanRequested;
+    if (pending) _deviceGeneration++;
+    unawaited(stopScan(silent: true));
+    if (pending) _finishDeviceAction();
+  }
+
+  Future<void> startScan() async {
     if (scanning) return;
-    final generation = ++_scanGeneration;
-    _devices.clear();
-    scanCompleted = false;
-    final problem = await checkAccess(true);
-    if (!_foreground || _disposed || generation != _scanGeneration) return;
-    if (problem != null) return _notice(problem);
-    scanning = true;
-    _scan = _ble.scan().listen((strip) {
-      if (strip.name.startsWith(namePrefix)) {
-        _devices[strip.id] = strip;
-        _refresh();
-      }
-    }, onError: (Object _) {
-      _notice('scanFailed');
-      unawaited(stopScan());
-    }, onDone: () => _finishScan(generation));
-    _scanTimeout = Timer(const Duration(seconds: 10), () => _finishScan(generation));
-  }, 'scanFailed');
+    await _deviceAction(() async {
+      final generation = ++_scanGeneration;
+      _devices.clear();
+      scanCompleted = false;
+      final problem = await checkAccess(true);
+      await _stoppingScan;
+      if (!_foreground || _disposed || generation != _scanGeneration) return;
+      if (problem != null) return _notice(problem);
+      scanning = true;
+      _scan = _ble.scan().listen((strip) {
+        if (generation == _scanGeneration && strip.name.startsWith(namePrefix)) {
+          _devices[strip.id] = strip;
+          _refresh();
+        }
+      }, onError: (Object _) {
+        if (generation != _scanGeneration) return;
+        _notice('scanFailed');
+        unawaited(stopScan());
+      }, onDone: () => _finishScan(generation));
+      _scanTimeout = Timer(const Duration(seconds: 10), () => _finishScan(generation));
+    }, 'scanFailed', scan: true);
+  }
 
   void _finishScan(int generation) {
     if (generation != _scanGeneration) return;
@@ -256,52 +289,60 @@ class AppController extends ChangeNotifier {
     unawaited(stopScan());
   }
 
-  Future<void> stopScan() async {
-    _scanGeneration++;
-    if (!scanning) return;
+  Future<void> stopScan({bool silent = false}) async {
+    final generation = ++_scanGeneration;
+    if (!scanning) {
+      await _stoppingScan;
+      return;
+    }
     scanning = false;
     _scanTimeout?.cancel();
     final scan = _scan;
     _scan = null;
-    try {
-      unawaited(scan?.cancel().catchError((Object _) => _notice('scanFailed')));
-      await _ble.stopScan();
-    } catch (_) {
-      _notice('scanFailed');
+    void failed(Object _) {
+      if (!silent && generation == _scanGeneration && connectingId == null) _notice('scanFailed');
     }
+    final stopping = Future<void>.microtask(_ble.stopScan).catchError(failed);
+    _stoppingScan = stopping;
+    unawaited(scan?.cancel().catchError(failed));
     _refresh();
+    await stopping;
+    if (identical(_stoppingScan, stopping)) _stoppingScan = null;
   }
 
-  Future<void> connect(Strip target, {void Function(String)? onFailure}) => _deviceAction(() async {
-    final generation = _foregroundGeneration;
-    if (!_devices.containsKey(target.id)) {
-      final problem = await checkAccess(true);
-      if (!_foreground || _disposed || generation != _foregroundGeneration) return;
-      if (problem != null) return (onFailure ?? _notice)(problem);
-    }
-    await stopScan();
-    if (!_foreground || _disposed || generation != _foregroundGeneration) return;
-    try {
-      await link.connect(target);
-    } finally {
-      if (!link.ready && remembered != null) link.restore(remembered!);
-    }
-  }, 'connectFailed', onFailure: onFailure);
+  Future<void> connect(Strip target, {void Function(String)? onFailure}) =>
+      _connect(target, request: true, onFailure: onFailure);
 
   Future<void> reconnect() => _reconnect(request: true);
 
-  Future<void> _reconnect({required bool request}) => _deviceAction(() async {
+  Future<void> _reconnect({required bool request}) async {
     final target = remembered;
     if (target == null || link.ready) return;
-    final generation = _foregroundGeneration;
-    final problem = await checkAccess(request);
-    if (!_foreground || _disposed || generation != _foregroundGeneration) return;
-    if (problem != null) return _notice(problem);
-    await stopScan();
-    if (!_foreground || _disposed || generation != _foregroundGeneration) return;
-    link.restore(target);
-    await link.reconnect();
-  }, 'connectFailed');
+    await _connect(target, request: request, recovery: true);
+  }
+
+  Future<void> _connect(Strip target, {required bool request, bool recovery = false,
+      void Function(String)? onFailure}) => _deviceAction(() async {
+    final generation = _deviceGeneration;
+    final foreground = _foregroundGeneration;
+    bool active() => _foreground && !_disposed && generation == _deviceGeneration &&
+        foreground == _foregroundGeneration;
+    if (recovery || !_devices.containsKey(target.id)) {
+      final problem = await checkAccess(request);
+      if (!active()) return;
+      if (problem != null) return (onFailure ?? _notice)(problem);
+    }
+    await stopScan(silent: true);
+    if (!active()) return;
+    if (recovery) link.restore(target);
+    try {
+      await (recovery ? link.reconnect() : link.connect(target));
+    } finally {
+      if (generation == _deviceGeneration && !link.ready && remembered != null) {
+        link.restore(remembered!);
+      }
+    }
+  }, 'connectFailed', onFailure: onFailure, targetId: target.id);
 
   Future<void> disconnect() => _deviceAction(link.disconnect, 'disconnectFailed');
   Future<void> forgetStrip(String id) => _deviceAction(() async {

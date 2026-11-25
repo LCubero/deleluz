@@ -31,11 +31,16 @@ class FakeBle implements BleApi {
   final connections = <String>[];
   final disconnects = <String>[];
   List<Strip> results = [strip];
+  Future<void>? opening;
+  Stream<Strip>? scanResults;
+  var scans = 0;
+  var scanStops = 0;
   final writes = <Uint8List>[];
   final changes = StreamController<(String, bool)>.broadcast();
   @override
   Future<void> connect(String id) async {
     connections.add(id);
+    if (opening != null) await opening;
     if (unreachable.contains(id)) throw StateError('Fake connection failure');
   }
 
@@ -46,10 +51,11 @@ class FakeBle implements BleApi {
   Future<bool> hasWriteWithoutResponse(String id) async => true;
   @override
   Stream<Strip> scan() {
-    return Stream.fromIterable(results);
+    scans++;
+    return scanResults ?? Stream.fromIterable(results);
   }
   @override
-  Future<void> stopScan() async {}
+  Future<void> stopScan() async { scanStops++; }
   @override
   Future<void> write(String id, Uint8List bytes) async {
     if (failWrite?.call(bytes) == true) throw StateError('Fake write failure');
@@ -111,6 +117,136 @@ void main() {
       } else {
         expect(controller.devices, expected ? [FakeBle.strip] : isEmpty);
       }
+    });
+  }
+
+  for (final recovery in [false, true]) {
+    testWidgets('cancel ${recovery ? 'recovery' : 'selector connect'} releases a late open', (tester) async {
+      final c = await start(tester);
+      final lateOpen = Completer<void>();
+      final row = find.byKey(ValueKey(FakeBle.strip.id));
+      if (recovery) {
+        await c.connect(FakeBle.strip);
+        ble.opening = lateOpen.future;
+        ble.changes.add((FakeBle.strip.id, false));
+      } else {
+        await tester.tap(find.text('Conectar'));
+        await tester.pumpAndSettle();
+        ble.opening = lateOpen.future;
+        await tester.tap(find.descendant(of: row, matching: find.text('Conectar')));
+      }
+      await tester.pump();
+      await tester.tap(find.text('Cancelar'));
+      await tester.pump();
+      final fallback = recovery ? LinkStatus.lost : LinkStatus.idle;
+      expect(c.link.status, fallback);
+      expect(c.busy, isFalse);
+      lateOpen.complete();
+      await tester.pump(const Duration(seconds: 2));
+      expect(c.link.status, fallback);
+      expect(ble.disconnects, [FakeBle.strip.id]);
+      expect(ble.connections, List.filled(recovery ? 2 : 1, FakeBle.strip.id));
+      expect(c.message, isNull);
+      expect(find.text('No se pudo conectar.'), findsNothing);
+    });
+  }
+
+  testWidgets('cancel during retry backoff prevents another attempt', (tester) async {
+    final c = await start(tester);
+    await c.connect(FakeBle.strip);
+    await c.disconnect();
+    ble.connections.clear();
+    ble.unreachable.add(FakeBle.strip.id);
+    await tester.pump();
+    await tester.tap(find.text('Reconectar'));
+    await tester.pump();
+    expect(ble.connections, [FakeBle.strip.id]);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pump(const Duration(seconds: 2));
+    expect(ble.connections, [FakeBle.strip.id]);
+    expect(c.link.status, LinkStatus.idle);
+    expect(c.message, isNull);
+  });
+
+  for (final scan in [false, true]) {
+    testWidgets('cancel pending ${scan ? 'scan' : 'connect'} permission discards a late error', (tester) async {
+      final permission = Completer<String?>();
+      await Models(store, presetIds: {}).saveRememberedStrips([
+        const RememberedStrip('fake', 'LEDDMX Test'),
+      ]);
+      final c = AppController(ble, store, checkAccess: (_) => permission.future);
+      addTearDown(c.dispose);
+      await tester.pumpWidget(MainApp(controller: c));
+      await tester.tap(find.text(scan ? 'Cambiar' : 'Reconectar'));
+      await tester.pumpAndSettle();
+      expect(c.busy, isTrue);
+      await tester.tap(find.text('Cancelar'));
+      await tester.pump();
+      expect(c.busy, isFalse);
+      permission.completeError(StateError('Late permission error'));
+      await tester.pumpAndSettle();
+      expect(c.message, isNull);
+      expect(ble.scans, 0);
+      expect(ble.connections, isEmpty);
+    });
+  }
+
+  testWidgets('cancel an active scan without marking it completed', (tester) async {
+    final results = StreamController<Strip>();
+    ble.scanResults = results.stream;
+    final c = await start(tester);
+    await tester.tap(find.text('Cambiar'));
+    await tester.pumpAndSettle();
+    expect(c.scanning, isTrue);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    unawaited(results.close());
+    await tester.pump();
+    expect(c.scanning, isFalse);
+    expect(c.scanCompleted, isFalse);
+    expect(c.message, isNull);
+    expect(ble.scanStops, 1);
+  });
+
+  for (final size in [const Size(320, 640), const Size(412, 915)]) {
+    testWidgets('device preview wraps both ways without changing tabs at $size', (tester) async {
+      await tester.binding.setSurfaceSize(size);
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final c = await start(tester);
+      for (final id in ['C', 'B', 'A']) {
+        await c.connect(Strip(id, 'LEDDMX $id'));
+        c.renameStrip(id, 'Alias $id');
+      }
+      await tester.pumpAndSettle();
+      ble.connections.clear();
+      ble.disconnects.clear();
+      Future<void> swipe(String from, String to, double dx, int dot) async {
+        await tester.drag(find.text('Alias $from'), Offset(dx, 0));
+        await tester.pumpAndSettle();
+        expect(find.text('Alias $to'), findsOneWidget);
+        for (var i = 0; i < 3; i++) {
+          final indicator = tester.widget<DecoratedBox>(find.byKey(ValueKey('strip-dot-$i')));
+          expect((indicator.decoration as BoxDecoration).color, i == dot ? glowViolet : glowFaint);
+        }
+        expect(tester.takeException(), isNull);
+      }
+      await swipe('A', 'B', -85, 1);
+      await swipe('B', 'C', -85, 2);
+      await swipe('C', 'A', -85, 0);
+      await swipe('A', 'C', 85, 2);
+      expect(find.text('Sin conexión'), findsOneWidget);
+      expect(c.setupDevice?.id, 'A');
+      expect(ble.connections, isEmpty);
+      expect(ble.disconnects, isEmpty);
+      expect(ble.writes, isEmpty);
+      await tester.tap(find.text('Conectar'));
+      await tester.pumpAndSettle();
+      expect(ble.disconnects, ['A']);
+      expect(ble.connections, ['C']);
+      expect(c.setupDevice?.id, 'C');
+      expect(find.text('Desconectar'), findsOneWidget);
     });
   }
 

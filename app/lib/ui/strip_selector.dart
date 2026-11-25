@@ -15,7 +15,7 @@ class StripSelector extends StatefulWidget {
     await Navigator.of(context).push<void>(MaterialPageRoute(
       builder: (_) => StripSelector(controller: controller, backLabel: backLabel),
     ));
-    await controller.stopScan();
+    controller.cancelScan();
   }
 
   @override
@@ -133,8 +133,10 @@ class _StripSelectorState extends State<StripSelector> {
         ),
         const SizedBox(height: 14),
         OutlinedButton(style: OutlinedButton.styleFrom(backgroundColor: glowGlass,
-          side: const BorderSide(color: glowLine)), onPressed: c.busy || c.scanning ? null : c.startScan,
-          child: Text(c.text('scanAgain'))),
+          side: const BorderSide(color: glowLine)),
+          onPressed: c.connectingId != null ? null : c.canCancelScan ? c.cancelScan
+              : c.busy ? null : c.startScan,
+          child: Text(c.text(c.canCancelScan && c.connectingId == null ? 'cancel' : 'scanAgain'))),
     ];
     return Scaffold(
       body: GlowBackdrop(child: SafeArea(child: Center(child: ConstrainedBox(
@@ -157,7 +159,8 @@ class _StripSelectorState extends State<StripSelector> {
   Widget _row(Strip strip, {RememberedStrip? saved, String? state}) {
     final theme = Theme.of(context).textTheme;
     final connected = _connected(strip);
-    final failure = connected ? null : _failures[strip.id];
+    final pending = c.connectingId == strip.id;
+    final failure = connected || pending ? null : _failures[strip.id];
     final error = Theme.of(context).colorScheme.error;
     final primary = !connected && failure == null;
     final pill = FilledButton(
@@ -170,8 +173,9 @@ class _StripSelectorState extends State<StripSelector> {
         side: primary ? null : BorderSide(color: failure == null ? glowLine : error),
         textStyle: const TextStyle(fontSize: 15, height: 1.2, fontWeight: FontWeight.w700),
       ),
-      onPressed: c.busy ? null : () => _toggle(strip),
-      child: Text(c.text(failure == null ? _action(strip) : 'retryStrip'), textAlign: TextAlign.center),
+      onPressed: pending ? c.cancelConnection : c.busy ? null : () => _toggle(strip),
+      child: Text(c.text(pending ? 'cancel' : failure == null ? _action(strip) : 'retryStrip'),
+        textAlign: TextAlign.center),
     );
     return Material(color: glowGlass,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16),

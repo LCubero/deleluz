@@ -126,15 +126,18 @@ class _BackdropPainter extends CustomPainter {
 
 /// Keeps horizontal drags that start in a slider or color selector off the tab swipe.
 class SliderZone extends StatelessWidget {
-  const SliderZone({super.key, required this.child});
+  const SliderZone({super.key, required this.child, this.onHorizontalDragStart, this.onHorizontalDragEnd});
   final Widget child;
+  final GestureDragStartCallback? onHorizontalDragStart;
+  final GestureDragEndCallback? onHorizontalDragEnd;
 
   @override
   Widget build(BuildContext context) => GestureDetector(
     behavior: HitTestBehavior.opaque,
     excludeFromSemantics: true,
     // A child control can handle the drag; vertical scrolling can still win.
-    onHorizontalDragStart: (_) {},
+    onHorizontalDragStart: onHorizontalDragStart ?? (_) {},
+    onHorizontalDragEnd: onHorizontalDragEnd,
     child: child,
   );
 }
@@ -346,8 +349,9 @@ class GlowSegments<T> extends StatelessWidget {
 }
 
 class ConnectionChip extends StatelessWidget {
-  const ConnectionChip({super.key, required this.controller});
+  const ConnectionChip({super.key, required this.controller, this.status});
   final AppController controller;
+  final LinkStatus? status;
   static const _horizontalPadding = 12.0;
   static const _dotSize = 8.0;
   static const _gap = 8.0;
@@ -357,7 +361,7 @@ class ConnectionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = controller.link.status;
+    final status = this.status ?? controller.link.status;
     final color = switch (status) {
       LinkStatus.idle => const Color(0xff8f88b3),
       LinkStatus.connecting => const Color(0xfffbbf24),

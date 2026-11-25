@@ -22,6 +22,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   AppController get c => widget.controller;
   bool _quickOpen = false;
+  String? _previewId;
+  String? _previewAnchor;
+  double _swipeStart = 0;
 
   Future<void> _chooseStrip() => StripSelector.open(context, c);
 
@@ -152,7 +155,21 @@ class _HomeScreenState extends State<HomeScreen> {
     ));
 
   Widget _device(BuildContext context) {
-    final connected = c.link.ready;
+    final saved = c.rememberedStrips;
+    final remembered = c.remembered;
+    if (_previewAnchor != remembered?.id) {
+      _previewAnchor = remembered?.id;
+      _previewId = null;
+    }
+    final previewIndex = saved.indexWhere((strip) => strip.id == _previewId);
+    final index = previewIndex < 0 ? 0 : previewIndex;
+    final strip = saved.isEmpty ? null : saved[index];
+    final showingRemembered = strip?.id == remembered?.id;
+    final connected = c.link.ready && c.link.strip?.id == strip?.id;
+    final pending = c.connectingId != null;
+    final status = c.connectingId == strip?.id && pending ? LinkStatus.connecting
+        : connected ? LinkStatus.connected
+        : showingRemembered && !c.link.ready ? c.link.status : LinkStatus.idle;
     // Color unknown (nothing sent yet, or on with a mode that has no color such as music):
     // this gradient is decorative, not device telemetry. Off stays dark.
     final rgb = connected && c.sentPower == true ? c.sentColor : null;
@@ -160,33 +177,51 @@ class _HomeScreenState extends State<HomeScreen> {
         || (c.sentPower == true && rgb == null && !c.hasActiveEffect));
     final previewColors = switch (rgb) {
       final color? => [color],
-      _ when c.hasActiveEffect => glowEffectColors,
+      _ when connected && c.hasActiveEffect => glowEffectColors,
       _ when unknown => const [[100, 75, 125], [141, 91, 126], [68, 117, 135]],
       _ => const <List<int>>[],
     };
     final glow = rgb == null ? null : Color.fromARGB(255, rgb[0], rgb[1], rgb[2]);
-    final strip = c.remembered;
     final theme = Theme.of(context).textTheme;
+    final name = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text(strip?.label ?? 'LEDDMX', style: theme.titleMedium,
+        maxLines: 1, overflow: TextOverflow.ellipsis),
+      // Show the Bluetooth name under an alias, never the name twice.
+      Text(strip != null && strip.label != strip.name ? strip.name
+          : c.text(status == LinkStatus.lost ? 'keepsColor' : 'controller'),
+        style: theme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+      if (saved.length > 1) Padding(padding: const EdgeInsets.only(top: 4),
+        child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
+          child: Row(spacing: 4, children: [
+            for (var i = 0; i < saved.length; i++) DecoratedBox(
+              key: ValueKey('strip-dot-$i'), decoration: BoxDecoration(shape: BoxShape.circle,
+                color: i == index ? glowViolet : glowFaint),
+              child: const SizedBox.square(dimension: 5)),
+          ]))),
+    ]);
     return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: [
       Row(spacing: 12, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(strip?.label ?? 'LEDDMX', style: theme.titleMedium,
-            maxLines: 1, overflow: TextOverflow.ellipsis),
-          // Second line: the Bluetooth name under an alias; otherwise a short description, never the name twice.
-          Text(strip != null && strip.label != strip.name ? strip.name
-              : c.text(c.link.status == LinkStatus.lost ? 'keepsColor' : 'controller'),
-            style: theme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-        ])),
+        Expanded(child: saved.length < 2 ? name : SliderZone(child: name,
+          onHorizontalDragStart: (details) => _swipeStart = details.globalPosition.dx,
+          onHorizontalDragEnd: (details) {
+            final dx = details.globalPosition.dx - _swipeStart;
+            if (dx.abs() < 24) return;
+            setState(() {
+              _previewId = saved[(index + (dx < 0 ? 1 : -1)) % saved.length].id;
+            });
+          })),
         // Flexible keeps large text from overflowing; Align without widthFactor pins the chip right.
         Flexible(child: Align(alignment: AlignmentDirectional.topEnd, heightFactor: 1,
-          child: ConnectionChip(controller: c))),
+          child: ConnectionChip(controller: c, status: status))),
       ]),
       Semantics(container: true, image: true,
         label: c.text(unknown ? 'stripPreviewUnknown' : 'stripPreview'),
         child: GlowStrip(colors: previewColors, height: 14, glow: glow)),
       Row(spacing: 8, children: [
-        Expanded(child: _connectButton(c.text(connected ? 'disconnect' : strip != null ? 'reconnect' : 'connect'),
-          c.busy ? null : connected ? c.disconnect : strip != null ? c.reconnect : _chooseStrip)),
+        Expanded(child: _connectButton(c.text(pending ? 'cancel' : connected ? 'disconnect'
+            : strip != null && previewIndex < 0 ? 'reconnect' : 'connect'),
+          pending ? c.cancelConnection : c.busy ? null : connected ? c.disconnect
+            : strip == null ? _chooseStrip : showingRemembered ? c.reconnect : () => c.connect(strip))),
         TextButton(onPressed: c.busy ? null : _chooseStrip,
           style: TextButton.styleFrom(foregroundColor: glowLink,
             padding: const EdgeInsets.symmetric(horizontal: 8)), child: Text(c.text('changeStrip'))),

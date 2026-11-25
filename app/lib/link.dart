@@ -41,7 +41,7 @@ class Link {
       final (id, up) = change;
       if (up || id != strip?.id) return;
       if (status == LinkStatus.connected) _set(LinkStatus.lost);
-      if (status == LinkStatus.connecting) _droppedWhileOpening = true;
+      if (status == LinkStatus.connecting || _releasing != null) _droppedWhileOpening = true;
     });
   }
 
@@ -53,11 +53,13 @@ class Link {
 
   static const maxTries = 4;
 
-  // Bumped by every connect/forget; a pending open that finds it changed is stale and
+  // Bumped by every connect/cancel/forget; a pending open that finds it changed is stale and
   // releases whatever it opened, so only one strip is ever held.
   int _generation = 0;
   bool _droppedWhileOpening = false;
   Future<void>? _releasing;
+  Future<void>? _opening;
+  LinkStatus? _cancelFallback;
 
   LinkStatus status = LinkStatus.idle;
   Strip? strip;
@@ -72,27 +74,52 @@ class Link {
   /// Restores a remembered strip without connecting.
   void restore(Strip remembered) => strip = remembered;
 
-  Future<void> connect(Strip target) async {
-    if (status == LinkStatus.connecting) return;
-    if (ready && strip?.id == target.id) return;
-    final generation = ++_generation;
-    if (ready) {
-      await _release();
-      if (generation != _generation) return;
-      strip = target;
-    } else {
-      strip = target;
-      _set(LinkStatus.connecting);
-    }
-    await _open(generation, LinkStatus.idle);
-  }
+  Future<void> connect(Strip target) => _connect(target, LinkStatus.idle);
 
   Future<void> reconnect() async {
-    if (strip == null || status == LinkStatus.connecting || status == LinkStatus.connected) return;
-    final fallback = status;
+    final target = strip;
+    if (target == null || ready) return;
+    await _connect(target, status);
+  }
+
+  void cancelConnect() {
+    final fallback = _cancelFallback;
+    if (fallback == null) return;
+    _cancelFallback = null;
+    _generation++;
+    _set(fallback);
+  }
+
+  Future<void> _connect(Strip target, LinkStatus fallback) async {
+    if (status == LinkStatus.connecting || (ready && strip?.id == target.id)) return;
     final generation = ++_generation;
+    final previous = _opening;
+    final drained = Completer<void>();
+    _opening = drained.future;
+    _cancelFallback = fallback;
+    final wasReady = ready;
     _set(LinkStatus.connecting);
-    await _open(generation, fallback);
+    try {
+      // A canceled native open still owns the transport until its late result is cleaned up.
+      if (previous != null) await previous;
+      if (generation != _generation) return;
+      if (wasReady || ready) {
+        if (strip?.id == target.id) {
+          _set(LinkStatus.connected);
+          return;
+        }
+        await _release();
+      }
+      if (generation != _generation) return;
+      strip = target;
+      await _open(generation, fallback);
+    } catch (_) {
+      if (generation == _generation) rethrow;
+    } finally {
+      if (generation == _generation) _cancelFallback = null;
+      if (identical(_opening, drained.future)) _opening = null;
+      drained.complete();
+    }
   }
 
   /// [fallback] is the status after a failed open: a failed recovery stays `lost`.
@@ -101,36 +128,33 @@ class Link {
     _droppedWhileOpening = false;
     var opened = false;
     try {
-      for (var attempt = 1;; attempt++) {
+      for (var attempt = 1; generation == _generation; attempt++) {
         try {
           await _ble.connect(id);
           opened = true;
           break;
         } catch (_) {
+          if (generation != _generation) return;
           if (attempt >= maxTries) rethrow;
           await Future<void>.delayed(retryDelay);
         }
       }
-      if (generation != _generation) {
-        await _ble.disconnect(id);
-        return;
-      }
+      if (!opened) return;
+      if (generation != _generation) return;
       if (!await _ble.hasWriteWithoutResponse(id)) throw UnsupportedController();
-      if (generation != _generation) {
-        await _ble.disconnect(id);
-        return;
-      }
+      if (generation != _generation) return;
       if (_droppedWhileOpening) throw StateError('Link dropped while opening');
       _set(LinkStatus.connected);
       onRemember?.call(id);
     } catch (_) {
-      if (opened) {
+      if (generation == _generation) rethrow;
+    } finally {
+      if (opened && !(generation == _generation && ready)) {
         try {
           await _ble.disconnect(id);
-        } catch (_) {/* Preserve the original error. */}
+        } catch (_) {/* Preserve the original error, or silently finish canceling. */}
       }
-      if (generation == _generation) _set(fallback);
-      rethrow;
+      if (generation == _generation && !ready) _set(fallback);
     }
   }
 
@@ -167,6 +191,7 @@ class Link {
     if (releasing != null) await releasing;
     if (ready) await disconnect();
     _generation++; // Invalidates a pending open; it releases the strip itself.
+    _cancelFallback = null;
     strip = null;
     _set(LinkStatus.idle);
     onRemember?.call(null);
