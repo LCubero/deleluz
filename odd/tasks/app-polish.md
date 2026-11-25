@@ -100,3 +100,4 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - L37 (2026-11-25, owner, verbatim): "espera, el brillo con favoritos expandido no importa que se corte o mas bien que se vea cortado, no se si eso estás peliando" -> the Color fijo fit rule applies with Favoritos collapsed only.
 - L38 (2026-11-25, owner, verbatim): "y quitale el titulo blancos y deja los 3 colores de blanco y ya"
 - L39 (2026-11-25, owner, verbatim): "y en efectos integrados quiero de primero los efectos de la tira y abajo los del app"
+- L40 (2026-11-25): b9914fb (tests 234/234, analyze clean, parent run); build 2010 installed. adb check: Color fijo with Favoritos collapsed shows disc, white chips without title (even spacing) and the full Brillo card above the nav; Efectos integrados order is Ciclo de la tira, Catálogo (internal scroll, favorites first), AUTO de la app, Brillo, Velocidad; nothing overlaps. Waiting for the owner to test 2010.
