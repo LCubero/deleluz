@@ -25,7 +25,7 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - T2 [S1] Color: saturation and white tones (Android). Route: worker. Commit: ad070b5 [x]
 - T3 [S4] Effect list with search and favorites, favorites first (Android, Color → Efectos integrados). Route: worker. Commit: 22a0c70 [x]
 - T4 [S2] Effect steps in "Mis escenas" (Android). Route: worker. Risk: item 1 (stored scene format). Commit: 64b5b8b, da46e3c [x]
-- T5 [S3] App-driven AUTO: current effect name, per-effect duration (Android). Commit: -
+- T5 [S3] App-driven AUTO: current effect name, per-effect duration (Android). Route: worker. Commit: 4546165 [x]
 - T6 [S5] Timer sheet redesign (Android). Commit: -
 - T8 [S9, S11] Design proposals: quick-actions add sheet (Colores / Efectos / Escenas / Mis escenas) and a prominent Bluetooth-off notice. Route: worker. Commit: 9fb0105 [x]
 - T9 [S8, S9, S10] Quick actions (Android): rename to "Acciones rápidas", built-in effects as targets, new add sheet, remove "Todas las escenas" from Inicio. After T3 and T8. Commit: -
@@ -43,3 +43,4 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - L7 (2026-11-25, owner, verbatim): "- En escenas rápidas mejor llamarlo acciones rápidas y poder elegir los efectos integrados tmb. - Ver si se puede Mejorar el menú de acciones rápidas al agregar, que se vea mejor y más fácil los colores y selector, las escenas etc, y separar mis escenas de escenas - Quitar el  link y texto \"todas las escenas\" de inicio. - El mensaje de que encienda el bluetooth debería ser más vistoso y notarse más que hace falta encender el bluetooth"
 - L8 (2026-11-25): T3 done (22a0c70): flutter test 152/152, analyze clean. T8 artboards 08-11 checked at 390 and 320 px; fixed tab label crowding in 08 at 320 px. Waiting for the owner to choose 08/09 and 10/11.
 - L9 (2026-11-25): T4 done (64b5b8b, da46e3c): flutter test 158/158, analyze clean. Independent verify: v1.0.0 scenes load and play unchanged; loading never rewrites storage. Native review (risk, reliability) approved, lineage review-4dc0f795da4f73fd; R3-001 refuted and pinned by a test, R3-002 test added. Left as is: >8 steps keep the first 8; shared `_integer` accepts 1.0 as before.
+- L10 (2026-11-25): T5 done (4546165): flutter test 170/170, analyze clean; native assess not due. Firmware cycle relabelled "Ciclo de la tira" (still sends FF).
