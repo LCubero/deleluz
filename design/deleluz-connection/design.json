@@ -1,10 +1,28 @@
 {
   "title": "DeleLuz Android · Opciones de conexión",
-  "brief": "Tres alternativas Glow Glass para gestionar una tira a la vez sin agrandar Inicio. Cada tablero compara Inicio y la interfaz de conexión en dos marcos de 412 × 915.",
+  "brief": "Tres alternativas Glow Glass con cuatro alias locales, una sola conexión activa y un diálogo de renombrado sin agrandar Inicio.",
   "feature": "odd/tasks/deleluz-android.md",
   "artboards": [
-    { "file": "01-panel-conexion.html", "title": "Panel de conexión", "tradeoff": "Toca el estado para gestionar las tiras sin salir de Inicio; el panel cubre parte de la pantalla.", "width": 920, "height": 1080 },
-    { "file": "02-menu-compacto.html", "title": "Menú compacto", "tradeoff": "El menú ⋯ sustituye la tarjeta por una fila más baja; buscar otra tira requiere un paso adicional.", "width": 920, "height": 1080 },
-    { "file": "03-selector-tiras.html", "title": "Selector de tiras", "tradeoff": "El chip conecta o desconecta y «Cambiar» abre un selector con espacio para más tiras, pero oculta Inicio.", "width": 920, "height": 1080 }
+    {
+      "file": "01-panel-conexion.html",
+      "title": "Panel de conexión",
+      "tradeoff": "Cuatro tiras con acciones a mano; el panel cubre gran parte de Inicio.",
+      "width": 1200,
+      "height": 1080
+    },
+    {
+      "file": "02-menu-compacto.html",
+      "title": "Menú compacto",
+      "tradeoff": "El menú ⋯ ocupa menos espacio; con cuatro tiras hay que desplazarlo.",
+      "width": 1200,
+      "height": 1080
+    },
+    {
+      "file": "03-selector-tiras.html",
+      "title": "Selector de tiras",
+      "tradeoff": "El selector da más espacio a las cuatro tiras; Inicio queda fuera de vista.",
+      "width": 1200,
+      "height": 1080
+    }
   ]
 }
