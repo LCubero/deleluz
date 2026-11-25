@@ -18,7 +18,29 @@ Las versiones nuevas se instalan encima y conservan tus tiras, alias y escenas. 
 
 New versions install over the old one and keep your strips, aliases and scenes. Not available for iPhone.
 
+## Novedades de Android (aún no publicadas)
+
+La fase 1 está en `feat/app-polish`: probada en un celular; la revisión de compatibilidad con más celulares sigue en curso. La descarga de arriba no incluye estos cambios.
+
+- **Color:** disco con saturación y blancos Cálido, Neutro y Frío. Se usa el mismo selector en Color, Acciones rápidas y los pasos de color de Mis escenas.
+- **Efectos integrados:** búsqueda y favoritos con estrella al principio. El **AUTO de la app** muestra el nombre del efecto y cambia cada 10 s, 30 s, 1 min o 5 min, con Todos o Favoritos. Solo funciona con la app en primer plano y la tira conectada; el **Ciclo de la tira** es independiente.
+- **Mis escenas:** hasta ocho pasos de color o efecto integrado, cada uno con su duración. Las escenas anteriores siguen funcionando. **Acciones rápidas** sustituye a Escenas rápidas: elige primero el tipo y luego la acción, incluidos efectos.
+- **Temporizador:** anillo de cuenta regresiva, hora de apagado, botones +5 y +15 min y tiempo personalizado en minutos y segundos, con un máximo de 12 h.
+- **Bluetooth:** tarjeta visible si está apagado, avisos con iconos y errores claros, con límites de reintentos y tiempos de espera en BLE.
+
+## What's new on Android (unreleased)
+
+Phase 1 is on `feat/app-polish`: tested on one phone, with wider phone compatibility testing in progress. The download above does not include these changes.
+
+- **Color:** a saturation disc with Warm, Neutral, and Cool white presets. The same picker is used in Color, Quick actions, and color steps in My scenes.
+- **Built-in effects:** search the catalog and star favorites to list them first. **App AUTO** shows the effect name and advances every 10 s, 30 s, 1 min, or 5 min, using All or Favorites. It runs only in the foreground while connected; the **Strip cycle** is separate.
+- **My scenes:** up to eight color or built-in effect steps, each with its own duration. Older scenes still work. **Quick actions** replaces Quick scenes: choose a type, then an action, including effects.
+- **Timer:** countdown ring, shutoff time, +5 and +15 min buttons, and custom minutes and seconds, capped at 12 hours.
+- **Bluetooth:** a prominent card when Bluetooth is off, notices with icons, and clear errors, with bounded BLE retries and timeouts.
+
 ## What it looks like
+
+These screenshots show the published app, not the unreleased polish.
 
 <p align="center"><img src="docs/app-screens/showreel.webp" width="300" alt="DeleLuz Android app tour: Inicio, Color, Escenas, Música, strip selector and Ajustes"></p>
 

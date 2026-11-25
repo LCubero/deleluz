@@ -4,6 +4,26 @@
 
 This file records meaningful completed changes in chronological order, newest first. Current state and future work belong in `docs/repo-harness/current-state.md`.
 
+## Unreleased — 2026-11-25
+
+Android phase 1 on `feat/app-polish`; tested on one phone. See [the phase 1 log](odd/tasks/app-polish.md#log).
+
+### Added
+
+- Color disc with saturation and Warm, Neutral, and Cool RGB white presets; one shared picker for Color, quick actions, and scene color steps.
+- Searchable built-in effect catalog with starred favorites first. App AUTO shows the current effect name and advances through all effects or favorites every 10 s, 30 s, 1 min, or 5 min, only in the foreground while connected.
+- My scenes supports up to eight color or built-in effect steps with individual durations; older scenes still load and play.
+
+### Changed
+
+- Renamed Quick scenes to Quick actions and added built-in effects with a two-step add sheet. Kept the strip cycle separate from App AUTO.
+- Redesigned the off timer with a countdown ring, shutoff time, +5 and +15 min controls, and custom minutes and seconds capped at 12 hours.
+- Made the Bluetooth-off card prominent and added icons to notices.
+
+### Fixed
+
+- Bounded BLE retries and added connect and write timeouts. A failed timer shutoff now shows an error with a retry option.
+
 ## 2026-11-25
 
 - Added the native Android app DeleLuz 1.0.0 (`app/`, Flutter, shared as a signed APK): connect, power, color, brightness, built-in effects 1-210 and Auto, scenes, music modes, several saved strips with per-phone aliases and per-strip setup, cancel a pending connection, and an About section. Verified on two phones and two strips and published as GitHub release v1.0.0 (`DeleLuz-1.0.0.apk`); screenshots and a showreel are in `docs/app-screens/` (`odd/tasks/deleluz-android.md`).

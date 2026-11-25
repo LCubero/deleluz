@@ -20,12 +20,14 @@ North star: a small, efficient, safe suite to control LEDDMX-03 strips from any 
 
 The MIT request is done: the three repo-harness skills, their runtime copies and `.repo-harness/manifest.json` say MIT, and `.repo-harness/check.py` reports `current`.
 
-## Findings
+## Findings at the v1.0.0 baseline
 
-| Topic | Today | What is possible |
+These observations predate the Android phase 1 changes below.
+
+| Topic | v1.0.0 baseline | What was possible |
 |---|---|---|
-| White and saturation | **Verified.** White comes only from the quick scenes "Blanco cálido" and "Blanco frío". The hue wheel fixes saturation and value at 100 % (`app/lib/ui/color/color_screen.dart:190-193`), so it cannot reach white, pastels or soft tones. White is sent as RGB. | **Verified** that the strip takes any RGB value. **Unknown:** whether there is a separate white channel or a color-temperature command; nothing is documented. |
-| Scenes with built-in effects | **Verified.** A scene stores only 1-8 RGB colors, the brightness and one interval (`app/lib/model/models.dart:421-432`). | **Inference.** An "effect" step type (ID plus duration) fits, because the app can already send any effect ID (`app/lib/protocol.dart`). |
+| White and saturation | **Verified.** White comes only from the quick scenes "Blanco cálido" and "Blanco frío". The hue wheel fixes saturation and value at 100 %, so it cannot reach white, pastels or soft tones. White is sent as RGB. | **Verified** that the strip takes any RGB value. **Unknown:** whether there is a separate white channel or a color-temperature command; nothing is documented. |
+| Scenes with built-in effects | **Verified.** A scene stores only 1-8 RGB colors, the brightness and one interval. | **Inference.** An "effect" step type (ID plus duration) fits, because the app can already send any effect ID (`app/lib/protocol.dart`). |
 | AUTO: effect name and duration | **Verified.** AUTO sends ID `FF` once. The strip never notifies its state: FFE1 sends nothing, and FFE2 has no descriptor to turn notifications on (`docs/PROTOCOL.md` GATT table). No command for per-effect duration is known. | **Inference.** An app-driven AUTO can send effect IDs on a timer, show the current name and use its own duration per effect, separate from the effect speed. It only runs while the app is open and connected. |
 | Effect favorites | **Verified.** Favorites store colors only. Quick scenes take colors and scenes, not effects. The 210 effects are browsed with a number stepper, with no list and no search. | Add a star on effects, a searchable effect list, and effects as quick-scene targets. |
 | Off timer | **Verified.** A generic dialog. No countdown is shown, custom time is typed in two text fields, and the only action is "off". At 320-360 px wide the webapp sheet title is cut to "Temporizador de ap…". | Countdown ring, add-time and cancel buttons, end time ("se apaga a las 23:15"), the last-used duration as default, no truncation. A strip-side timer stays **unknown** (`0x10` is unconfirmed). |
@@ -57,7 +59,7 @@ Checked at 320, 360, 412, 768, 1024, 1366 and 1920 px wide with device emulation
 
 Each phase gets its own ODD task document when it starts.
 
-1. **App polish** (Android only; the webapp follows once the Android app is complete and tested): saturation and white tones in Color; an effect list with search and favorites, with effects allowed in quick scenes; effect steps in "Mis escenas"; app-driven AUTO with the effect name and per-effect duration; timer sheet redesign.
+1. **App polish — delivered on Android, unreleased.** The owner approved the implementation on one phone; the multi-phone compatibility pass (T17) is in progress. See [the phase 1 spec and delivery log](../odd/tasks/app-polish.md). The webapp port waits until the owner considers the Android app complete and tested.
 2. **Two-strip spike, then groups:** open 2 links from Android, fan out one command, log the skew and reconnects. Build groups only if this holds up.
 3. **Webapp parity and responsive layouts:** port phase 1, add the strip list, then the tablet layout, the desktop layout and a home dashboard. Check every width with screenshots.
 4. **Hub spike on the Pi 3B+:** a Python service that talks BLE to the strips and serves a small local HTTP API (local network only, no cloud). Then move it to the ESP32-S3.

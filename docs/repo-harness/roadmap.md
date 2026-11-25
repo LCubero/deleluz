@@ -17,9 +17,9 @@ This roadmap is the canonical lifecycle owner. Track only non-trivial work with 
 ## Active Records
 <!-- doc-role:active-records -->
 
-- RH-W-0001 App polish (P1, proposed): saturation/white tones, effect list with search and favorites, effect steps in scenes, app-driven AUTO with name and per-effect duration, timer sheet redesign. Origin: owner requests 2026-11-25 ([plan](../PLAN.md)). Next: owner approves phase 1, then an ODD task document.
+- RH-W-0001 App polish (P1, active; near completion): Android implementation delivered on `feat/app-polish`, unreleased. Origin: owner requests 2026-11-25 ([plan](../PLAN.md)). Evidence: core features `ad070b5`, `22a0c70`, `64b5b8b`, `4546165`, `0257279`; owner approved build 2010 on one phone (`b9914fb`; [phase 1 log](../../odd/tasks/app-polish.md#log), L40–L42). Remaining: finish and record T17 multi-phone compatibility; tablets and the webapp port are outside phase 1.
 - RH-W-0002 Two-strip spike, then groups (P2, proposed; after RH-W-0001): Android holds one link today (`app/lib/link.dart`). Next: two-strip fan-out test with skew log.
-- RH-W-0003 Webapp parity and responsive layouts (P2, proposed; after RH-W-0001): tablet, desktop, home dashboard. Next: port phase 1 features.
+- RH-W-0003 Webapp parity and responsive layouts (P2, deferred; after RH-W-0001): tablet, desktop, home dashboard. Start the port only after the owner considers the Android app complete and tested ([phase 1 log](../../odd/tasks/app-polish.md#log), L15–L16).
 - RH-W-0004 Hub spike on Raspberry Pi 3B+, then ESP32-S3 (P3, proposed): local BLE bridge with a LAN-only API. Next: owner has the Pi ready; bleak replay of one command.
 - RH-W-0005 Integrations (P3, deferred until RH-W-0004 works): Home Assistant, Matter bridge for Alexa/Google, AI tool API, CasaOS.
 
@@ -32,7 +32,7 @@ This roadmap is the canonical lifecycle owner. Track only non-trivial work with 
 - Scene sequence editor: the step editor was rejected (L33); replaced by simple color-square sequences "Mis escenas" (L37-L62).
 - Webapp strip test session: quick scenes, Mis escenas, favorites, Música, effects + AUTO with speed 10 %/90 %, disconnect and link loss on the real strip (`odd/tasks/deleluz-webapp.md` L64).
 - Phone-mic music modes (host-driven color/brightness from the phone microphone): deferred by the user until the firmware path advances (L31).
-- Native Android app: v1.0.0 published on GitHub Releases (`app/`, `odd/tasks/deleluz-android.md`). Follow-ups: scenes and the off timer keep running under the notification shade; no notice when preferences fall back to session-only storage; no in-app update notice.
+- Native Android app: v1.0.0 published on GitHub Releases (`app/`, `odd/tasks/deleluz-android.md`). Follow-ups: scenes and the off timer keep running under the notification shade; no in-app update notice.
 - Phone design: the webapp uses the approved Glow Glass design (`design/deleluz-webapp/`); earlier phone directions are archived locally in `_archive/` (still in Git history).
 
 ## Resolved Records

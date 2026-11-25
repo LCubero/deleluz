@@ -2,7 +2,7 @@
 
 Native Android app (Flutter) for the LEDDMX-03 LED strip controller, with the Glow Glass design of the phone webapp ([`../webapp/README.md`](../webapp/README.md)). It is shared as an APK, not through an app store. iPhone builds need macOS and are not covered here.
 
-<p align="center"><img src="../docs/app-screens/showreel.webp" width="300" alt="DeleLuz Android app tour"></p>
+<p align="center"><img src="../docs/app-screens/showreel.webp" width="300" alt="Published DeleLuz Android app tour"></p>
 
 ## Install
 
@@ -14,9 +14,11 @@ If you installed a test build from before 1.0.0, uninstall it once first: it was
 
 ## What it does
 
-- **Inicio**: the device card shows the strip by alias (Bluetooth name below), its status and a preview of what was last sent. One button connects, reconnects, disconnects, or cancels a pending connection. Swipe the name to show your other saved strips in a loop (dots show which one); tap Conectar to switch. **Cambiar** opens the strip selector. Also power (disabled while disconnected), brightness, speed (enabled only for effects), quick scenes, up to six shortcuts, and the off timer.
-- **Color**: hue wheel, the shared Favoritos palette (up to 15), built-in effects 1–210 with vendor names, or Auto cycle. Opens on Color fijo.
-- **Escenas**: Mis escenas (1–8 colors, speed, brightness, up to 12 scenes), included scenes, and Música (four strip-microphone modes and their sensitivity). Opens on Mis escenas.
+The features below describe unreleased phase 1 on `feat/app-polish`, not the APK above. One phone has been tested; the wider compatibility pass is in progress ([T17](../odd/tasks/app-polish.md#tasks)).
+
+- **Inicio**: connect, reconnect, disconnect, or cancel a pending connection. **Cambiar** opens the strip selector. The connection card does not swipe. **Acciones rápidas** replaces **Escenas rápidas**: pick a type (color, effect, included scene, or saved scene), then an item. The off-timer sheet shows a countdown ring and shutoff time, offers +5 and +15 min, and accepts custom minutes and seconds up to 12 hours.
+- **Color**: the color disc adjusts saturation and offers Cálido, Neutro, and Frío white presets. Color, quick actions, and scene color steps use the same picker, including editable color favorites. Search the 210 built-in effects and star favorites to list them first. **AUTO de la app** shows the current effect name and advances every 10 s, 30 s, 1 min, or 5 min through Todos or Favoritos. It only runs in the foreground while connected. **Ciclo de la tira** is the separate firmware cycle.
+- **Escenas**: **Mis escenas** supports up to eight color or built-in effect steps, each with its own duration. Older scenes still load and play. Included scenes and Música (four strip-microphone modes and sensitivity) are also available.
 - **Elegir tira** (from Cambiar or Ajustes → Dispositivos): your saved strips and new nearby strips. Each row has rename (pencil), forget (trash) and one Conectar/Desconectar button; long-press for the same menu. Errors show on the row with Reintentar. Search appears with four or more strips.
 - **Ajustes**: Dispositivos; Configuración del dispositivo (color order and LED count, saved per strip and sent only when connected and after a confirmation); language (Spanish default, English); help; privacy; Acerca de.
 
@@ -24,7 +26,7 @@ Horizontal drags on sliders and color pickers never switch tabs; swipe elsewhere
 
 ## Connection
 
-One strip connected at a time; several can be saved, each with an alias that stays on this phone. Up to 4 connect tries, 300 ms apart, and Cancelar stops them at once. Commands are spaced 50 ms apart, and a new slider value replaces the unsent one. A deliberate disconnect releases the strip so another phone or app can connect. The app shows what it last sent, not the strip's real state: the controller reports nothing back. Wire format: [`../docs/PROTOCOL.md`](../docs/PROTOCOL.md).
+One strip connected at a time; several can be saved, each with an alias that stays on this phone. BLE retries are bounded, and connect and write operations have timeouts. A prominent card prompts you to enable Bluetooth when it is off; notices use icons, and a failed timer shutoff shows an error with a retry option. Commands are spaced 50 ms apart, and a new slider value replaces the unsent one. A deliberate disconnect releases the strip so another phone or app can connect. The app shows what it last sent, not the strip's real state: the controller reports nothing back. Wire format: [`../docs/PROTOCOL.md`](../docs/PROTOCOL.md).
 
 ## Limits
 

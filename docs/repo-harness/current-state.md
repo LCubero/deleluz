@@ -12,6 +12,7 @@ DeleLuz controls the stock LEDDMX-03 from a native Android app (`app/`, publishe
 
 <!-- doc-role:recent-work -->
 
+- Android-only phase 1 is implemented and unreleased on `feat/app-polish`. The owner tested and approved the app on one phone (test build 2010; [phase 1 log](../../odd/tasks/app-polish.md#log), L40–L42).
 - Published the native Android app v1.0.0 (one universal APK, `DeleLuz-1.0.0.apk`) on GitHub Releases; built on branch `feat/android-app`, merged to `main`, verified by the user on two phones and two strips; independent review and native risk reviews done (`odd/tasks/deleluz-android.md` L41-L56).
 - Added onboard-mic sensitivity to the webapp, verified on the strip by the user (`335d91c`; lab L59).
 - Recorded Linux BLE connection behavior, power-source observations, and GATT discovery (lab L55–L60).
@@ -20,10 +21,12 @@ DeleLuz controls the stock LEDDMX-03 from a native Android app (`app/`, publishe
 
 <!-- doc-role:pending-work -->
 
-See the [roadmap](roadmap.md). Firmware readback and a strip-side timer remain unconfirmed and do not block the Android app.
+The multi-phone compatibility pass (T17) is in progress. The webapp port is deferred until the owner considers the Android app complete and tested ([phase 1 log](../../odd/tasks/app-polish.md#log), L15–L16). See the [roadmap](roadmap.md). Firmware readback and a strip-side timer remain unconfirmed and do not block the Android app.
+
+Previously recorded publication approvals are separate from T17: adding per-ABI APKs to v1.0.0 (and updating the release notes and README) and pushing the local commits on `main`.
 
 ## Next Step
 
 <!-- doc-role:next-step -->
 
-The arm64 APK was installed over v1.0.0 on the user's phone on 2026-11-25 and opens with saved strips intact. Next: owner decides on phase 1 of [the plan](../PLAN.md) (roadmap RH-W-0001). Still pending approval: add the three per-ABI APKs to release v1.0.0, mention them in the release notes and README as an advanced option, and push the five local commits on `main`. Keep the release keystore backup; raise the build number above 2004 for the next APK. An iOS build needs macOS.
+Continue T17 across common phone sizes, densities, Android API levels, text scales, and navigation modes. Tablets are out of scope. Get explicit owner approval in the current turn before any test on a physical phone or strip ([phase 1 log](../../odd/tasks/app-polish.md#log), L41).
