@@ -97,3 +97,4 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - L34 (2026-11-25): T19d committed: timer OFF failure is its own state (cleared only by a successful OFF or a new timer), retry also on Inicio. flutter test 231/231, analyze clean (parent run). Not yet on the phone.
 - L35 (2026-11-25, owner, verbatim): "quita noche de color fijo, eso no lo quiero"
 - L36 (2026-11-25, decision): remove the Noche choice from the shared color picker (one picker everywhere per S13); quick actions already saved with Noche keep loading and working. Restore the Color fijo fit (S22) first by that removal; trim hint notices only if Brillo still does not fit.
+- L37 (2026-11-25, owner, verbatim): "espera, el brillo con favoritos expandido no importa que se corte o mas bien que se vea cortado, no se si eso estás peliando" -> the Color fijo fit rule applies with Favoritos collapsed only.
