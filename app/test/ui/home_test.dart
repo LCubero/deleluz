@@ -33,7 +33,12 @@ class FakeBle implements BleApi {
   final writes = <Uint8List>[];
   final changes = StreamController<(String, bool)>.broadcast();
   @override
-  Future<void> connect(String id) async => connections.add(id);
+  Future<void> connect(String id) async {
+    connections.add(id);
+    if (unreachable.contains(id)) throw StateError('Fake connection failure');
+  }
+
+  final unreachable = <String>{};
   @override
   Future<void> disconnect(String id) async => disconnects.add(id);
   @override
@@ -231,6 +236,9 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  final selectorScroll = find.descendant(of: find.byKey(const Key('strip-selector-list')),
+    matching: find.byType(Scrollable), matchRoot: false).first;
+
   testWidgets('selector states, management actions and expansion persist', (tester) async {
     await tester.binding.setSurfaceSize(const Size(412, 915));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -246,7 +254,7 @@ void main() {
     expect(find.text('Desconectar'), findsOneWidget);
     await tester.tap(find.text('Cambiar'));
     await tester.pumpAndSettle();
-    expect(find.text('Mis tiras · 4'), findsOneWidget);
+    expect(find.text('MIS TIRAS · 4'), findsOneWidget);
     Finder row(String id) => find.byKey(ValueKey(id));
     Finder within(String id, Finder child) => find.descendant(of: row(id), matching: child);
     expect(within('1', find.text('Conectado')), findsOneWidget);
@@ -258,9 +266,9 @@ void main() {
     expect(secondCard.top - firstCard.bottom, greaterThanOrEqualTo(10));
     expect(firstCard.left, greaterThanOrEqualTo(18));
     expect(412 - firstCard.right, greaterThanOrEqualTo(18));
-    await tester.scrollUntilVisible(row('fake'), 140);
+    await tester.scrollUntilVisible(row('fake'), 140, scrollable: selectorScroll);
     expect(within('fake', find.text('Conectar')), findsOneWidget);
-    await tester.scrollUntilVisible(row('1'), -140);
+    await tester.scrollUntilVisible(row('1'), -140, scrollable: selectorScroll);
     await tester.ensureVisible(within('1', find.byTooltip('Renombrar')));
     await tester.tap(within('1', find.byTooltip('Renombrar')));
     await tester.pumpAndSettle();
@@ -320,7 +328,7 @@ void main() {
     expect(c.link.ready, isTrue);
     expect(models.loadRememberedStrips().map((strip) => strip.id), ['2', '3', '4']);
 
-    final section = find.text('Mis tiras · 3');
+    final section = find.text('MIS TIRAS · 3');
     await tester.tap(section);
     await tester.pumpAndSettle();
     expect(row('2'), findsNothing);
@@ -336,6 +344,75 @@ void main() {
     expect(models.loadStripsExpanded(), isTrue);
     await tester.tap(find.byTooltip('Volver a Inicio'));
     await tester.pumpAndSettle();
+  });
+
+  for (final id in ['saved', 'fake']) {
+    testWidgets('selector keeps connection failure and retry on row $id', (tester) async {
+      await Models(store, presetIds: {}).saveRememberedStrips([
+        const RememberedStrip('saved', 'LEDDMX Saved'),
+      ]);
+      await start(tester);
+      await tester.tap(find.text('Cambiar'));
+      await tester.pumpAndSettle();
+      Finder within(Finder child) => find.descendant(of: find.byKey(ValueKey(id)), matching: child);
+      final error = find.text('No se pudo conectar.');
+      final retry = find.text('Reintentar');
+      expect(find.byType(TextField), findsNothing);
+      ble.unreachable.add(id);
+      await tester.tap(within(find.text('Conectar')));
+      await tester.pump();
+      for (var i = 0; i < 3; i++) {
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+      await tester.pumpAndSettle();
+      expect(error, findsOneWidget);
+      expect(within(error), findsOneWidget);
+      expect(within(retry), findsOneWidget);
+      ble.unreachable.remove(id);
+      await tester.tap(within(retry));
+      await tester.pumpAndSettle();
+      expect(error, findsNothing);
+      expect(retry, findsNothing);
+      expect(within(find.text('Desconectar')), findsOneWidget);
+    });
+  }
+
+  testWidgets('selector compact actions and normalized search', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(412, 915));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await Models(store, presetIds: {}).saveRememberedStrips([
+      const RememberedStrip('one', 'LEDDMX Ático', alias: 'Rincón'),
+      const RememberedStrip('two', 'LEDDMX Cocina'),
+    ]);
+    ble.results = [const Strip('one', 'LEDDMX Ático'), const Strip('three', 'LEDDMX Ñandú'), FakeBle.strip];
+    await start(tester);
+    await tester.tap(find.text('Cambiar'));
+    await tester.pumpAndSettle();
+    final row = find.byKey(const ValueKey('one'));
+    Finder within(Finder child) => find.descendant(of: row, matching: child);
+    expect(tester.getSize(within(find.byType(Material)).first).height, lessThanOrEqualTo(80));
+    final actionY = tester.getCenter(within(find.text('Conectar'))).dy;
+    for (final label in ['Renombrar', 'Olvidar']) {
+      final icon = within(find.byTooltip(label));
+      expect(tester.getSize(icon), const Size(48, 48));
+      expect(tester.getCenter(icon).dy, lessThan(actionY));
+    }
+    final search = find.byType(TextField);
+    expect(find.text('Buscar tira'), findsOneWidget);
+    for (final query in ['RINCON', 'atico']) {
+      await tester.enterText(search, query);
+      await tester.pumpAndSettle();
+      expect(row, findsOneWidget);
+      expect(find.text('LEDDMX Cocina'), findsNothing);
+      expect(find.text('LEDDMX Ñandú'), findsNothing);
+    }
+    await tester.enterText(search, 'nandu');
+    await tester.pumpAndSettle();
+    expect(row, findsNothing);
+    expect(find.text('LEDDMX Ñandú'), findsOneWidget);
+    await tester.enterText(search, 'missing');
+    await tester.pumpAndSettle();
+    expect(find.text('No se encontraron tiras.'), findsOneWidget);
   });
 
   testWidgets('disconnected power cannot send', (tester) async {
@@ -388,6 +465,18 @@ void main() {
     expect(ble.writes, hasLength(2));
     expect(ble.writes.last[4], controller.brightness);
     expect(slider, findsOneWidget);
+  });
+
+  testWidgets('a drag on the disabled speed slider does not change tab', (tester) async {
+    await start(tester);
+    final slider = find.byKey(const Key('speed'));
+    await tester.scrollUntilVisible(slider, 120);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Slider>(slider).onChanged, isNull);
+    await tester.drag(slider, const Offset(-300, 0));
+    await tester.pumpAndSettle();
+    final selected = find.byWidgetPredicate((w) => w is Semantics && w.properties.selected == true);
+    expect(find.ancestor(of: find.text('Inicio'), matching: selected), findsOneWidget);
   });
 
   for (final (problem, message) in [
@@ -475,7 +564,7 @@ void main() {
       await start(tester);
       await tester.tap(find.text('Cambiar'));
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(find.text('Buscar de nuevo'), 160);
+      await tester.scrollUntilVisible(find.text('Buscar de nuevo'), 160, scrollable: selectorScroll);
       expect(find.text('Buscar de nuevo').hitTestable(), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.tap(find.byTooltip('Volver a Inicio'));

@@ -201,16 +201,18 @@ class AppController extends ChangeNotifier {
     }
   }
 
-  Future<void> _deviceAction(Future<void> Function() action, String failure) async {
+  Future<void> _deviceAction(Future<void> Function() action, String failure,
+      {void Function(String)? onFailure}) async {
+    final report = onFailure ?? _notice;
     if (busy || _disposed) return;
     busy = true;
     _notice(null);
     try {
       await action();
     } on UnsupportedController {
-      _notice('controllerUnsupported');
+      report('controllerUnsupported');
     } catch (_) {
-      _notice(failure);
+      report(failure);
     } finally {
       busy = false;
       _refresh();
@@ -261,10 +263,10 @@ class AppController extends ChangeNotifier {
     _refresh();
   }
 
-  Future<void> connect(Strip target) => _deviceAction(() async {
+  Future<void> connect(Strip target, {void Function(String)? onFailure}) => _deviceAction(() async {
     if (!_devices.containsKey(target.id)) {
       final problem = await checkAccess(true);
-      if (problem != null) return _notice(problem);
+      if (problem != null) return (onFailure ?? _notice)(problem);
     }
     await stopScan();
     if (!_foreground || _disposed) return;
@@ -273,7 +275,7 @@ class AppController extends ChangeNotifier {
     } finally {
       if (!link.ready && remembered != null) link.restore(remembered!);
     }
-  }, 'connectFailed');
+  }, 'connectFailed', onFailure: onFailure);
 
   Future<void> reconnect() => _reconnect(request: true);
 

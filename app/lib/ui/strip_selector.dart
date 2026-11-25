@@ -15,6 +15,26 @@ class StripSelector extends StatefulWidget {
 
 class _StripSelectorState extends State<StripSelector> {
   AppController get c => widget.controller;
+  final _search = TextEditingController();
+  final _failures = <String, String>{};
+
+  // Fold precomposed Latin accents and decomposed combining marks.
+  static final _accents = {
+    RegExp('[àáâãäåāăą]'): 'a', RegExp('[çćĉċč]'): 'c',
+    RegExp('[èéêëēĕėęě]'): 'e', RegExp('[ìíîïĩīĭį]'): 'i',
+    RegExp('[ñńņň]'): 'n', RegExp('[òóôõöøōŏő]'): 'o',
+    RegExp('[ùúûüũūŭůűų]'): 'u', RegExp('[ýÿŷ]'): 'y',
+    RegExp(r'[\u0300-\u036f]'): '',
+  };
+
+  String _fold(String value) => _accents.entries.fold(value.toLowerCase(),
+    (text, accent) => text.replaceAll(accent.key, accent.value));
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -31,7 +51,11 @@ class _StripSelectorState extends State<StripSelector> {
     if (_connected(strip)) {
       c.disconnect();
     } else {
-      c.connect(strip);
+      if (c.busy) return;
+      setState(() => _failures.remove(strip.id));
+      c.connect(strip, onFailure: (key) {
+        if (mounted) setState(() => _failures[strip.id] = key);
+      });
     }
   }
 
@@ -41,30 +65,55 @@ class _StripSelectorState extends State<StripSelector> {
     final savedIds = saved.map((strip) => strip.id).toSet();
     final devices = c.devices;
     final nearby = devices.where((strip) => !savedIds.contains(strip.id)).toList();
+    final showSearch = saved.length + nearby.length >= 4;
+    final query = showSearch ? _fold(_search.text.trim()) : '';
+    bool matches(Strip strip) => _fold(strip.name).contains(query) ||
+      (strip is RememberedStrip && _fold(strip.label).contains(query));
+    final savedMatches = saved.where(matches).toList();
+    final nearbyMatches = nearby.where(matches).toList();
     final seen = devices.map((strip) => strip.id).toSet();
     final theme = Theme.of(context).textTheme;
+    final header = Row(spacing: 10, children: [
+          Material(color: glowGlass, shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14), side: const BorderSide(color: glowLine)),
+            child: IconButton(tooltip: c.text('backToHome'), icon: const BackButtonIcon(),
+              onPressed: () => Navigator.of(context).pop())),
+          Expanded(child: Text(c.text('chooseStrip'), style: theme.titleLarge)),
+    ]);
     final children = <Widget>[
         Text(c.text('oneStrip'), style: theme.bodySmall),
+        if (showSearch) ...[
+          const SizedBox(height: 12),
+          TextField(controller: _search, onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(hintText: c.text('searchStrip'),
+              prefixIcon: const Icon(Icons.search), filled: true, fillColor: glowGlass,
+              border: _searchBorder(glowLine), enabledBorder: _searchBorder(glowLine),
+              focusedBorder: _searchBorder(glowViolet))),
+        ],
         const SizedBox(height: 12),
-        Semantics(expanded: c.stripsExpanded, child: TextButton(
-          onPressed: c.toggleStripsExpanded,
+        Semantics(expanded: c.stripsExpanded || query.isNotEmpty, child: TextButton(
+          style: TextButton.styleFrom(alignment: Alignment.centerLeft, padding: EdgeInsets.zero),
+          onPressed: query.isEmpty ? c.toggleStripsExpanded : null,
           child: Row(spacing: 8, children: [
-            Expanded(child: Text(c.text('myStrips', {'count': saved.length}), style: theme.titleMedium)),
-            Icon(c.stripsExpanded ? Icons.expand_less : Icons.expand_more),
+            Expanded(child: _section(c.text('myStrips', {'count': savedMatches.length}))),
+            if (query.isEmpty) Icon(c.stripsExpanded ? Icons.expand_less : Icons.expand_more),
           ]),
         )),
-        if (c.stripsExpanded)
-          for (final strip in saved) Padding(
+        if (c.stripsExpanded || query.isNotEmpty)
+          for (final strip in savedMatches) Padding(
             key: ValueKey(strip.id), padding: const EdgeInsets.only(top: 10),
             child: _row(strip, saved: strip, state: _connected(strip) ? 'connected'
               : c.scanCompleted && !seen.contains(strip.id) ? 'stripOutOfRange' : 'rememberedStrip'),
           ),
         const SizedBox(height: 20),
-        Text(c.text('newNearbyStrips'), style: theme.titleMedium),
-        for (final strip in nearby) Padding(
+        _section(c.text('newNearbyStrips')),
+        for (final strip in nearbyMatches) Padding(
           key: ValueKey(strip.id), padding: const EdgeInsets.only(top: 10), child: _row(strip),
         ),
-        if (c.scanning || (c.scanCompleted && nearby.isEmpty)) Padding(
+        if (query.isNotEmpty && savedMatches.isEmpty && nearbyMatches.isEmpty)
+          Padding(padding: const EdgeInsets.only(top: 10),
+            child: Semantics(liveRegion: true, child: Text(c.text('noMatchingStrips'), style: theme.bodySmall))),
+        if (c.scanning || (query.isEmpty && c.scanCompleted && nearby.isEmpty)) Padding(
           padding: const EdgeInsets.only(top: 8),
           child: Semantics(liveRegion: true, child: Text(c.text(c.scanning ? 'scanning' : 'noNewStrips'))),
         ),
@@ -74,51 +123,87 @@ class _StripSelectorState extends State<StripSelector> {
             style: TextStyle(color: Theme.of(context).colorScheme.error))),
         ),
         const SizedBox(height: 14),
-        OutlinedButton(onPressed: c.busy || c.scanning ? null : c.startScan,
+        OutlinedButton(style: OutlinedButton.styleFrom(backgroundColor: glowGlass,
+          side: const BorderSide(color: glowLine)), onPressed: c.busy || c.scanning ? null : c.startScan,
           child: Text(c.text('scanAgain'))),
     ];
     return Scaffold(
-      appBar: AppBar(title: Text(c.text('chooseStrip')), leading: IconButton(
-        tooltip: c.text('backToHome'), icon: const BackButtonIcon(),
-        onPressed: () => Navigator.of(context).pop(),
-      )),
-      body: GlowBackdrop(child: SafeArea(top: false, child: Center(child: ConstrainedBox(
+      body: GlowBackdrop(child: SafeArea(child: Center(child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
-        child: ListView(padding: glowScreenPadding, children: children),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Padding(padding: const EdgeInsets.fromLTRB(18, 16, 18, 0), child: header),
+          Expanded(child: ListView(key: const Key('strip-selector-list'),
+            padding: glowScreenPadding, children: children)),
+        ]),
       )))),
     );
   });
 
+  OutlineInputBorder _searchBorder(Color color) => OutlineInputBorder(
+    borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: color));
+
+  Widget _section(String label) => Text(label.toUpperCase(), style: const TextStyle(
+    fontSize: 12, letterSpacing: 1.2, fontWeight: FontWeight.w700, color: glowMuted));
+
   Widget _row(Strip strip, {RememberedStrip? saved, String? state}) {
     final theme = Theme.of(context).textTheme;
+    final connected = _connected(strip);
+    final failure = connected ? null : _failures[strip.id];
+    final error = Theme.of(context).colorScheme.error;
+    final primary = !connected && failure == null;
+    final pill = FilledButton(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(0, 28), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: const StadiumBorder(),
+        backgroundColor: primary ? Colors.transparent : glowGlassSelected,
+        foregroundColor: failure == null ? glowInk : error,
+        side: primary ? null : BorderSide(color: failure == null ? glowLine : error),
+        textStyle: const TextStyle(fontSize: 13, height: 1.2, fontWeight: FontWeight.w700),
+      ),
+      onPressed: c.busy ? null : () => _toggle(strip),
+      child: Text(c.text(failure == null ? _action(strip) : 'retryStrip'), textAlign: TextAlign.center),
+    );
     return Material(color: glowGlass,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: _connected(strip) ? glowViolet : glowLine)),
+        side: BorderSide(color: failure != null ? error : connected ? glowViolet : glowLine)),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onLongPress: saved == null || c.busy ? null : () => _menu(saved),
-        child: Padding(padding: const EdgeInsets.all(12), child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
-            Column(crossAxisAlignment: CrossAxisAlignment.start, spacing: 2, children: [
-              Text(saved?.label ?? strip.name, style: theme.titleMedium),
-              if (saved != null) Text(strip.name, style: theme.bodySmall),
-              if (state != null) Text(c.text(state), style: theme.bodySmall),
+        child: Padding(padding: EdgeInsets.symmetric(horizontal: 12, vertical: saved == null ? 8 : 2),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(spacing: 8, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Expanded(flex: 3, child: Padding(padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(saved?.label ?? strip.name, style: theme.titleMedium),
+                  if (saved != null) Text(strip.name, style: theme.bodySmall),
+                  if (state != null) Row(spacing: 5, children: [
+                    DecoratedBox(decoration: BoxDecoration(shape: BoxShape.circle,
+                      color: connected ? const Color(0xff34d399) : glowFaint),
+                      child: const SizedBox.square(dimension: 6)),
+                    Flexible(child: Text(c.text(state), style: theme.bodySmall)),
+                  ]),
+                ]))),
+              Flexible(flex: 2, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                if (saved != null) Row(mainAxisSize: MainAxisSize.min, children: [
+                  _rowIcon('renameStrip', Icons.edit_outlined, () => _rename(saved)),
+                  _rowIcon('forgetStripAction', Icons.delete_outline, () => _forget(saved)),
+                ]),
+                if (primary && !c.busy)
+                  Ink(decoration: const ShapeDecoration(gradient: glowStrongGradient, shape: StadiumBorder()), child: pill)
+                else pill,
+              ])),
             ]),
-            Wrap(alignment: WrapAlignment.end, crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8, runSpacing: 8, children: [
-                if (saved != null) ...[
-                  IconButton(tooltip: c.text('renameStrip'), icon: const Icon(Icons.edit_outlined),
-                    onPressed: c.busy ? null : () => _rename(saved)),
-                  IconButton(tooltip: c.text('forgetStripAction'), icon: const Icon(Icons.delete_outline),
-                    onPressed: c.busy ? null : () => _forget(saved)),
-                ],
-                FilledButton(onPressed: c.busy ? null : () => _toggle(strip), child: Text(c.text(_action(strip)))),
-              ]),
-          ],
-        )),
+            if (failure != null) Padding(padding: const EdgeInsets.only(bottom: 8, top: 4),
+              child: Semantics(liveRegion: true, child: Text(c.text(failure),
+                style: theme.bodySmall?.copyWith(color: error)))),
+          ])),
       ),
     );
   }
+
+  Widget _rowIcon(String label, IconData icon, VoidCallback action) => SizedBox.square(dimension: 48,
+    child: IconButton(tooltip: c.text(label), icon: Icon(icon, size: 16),
+      color: glowMuted, onPressed: c.busy ? null : action));
 
   Future<void> _menu(RememberedStrip strip) async {
     final action = _action(strip);
