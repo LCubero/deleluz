@@ -155,9 +155,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _device(BuildContext context) {
     final connected = c.link.ready;
-    // No visual command yet: this gradient is decorative, not device telemetry.
-    final unknown = connected && c.sentPower == null;
+    // Color unknown (nothing sent yet, or on with a mode that has no color such as music):
+    // this gradient is decorative, not device telemetry. Off stays dark.
     final rgb = connected && c.sentPower == true ? c.sentColor : null;
+    final unknown = connected && (c.sentPower == null
+        || (c.sentPower == true && rgb == null && !c.hasActiveEffect));
     final previewColors = switch (rgb) {
       final color? => [color],
       _ when c.hasActiveEffect => glowEffectColors,

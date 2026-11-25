@@ -150,6 +150,9 @@ void main() {
     await send(tester, () => c.applyShortcut({'kind': 'color', 'rgb': [10, 20, 30]}));
     expect(paint().gradient, isNull);
     expect(paint().color, const Color(0xff0a141e));
+    // On with a colorless mode (music): color unknown again, so the calm gradient returns.
+    await send(tester, () => c.setVoiceMode(1));
+    expect(paint().gradient, unknown);
     await send(tester, () => c.setEffect(2));
     expect(paint().gradient, isA<LinearGradient>());
     expect(paint().gradient, isNot(unknown));
