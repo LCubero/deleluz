@@ -163,6 +163,19 @@ void main() {
     await start(tester);
     await tester.tap(find.text('Color').last);
     await tester.pumpAndSettle();
+    final disc = tester.getSize(find.byKey(const Key('color-disc'))).width;
+    final slider = find.byKey(const Key('color-brightness'));
+    final card = find.ancestor(of: slider, matching: find.byType(GlassCard));
+    final viewport = find.ancestor(of: slider, matching: find.byType(SingleChildScrollView));
+    final bottom = tester.getBottomLeft(card).dy - tester.getTopLeft(viewport).dy;
+    debugPrint('Owner viewport: disc=$disc dp; Brillo bottom=$bottom dp');
+    final tones = ['Cálido', 'Neutro', 'Frío'].map((label) =>
+      tester.getRect(find.widgetWithText(ChoiceChip, label))).toList();
+    for (final tone in tones) {
+      expect(tone.top, tones.first.top);
+      expect(tone.shortestSide, greaterThanOrEqualTo(48));
+    }
+    expect(disc, greaterThanOrEqualTo(216), reason: 'Disc: $disc dp; card bottom: $bottom dp; viewport: ${tester.getSize(viewport).height} dp');
     expectBrightnessInViewport(tester, 'color-brightness');
     await tester.tap(find.byKey(const Key('color-effects')));
     await tester.pumpAndSettle();
@@ -632,14 +645,41 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  for (final width in [320.0, 412.0]) {
-    testWidgets('shared color picker and palette at $width dp', (tester) async {
+  testWidgets('stored Noche quick action keeps its label and sends #200400', (tester) async {
+    const night = {'kind': 'color', 'rgb': [32, 4, 0], 'name': 'night'};
+    await Models(store, presetIds: {}).saveShortcuts([night]);
+    final c = await start(tester);
+    expect(c.shortcuts.single, night);
+    await c.connect(FakeBle.strip);
+    await tester.pumpAndSettle();
+    final title = find.text('Acciones rápidas');
+    await tester.scrollUntilVisible(title, 100);
+    await tester.tap(title);
+    await tester.pumpAndSettle();
+    final shortcut = find.text('Noche');
+    expect(shortcut, findsOneWidget);
+    await tester.ensureVisible(shortcut);
+    await tester.pumpAndSettle();
+    await tester.tap(shortcut);
+    for (var i = 0; i < 3; i++) {
+      now += 50;
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(ble.writes.last, wire.color(32, 4, 0));
+    expect(c.models.loadShortcuts().single, night);
+  });
+
+  for (final (width, language) in [(320.0, 'es'), (320.0, 'en'), (412.0, 'es'), (412.0, 'en')]) {
+    testWidgets('shared color picker and palette at $width dp in $language', (tester) async {
       await tester.binding.setSurfaceSize(Size(width, width == 320 ? 640 : 915));
       tester.platformDispatcher.textScaleFactorTestValue = 1.4;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      await Models(store, presetIds: {}).saveShortcuts([]);
+      final models = Models(store, presetIds: {});
+      await models.saveShortcuts([]);
+      await models.savePalette(['#200400']);
       final c = await start(tester);
+      c.setLanguage(language);
       await c.connect(FakeBle.strip);
       await tester.pumpAndSettle();
       final before = ble.writes.length;
@@ -654,34 +694,36 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
       }
-      final title = find.text('Acciones rápidas');
+      final title = find.text(c.text('quickActions'));
       await tester.scrollUntilVisible(title, 100);
       await tap(title);
-      final add = find.byTooltip('Agregar acción rápida');
-      final confirm = find.widgetWithText(FilledButton, 'Agregar');
+      final add = find.byTooltip(c.text('addShortcut'));
+      final confirm = find.widgetWithText(FilledButton, c.text('quickAdd'));
       await tap(add);
       await tap(find.byKey(const Key('quick-type-color')));
       expect(find.byKey(const Key('glow-sheet')), findsOneWidget);
       expect(shared, findsOneWidget);
-      await tap(tone('Noche'));
+      expect(tone(c.text('night')), findsNothing);
       await tap(inside('color-favorites'));
-      await tap(inside('favorite-plus'));
       await tap(inside('favorite-#200400'));
       expect(ble.writes, hasLength(before));
       await tap(confirm);
       expect(c.models.loadShortcuts().single, {'kind': 'color', 'rgb': [32, 4, 0], 'name': 'night'});
       await tap(add);
       await tap(find.byKey(const Key('quick-type-color')));
-      await tap(tone('Neutro'));
+      final neutral = tone(c.text('whiteNeutralTone'));
+      await tap(neutral);
+      expect(tester.getSemantics(neutral).getSemanticsData().flagsCollection.isSelected, Tristate.isTrue);
       await tap(confirm);
       expect(c.models.loadShortcuts().last, {'kind': 'color', 'rgb': [255, 228, 196], 'name': 'whiteNeutralTone'});
       expect(ble.writes, hasLength(before));
 
-      await tap(find.text('Escenas').last);
+      await tap(find.text(c.text('scenes')).last);
       await tap(find.byKey(const Key('scene-new')));
       await tap(find.byKey(const Key('scene-add-color')));
       expect(find.byKey(const Key('glow-sheet')), findsOneWidget);
       expect(shared, findsOneWidget);
+      expect(tone(c.text('night')), findsNothing);
       await tap(inside('favorite-#200400'));
       expect(ble.writes, hasLength(before));
       await tap(find.byKey(const Key('scene-apply-step')));
@@ -690,7 +732,7 @@ void main() {
       expect(shared, findsOneWidget);
       final disc = find.descendant(of: shared, matching: find.byType(ColorDisc));
       expect(tester.widget<ColorDisc>(disc).color, const Color(0xff200400));
-      await tap(tone('Frío'));
+      await tap(tone(c.text('whiteCoolTone')));
       await tap(find.byKey(const Key('scene-apply-step')));
       expect(find.widgetWithText(ListTile, '#FFFFFF'), findsOneWidget);
       expect(ble.writes, hasLength(before));
@@ -698,6 +740,7 @@ void main() {
 
       await tap(find.text('Color').last);
       expect(shared, findsOneWidget);
+      expect(tone(c.text('night')), findsNothing);
       if (inside('favorite-#200400').evaluate().isEmpty) await tap(inside('color-favorites'));
       await tap(inside('favorite-#200400'));
       for (var i = 0; i < 3; i++) {
@@ -794,11 +837,11 @@ void main() {
       await editEffect();
       await tap(find.widgetWithText(SimpleDialogOption, c.text('changeShortcut')));
       await tap(color);
-      await tap(find.widgetWithText(ChoiceChip, 'Noche'));
+      await tap(find.widgetWithText(ChoiceChip, 'Frío'));
       await tap(find.widgetWithText(FilledButton, 'Cambiar'));
-      const night = {'kind': 'color', 'name': 'night', 'rgb': [32, 4, 0]};
-      expect(c.shortcuts.first, night);
-      expect(c.models.loadShortcuts().first, night);
+      const cool = {'kind': 'color', 'name': 'coolWhite', 'rgb': [255, 255, 255]};
+      expect(c.shortcuts.first, cool);
+      expect(c.models.loadShortcuts().first, cool);
       final scene = find.text(c.text('rasta'));
       await tester.ensureVisible(scene);
       await tester.pumpAndSettle();

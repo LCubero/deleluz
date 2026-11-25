@@ -140,6 +140,7 @@ const _strings = <String, (String, String)>{
   'speedEffectsHint': ('La velocidad aplica a efectos', 'Speed applies to effects'),
   'micSensitivity': ('Sensibilidad del micrófono', 'Microphone sensitivity'),
   'percent': ('{value}\u00a0%', '{value}%'),
+  'brightnessDragHint': ('Desliza para ajustar', 'Drag to adjust'),
   'dragNote': ('Los cambios se envían al deslizar, como máximo una vez cada 50 ms.', 'Changes are sent as you drag, at most every 50 ms.'),
   'scenes': ('Escenas', 'Scenes'),
   'includedScenes': ('Incluidas', 'Included'),

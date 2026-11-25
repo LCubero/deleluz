@@ -97,7 +97,8 @@ class _ColorScreenState extends State<ColorScreen> {
           semanticFormatterCallback: (value) => c.text('percent', {'value': value.round()}),
           onChanged: (value) => change(value.round()),
           onChangeEnd: (_) => c.saveSelection())),
-        if (key == 'brightness') Notice(c.text('dragNote'), compact: true),
+        if (key == 'brightness')
+          Notice(c.text(_effects ? 'dragNote' : 'brightnessDragHint'), compact: true),
       ]),
     ));
   }
@@ -106,7 +107,7 @@ class _ColorScreenState extends State<ColorScreen> {
   Widget build(BuildContext context) => ListenableBuilder(listenable: c, builder: (context, _) {
     return SafeArea(child: Align(alignment: Alignment.topCenter, child: ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 480),
-      child: LayoutBuilder(builder: (context, viewport) => SingleChildScrollView(
+      child: SingleChildScrollView(
         padding: glowScreenPadding, child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           GlowHeader(title: c.text('color'), controller: c),
@@ -127,8 +128,7 @@ class _ColorScreenState extends State<ColorScreen> {
             const SizedBox(height: 12),
             _effectCard(),
           ] else ...[
-            SharedColorPicker(controller: c, rgb: _rgb,
-              discMaxDiameter: (viewport.maxHeight * .15).clamp(96.0, 216.0),
+            SharedColorPicker(controller: c, rgb: _rgb, showDiscHint: false,
               onChanged: (rgb, _) => _choose(rgb)),
           ],
           const SizedBox(height: 8),
@@ -138,7 +138,7 @@ class _ColorScreenState extends State<ColorScreen> {
             _slider('speed', c.speed, c.setSpeed),
           ],
         ],
-      ))),
+      )),
     )));
   });
 }
