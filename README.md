@@ -20,7 +20,7 @@ New versions install over the old one and keep your strips, aliases and scenes. 
 
 ## What it looks like
 
-<p align="center"><img src="docs/app-screens/showreel.gif" width="300" alt="DeleLuz Android app tour: Inicio, Color, Escenas, Música, strip selector and Ajustes"></p>
+<p align="center"><img src="docs/app-screens/showreel.webp" width="300" alt="DeleLuz Android app tour: Inicio, Color, Escenas, Música, strip selector and Ajustes"></p>
 
 | Inicio | Color | Escenas | Elegir tira |
 |---|---|---|---|
