@@ -7,6 +7,7 @@ import '../../protocol.dart' as wire;
 import '../color_picker.dart';
 import '../effect_list.dart';
 import '../glow_glass.dart';
+import '../notice.dart';
 import 'app_auto_card.dart';
 
 class ColorScreen extends StatefulWidget {
@@ -80,7 +81,7 @@ class _ColorScreenState extends State<ColorScreen> {
         selected: _auto || c.appAutoPlaying ? null : _effect, onFavorite: c.toggleEffectFavorite,
         onSelected: c.canSend ? _playEffect : null),
       const SizedBox(height: 12),
-      Text(c.text('effectsNote'), style: Theme.of(context).textTheme.bodySmall),
+      Notice(c.text('effectsNote')),
     ]));
   }
 
@@ -94,21 +95,20 @@ class _ColorScreenState extends State<ColorScreen> {
           semanticFormatterCallback: (value) => c.text('percent', {'value': value.round()}),
           onChanged: (value) => change(value.round()),
           onChangeEnd: (_) => c.saveSelection())),
-        if (key == 'brightness') Text(c.text('dragNote'), style: Theme.of(context).textTheme.bodySmall),
+        if (key == 'brightness') Notice(c.text('dragNote')),
       ]),
     ));
   }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(listenable: c, builder: (context, _) {
-    final style = Theme.of(context).textTheme;
     return SafeArea(child: Align(alignment: Alignment.topCenter, child: ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 480),
       child: SingleChildScrollView(padding: glowScreenPadding, child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           GlowHeader(title: c.text('color'), controller: c),
           if (c.message == 'commandFailed')
-            Text(c.text('commandFailed'), textAlign: TextAlign.center, style: style.bodySmall),
+            Notice(c.text('commandFailed'), kind: NoticeKind.error, live: true),
           const SizedBox(height: 12),
           GlowSegments<bool>(selected: _effects,
             onSelected: (effects) => setState(() => _effects = effects), segments: [

@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../app_controller.dart';
 import '../../model/models.dart';
 import '../glow_glass.dart';
+import '../notice.dart';
 
 /// Uses the same persisted palette as the scene editor and shortcut picker.
 class ColorFavorites extends StatefulWidget {
@@ -124,7 +125,6 @@ class _ColorFavoritesState extends State<ColorFavorites> {
   Widget build(BuildContext context) {
     final colors = _open ? c.models.loadPalette() : const <String>[];
     final trash = _dragging != null;
-    final style = Theme.of(context).textTheme.bodySmall;
     return GlowDisclosure(titleKey: const Key('color-favorites'), minHeight: 44,
       inlineChevron: true,
       title: c.text('favorites'), initiallyExpanded: _open, onExpansionChanged: (open) {
@@ -148,10 +148,10 @@ class _ColorFavoritesState extends State<ColorFavorites> {
           ),
         ])),
         const SizedBox(height: 12),
-        Text(c.text('paletteHint'), textAlign: TextAlign.center, style: style),
+        Notice(c.text('paletteHint')),
         if (_message case final message?) Padding(padding: const EdgeInsets.only(top: 8),
-          child: Semantics(liveRegion: true, child: Text(c.text(message),
-            textAlign: TextAlign.center, style: style))),
+          child: Notice(c.text(message), live: true,
+            kind: message == 'paletteFull' ? NoticeKind.warning : NoticeKind.error)),
       ],
     ]);
   }

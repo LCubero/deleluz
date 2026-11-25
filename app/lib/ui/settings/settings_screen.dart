@@ -8,6 +8,7 @@ import '../../model/models.dart';
 import '../../protocol.dart' show chipOrders;
 import '../../version.dart';
 import '../glow_glass.dart';
+import '../notice.dart';
 import '../glow_icon.dart';
 import '../strip_selector.dart';
 
@@ -101,7 +102,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _notice(String key) => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(_text(key))),
+    SnackBar(content: Notice(_text(key), kind: switch (key) {
+      'aboutLinkCopied' => NoticeKind.info,
+      'deviceSetupConnect' => NoticeKind.warning,
+      _ => NoticeKind.error,
+    })),
   );
 
   Future<void> _confirm() async {
@@ -164,7 +169,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           GlowHeader(title: _text('settings'), controller: c),
           _stripsRow(),
           _section('stripSettings', _deviceId == null ? [
-            Text(_text('deviceSetupEmpty'), style: theme.bodySmall),
+            Notice(_text('deviceSetupEmpty')),
           ] : [
             Text(_text('stripOrder')),
             DropdownButton<String>(
@@ -185,14 +190,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _field('stripMeters', _meters, decimal: true),
             ],
             _field('stripTotal', _total, readOnly: _perMeter),
-            if (_pixels == null) Semantics(liveRegion: true, child: Text(_text('stripError'),
-              style: TextStyle(color: Theme.of(context).colorScheme.error))),
+            if (_pixels == null) Notice(_text('stripError'), kind: NoticeKind.error, live: true),
             FilledButton(key: const Key('stripSend'),
               onPressed: _pixels != null && c.ready && !_sending ? _confirm : null,
               child: Text(_text('stripSend'), textAlign: TextAlign.center)),
-            if (!c.ready) Text(_text('deviceSetupConnect'), style: theme.bodySmall),
+            if (!c.ready) Notice(_text('deviceSetupConnect'), kind: NoticeKind.warning),
             Semantics(liveRegion: true, child: Text(lastLabel, style: theme.bodyMedium)),
-            Text(_text('stripFactory'), style: theme.bodySmall),
+            Notice(_text('stripFactory')),
           ], subtitle: c.setupDevice?.label),
           _section('settingsLanguage', [
             _segments('settingsLanguage', ['spanish', 'english'], c.language == 'en' ? 1 : 0,
@@ -205,7 +209,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _symptom('noResponse', ['checkPower', 'tryWhite']),
             _symptom('sceneStopped', ['keepForeground', 'applyAgain']),
           ]),
-          _section('privacyTitle', [Text(_text('privacyText')), Text(_text('privacyTimer'))]),
+          _section('privacyTitle', [Notice(_text('privacyText')), Notice(_text('privacyTimer'))]),
           _about(theme),
         ]),
       )),
@@ -278,7 +282,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _symptom(String key, List<String> steps) => GlowDisclosure(
     title: _text(key), smallChevron: true,
     children: [Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
-      for (final (index, step) in steps.indexed) Text('${index + 1}. ${_text(step)}'),
+      for (final (index, step) in steps.indexed) Notice('${index + 1}. ${_text(step)}'),
     ])],
   );
 

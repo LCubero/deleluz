@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../model/effects.dart';
+import 'notice.dart';
 
 /// Shared catalog; the caller decides what selecting an effect does.
 class EffectList extends StatefulWidget {
@@ -64,7 +65,7 @@ class _EffectListState extends State<EffectList> {
           setState(() => _query = _fold(value.trim()));
         }),
       const SizedBox(height: 8),
-      if (entries.isEmpty) Text(widget.text('effectSearchEmpty')) else
+      if (entries.isEmpty) Notice(widget.text('effectSearchEmpty')) else
         SizedBox(height: 270, child: Scrollbar(controller: _scroll,
           child: ListView.builder(controller: _scroll, padding: EdgeInsets.zero,
             itemCount: entries.length, itemBuilder: (context, index) {

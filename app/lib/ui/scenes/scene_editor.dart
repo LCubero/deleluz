@@ -145,8 +145,8 @@ class _SceneEditorState extends State<_SceneEditor> {
           child: TextButton.icon(key: const Key('scene-rename'),
             onPressed: _busy ? null : () => setState(() => _renaming = true),
             icon: const Icon(Icons.edit_outlined), label: Text(c.text('renameSequence')))),
-        if (_error != null) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(
-          c.text(_error!, {'max': maxSequenceName}), style: TextStyle(color: Theme.of(context).colorScheme.error),
+        if (_error != null) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Notice(
+          c.text(_error!, {'max': maxSequenceName}), kind: NoticeKind.error, live: true,
         )),
         const SizedBox(height: 12),
         Text(c.text('sceneSteps'), style: Theme.of(context).textTheme.titleMedium),
@@ -156,7 +156,7 @@ class _SceneEditorState extends State<_SceneEditor> {
           for (final (index, step) in _steps.indexed) ...[_row(index, step), const Divider(height: 1)],
         ])),
         const SizedBox(height: 8),
-        Text(c.text('sequenceReorderHint'), style: Theme.of(context).textTheme.bodySmall),
+        Notice(c.text('sequenceReorderHint')),
         Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 4, children: [
           OutlinedButton(key: const Key('scene-add-color'),
             onPressed: _busy || _steps.length >= maxColors ? null : () => _pick(effect: false),
@@ -172,10 +172,10 @@ class _SceneEditorState extends State<_SceneEditor> {
             c.setDraftPreviewBrightness(value);
           })),
         const SizedBox(height: 8),
-        Text(c.text('foregroundPlaybackHint'), style: Theme.of(context).textTheme.bodySmall),
+        Notice(c.text('foregroundPlaybackHint')),
         const SizedBox(height: 8),
         _LastSent(transport: widget.transport),
-        if (widget.transport.failed) Text(c.text('commandFailed')),
+        if (widget.transport.failed) Notice(c.text('commandFailed'), kind: NoticeKind.error, live: true),
         const SizedBox(height: 18),
         Center(
           child: OutlinedButton.icon(key: const Key('scene-delete'), onPressed: _busy ? null : _delete,

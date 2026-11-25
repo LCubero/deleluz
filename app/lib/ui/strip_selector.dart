@@ -4,6 +4,7 @@ import '../app_controller.dart';
 import '../link.dart';
 import '../model/models.dart';
 import 'glow_glass.dart';
+import 'notice.dart';
 
 class StripSelector extends StatefulWidget {
   const StripSelector({super.key, required this.controller, this.backLabel = 'backToHome'});
@@ -90,7 +91,7 @@ class _StripSelectorState extends State<StripSelector> {
           Expanded(child: Text(c.text('chooseStrip'), style: theme.titleLarge)),
     ]);
     final children = <Widget>[
-        Text(c.text('oneStrip'), style: theme.bodySmall),
+        Notice(c.text('oneStrip')),
         if (showSearch) ...[
           const SizedBox(height: 12),
           TextField(controller: _search, onChanged: (_) => setState(() {}),
@@ -121,15 +122,14 @@ class _StripSelectorState extends State<StripSelector> {
         ),
         if (query.isNotEmpty && savedMatches.isEmpty && nearbyMatches.isEmpty)
           Padding(padding: const EdgeInsets.only(top: 10),
-            child: Semantics(liveRegion: true, child: Text(c.text('noMatchingStrips'), style: theme.bodySmall))),
+            child: Notice(c.text('noMatchingStrips'), live: true)),
         if (c.scanning || (query.isEmpty && c.scanCompleted && nearby.isEmpty)) Padding(
           padding: const EdgeInsets.only(top: 8),
-          child: Semantics(liveRegion: true, child: Text(c.text(c.scanning ? 'scanning' : 'noNewStrips'))),
+          child: Notice(c.text(c.scanning ? 'scanning' : 'noNewStrips'), live: true),
         ),
         if (c.message case final key?) Padding(
           padding: const EdgeInsets.only(top: 8),
-          child: Semantics(liveRegion: true, child: Text(c.text(key),
-            style: TextStyle(color: Theme.of(context).colorScheme.error))),
+          child: Notice(c.text(key), kind: NoticeKind.error, live: true),
         ),
         const SizedBox(height: 14),
         OutlinedButton(style: OutlinedButton.styleFrom(backgroundColor: glowGlass,
@@ -209,8 +209,7 @@ class _StripSelectorState extends State<StripSelector> {
               ])),
             ]),
             if (failure != null) Padding(padding: const EdgeInsets.only(bottom: 8, top: 4),
-              child: Semantics(liveRegion: true, child: Text(c.text(failure),
-                style: theme.bodySmall?.copyWith(color: error)))),
+              child: Notice(c.text(failure), kind: NoticeKind.error, live: true)),
           ])),
       ),
     );

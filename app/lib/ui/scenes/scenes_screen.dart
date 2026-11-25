@@ -8,6 +8,7 @@ import '../../model/effects.dart';
 import '../../model/models.dart';
 import '../../protocol.dart' as wire;
 import '../glow_glass.dart';
+import '../notice.dart';
 import '../glow_icon.dart';
 import '../home_presets.dart';
 import '../color_picker.dart';
@@ -53,7 +54,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
   }
 
   void _connectFirst() => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(c.text('connectFirst'))),
+    SnackBar(content: Notice(c.text('connectFirst'), kind: NoticeKind.warning)),
   );
 
   @override
@@ -65,7 +66,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
         children: [
           GlowHeader(title: c.text('scenes'), controller: c),
           if (_transport.failed)
-            Text(c.text('commandFailed'), textAlign: TextAlign.center),
+            Notice(c.text('commandFailed'), kind: NoticeKind.error, live: true),
           const SizedBox(height: 12),
           GlowSegments<String>(selected: _panel,
             onSelected: (panel) => setState(() => _panel = panel), segments: [
@@ -129,7 +130,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
         icon: const Icon(Icons.add), label: Text(c.text('newSequence')),
         onPressed: items.length < maxSequences ? () => _edit(null) : null)),
       const SizedBox(height: 12),
-      if (items.isEmpty) Text(c.text('sequencesEmpty'), textAlign: TextAlign.center),
+      if (items.isEmpty) Notice(c.text('sequencesEmpty')),
       GlowGrid(columns: 2, children: [
         for (final item in items)
           _card('scene-play-${item['id']}', item['name'] as String, item['colors'] as List<List<int>>,
@@ -168,7 +169,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
     Text(c.text('musicTitle'), style: Theme.of(context).textTheme.titleLarge),
     const SizedBox(height: 8),
-    Text(c.text('musicHint')),
+    Notice(c.text('musicHint')),
     const SizedBox(height: 12),
     GlowGrid(columns: 2, children: [
       for (var mode = 1; mode <= 4; mode++)
@@ -303,11 +304,11 @@ class _IncludedPreviewState extends State<_IncludedPreview> with WidgetsBindingO
                 },
               )),
             ])),
-            Text(c.text('foregroundPlaybackHint')),
+            Notice(c.text('foregroundPlaybackHint')),
           ],
           const SizedBox(height: 8),
           _LastSent(transport: widget.transport),
-          if (widget.transport.failed) Text(c.text('commandFailed')),
+          if (widget.transport.failed) Notice(c.text('commandFailed'), kind: NoticeKind.error, live: true),
         ],
       ),
       actions: [

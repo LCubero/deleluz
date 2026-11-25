@@ -5,6 +5,7 @@ import '../model/models.dart';
 import 'color_picker.dart';
 import 'effect_list.dart';
 import 'glow_glass.dart';
+import 'notice.dart';
 import 'home_presets.dart';
 
 enum QuickActionKind {
@@ -121,7 +122,7 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Text(c.text(own ? 'myScenes' : 'quickIncluded'), style: Theme.of(context).textTheme.titleMedium),
       if (own) ...[
-        if (scenes.isEmpty) Text(c.text('quickNoSequences')),
+        if (scenes.isEmpty) Notice(c.text('quickNoSequences')),
         for (final scene in scenes)
           ListTile(title: Text(scene['name'] as String), selected: _selected?['id'] == scene['id'],
             onTap: () => _select({'kind': 'sequence', 'id': scene['id']})),

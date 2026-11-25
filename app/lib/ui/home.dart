@@ -7,6 +7,7 @@ import '../model/timer.dart';
 import 'bluetooth_card.dart';
 import 'glow_glass.dart';
 import 'glow_icon.dart';
+import 'notice.dart';
 import 'quick_actions_sheet.dart';
 import 'strip_selector.dart';
 import 'timer_sheet.dart';
@@ -23,9 +24,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   AppController get c => widget.controller;
   bool _quickOpen = false;
-  String? _previewId;
-  String? _previewAnchor;
-  double _swipeStart = 0;
 
   Future<void> _chooseStrip() => StripSelector.open(context, c);
 
@@ -39,7 +37,8 @@ class _HomeScreenState extends State<HomeScreen> {
       : height <= 820 ? (height * .12).clamp(72.0, 100.0).toDouble() : 120.0;
     final style = Theme.of(context).textTheme;
     final last = c.lastSentLabel;
-    return ListView(padding: glowScreenPadding, children: [
+    return SingleChildScrollView(padding: glowScreenPadding, child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       GlowHeader(title: c.text('title'), controller: c, showStatus: false,
         leading: const GlowIcon(GlowGlyph.wave), actions: [
         Center(child: IconButton(tooltip: c.text('offTimer'),
@@ -57,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
         BluetoothCard(controller: c),
         const SizedBox(height: 12),
       ],
-      dim(_device(context)),
+      SliderZone(child: dim(_device(context))),
       const SizedBox(height: 12),
       Center(child: Opacity(opacity: c.ready ? 1 : .5, child: DecoratedBox(
         decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xff1b1636),
@@ -77,18 +76,19 @@ class _HomeScreenState extends State<HomeScreen> {
         textAlign: TextAlign.center,
         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       const SizedBox(height: 6),
-      Text(last == null ? c.text('noCommand') : c.text('lastSent', {'command': last}),
-        textAlign: TextAlign.center, style: style.bodySmall),
+      SizedBox(height: 2 * MediaQuery.textScalerOf(context).scale(13) * 1.4,
+        child: Text(last == null ? c.text('noCommand') : c.text('lastSent', {'command': last}),
+          textAlign: TextAlign.center, style: style.bodySmall, maxLines: 2,
+          overflow: TextOverflow.clip,
+          strutStyle: const StrutStyle(fontSize: 13, height: 1.4, forceStrutHeight: true))),
       const SizedBox(height: 12),
       dim(ExcludeFocus(excluding: off, child: AbsorbPointer(absorbing: off, child: _quick(context)))),
-      if (!_quickOpen) ...[
-        const SizedBox(height: 12),
-        dim(_slider('speed', c.speed, !off && c.hasActiveEffect ? c.setSpeed : null,
-          hint: c.hasActiveEffect ? null : c.text('speedEffectsHint'))),
-      ],
+      const SizedBox(height: 12),
+      _slider('speed', c.speed, !off && c.hasActiveEffect ? c.setSpeed : null,
+        hint: c.hasActiveEffect ? null : c.text('speedEffectsHint')),
       const SizedBox(height: 12),
       dim(_slider('brightness', c.brightness, off ? null : c.setBrightness)),
-    ]);
+    ]));
   }
 
   Widget _quick(BuildContext context) {
@@ -123,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (c.ready) {
         c.applyShortcut(item);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(c.text('connectFirst'))));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Notice(c.text('connectFirst'), kind: NoticeKind.warning)));
       }
     }, onLongPress: () => _editShortcut(index), child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 6, children: [
@@ -149,27 +149,18 @@ class _HomeScreenState extends State<HomeScreen> {
         Semantics(label: c.text(label), child: Slider(key: Key(label), value: value.toDouble(), max: 100,
           onChanged: change == null ? null : (value) => change(value.round()),
           onChangeEnd: change == null ? null : (_) => c.saveSelection())),
-        if (hint != null) Text(hint, style: const TextStyle(color: glowMuted, fontSize: 13)),
+        if (hint != null) Notice(hint),
       ]),
     ));
 
   Widget _device(BuildContext context) {
-    final saved = c.rememberedStrips;
-    final remembered = c.remembered;
-    if (_previewAnchor != remembered?.id) {
-      _previewAnchor = remembered?.id;
-      _previewId = null;
-    }
-    final previewIndex = saved.indexWhere((strip) => strip.id == _previewId);
-    final index = previewIndex < 0 ? 0 : previewIndex;
-    final strip = saved.isEmpty ? null : saved[index];
-    final showingRemembered = strip?.id == remembered?.id;
+    final strip = c.remembered;
     final off = c.bluetoothOff;
     final connected = !off && c.link.ready && c.link.strip?.id == strip?.id;
     final pending = c.connectingId != null;
     final status = c.connectingId == strip?.id && pending ? LinkStatus.connecting
         : connected ? LinkStatus.connected
-        : showingRemembered && !c.link.ready ? c.link.status : LinkStatus.idle;
+        : !c.link.ready ? c.link.status : LinkStatus.idle;
     // Color unknown (nothing sent yet, or on with a mode that has no color such as music):
     // this gradient is decorative, not device telemetry. Off stays dark.
     final rgb = connected && c.sentPower == true ? c.sentColor : null;
@@ -190,26 +181,11 @@ class _HomeScreenState extends State<HomeScreen> {
       Text(strip != null && strip.label != strip.name ? strip.name
           : c.text(status == LinkStatus.lost ? 'keepsColor' : 'controller'),
         style: theme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-      if (saved.length > 1) Padding(padding: const EdgeInsets.only(top: 4),
-        child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
-          child: Row(spacing: 4, children: [
-            for (var i = 0; i < saved.length; i++) DecoratedBox(
-              key: ValueKey('strip-dot-$i'), decoration: BoxDecoration(shape: BoxShape.circle,
-                color: i == index ? glowViolet : glowFaint),
-              child: const SizedBox.square(dimension: 5)),
-          ]))),
+
     ]);
     return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: [
       Row(spacing: 12, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(child: off || saved.length < 2 ? name : SliderZone(child: name,
-          onHorizontalDragStart: (details) => _swipeStart = details.globalPosition.dx,
-          onHorizontalDragEnd: (details) {
-            final dx = details.globalPosition.dx - _swipeStart;
-            if (dx.abs() < 24) return;
-            setState(() {
-              _previewId = saved[(index + (dx < 0 ? 1 : -1)) % saved.length].id;
-            });
-          })),
+        Expanded(child: name),
         // Flexible keeps large text from overflowing; Align without widthFactor pins the chip right.
         Flexible(child: Align(alignment: AlignmentDirectional.topEnd, heightFactor: 1,
           child: ConnectionChip(controller: c, status: status))),
@@ -219,16 +195,16 @@ class _HomeScreenState extends State<HomeScreen> {
         child: GlowStrip(colors: previewColors, height: 14, glow: glow)),
       Row(spacing: 8, children: [
         Expanded(child: _connectButton(c.text(pending ? 'cancel' : connected ? 'disconnect'
-            : strip != null && previewIndex < 0 ? 'reconnect' : 'connect'), neutral: pending,
+            : strip != null ? 'reconnect' : 'connect'), neutral: pending,
           off ? null : pending ? c.cancelConnection : c.busy ? null : connected ? c.disconnect
-            : strip == null ? _chooseStrip : showingRemembered ? c.reconnect : () => c.connect(strip))),
+            : strip == null ? _chooseStrip : c.reconnect)),
         TextButton(onPressed: off || c.busy ? null : _chooseStrip,
           style: TextButton.styleFrom(foregroundColor: glowLink,
             padding: const EdgeInsets.symmetric(horizontal: 8)), child: Text(c.text('changeStrip'))),
       ]),
       if (c.message case final key? when key != 'bluetoothOff' && key != 'bluetoothEnableFailed') ...[
         const SizedBox(height: 8),
-        Semantics(liveRegion: true, child: Text(c.text(key), style: const TextStyle(color: Color(0xffffb4ba)))),
+        Notice(c.text(key), kind: NoticeKind.error, live: true),
       ],
     ]));
   }

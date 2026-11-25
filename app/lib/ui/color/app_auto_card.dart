@@ -6,6 +6,7 @@ import '../../app_controller.dart';
 import '../../model/effects.dart';
 import '../../model/models.dart';
 import '../glow_glass.dart';
+import '../notice.dart';
 
 class AppAutoCard extends StatelessWidget {
   const AppAutoCard({super.key, required this.controller, required this.onStart});
@@ -57,7 +58,7 @@ class AppAutoCard extends StatelessWidget {
           selected: c.appAutoFavorites,
           onSelected: playing || !hasFavorites ? null : (_) => c.setAppAutoOptions(favorites: true)),
       ]),
-      if (!hasFavorites) Text(c.text('appAutoFavoritesHint'), style: style.bodySmall),
+      if (!hasFavorites) Notice(c.text('appAutoFavoritesHint')),
       const SizedBox(height: 8),
       FilledButton.icon(key: const Key('app-auto-toggle'),
         onPressed: playing ? c.stopAppAuto : (c.canSend && (!c.appAutoFavorites || hasFavorites)) ? () {
@@ -68,7 +69,7 @@ class AppAutoCard extends StatelessWidget {
         icon: Icon(playing ? Icons.stop : Icons.play_arrow),
         label: Text(c.text(playing ? 'appAutoStop' : 'appAutoStart'))),
       const SizedBox(height: 4),
-      Text(c.text('appAutoNote'), style: style.bodySmall),
+      Notice(c.text('appAutoNote')),
     ]));
   }
 }

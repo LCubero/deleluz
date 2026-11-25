@@ -5,6 +5,7 @@ import '../model/models.dart';
 import 'color/favorites.dart';
 import 'color_disc.dart';
 import 'glow_glass.dart';
+import 'notice.dart';
 
 /// Selects a color without deciding whether to preview, save, or send it.
 class SharedColorPicker extends StatelessWidget {
@@ -55,7 +56,7 @@ class SharedColorPicker extends StatelessWidget {
         final selected = hsv.toColor().toARGB32();
         onChanged([(selected >> 16) & 255, (selected >> 8) & 255, selected & 255], null);
       }),
-      Text(controller.text('colorDiscHint'), textAlign: TextAlign.center, style: style.bodySmall),
+      Notice(controller.text('colorDiscHint')),
       const SizedBox(height: 12),
       GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Text(controller.text('whiteTones'), style: style.titleMedium),

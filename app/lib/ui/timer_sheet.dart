@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import '../app_controller.dart';
 import '../model/timer.dart';
 import 'glow_glass.dart';
+import 'notice.dart';
 
 class TimerSheet extends StatefulWidget {
   const TimerSheet({super.key, required this.controller});
@@ -113,18 +114,18 @@ class _TimerSheetState extends State<TimerSheet> {
                     ]),
                   ],
                   if (_invalid) Padding(padding: const EdgeInsets.only(top: 8),
-                    child: Text(c.text('invalidTimer'), style: TextStyle(color: Theme.of(context).colorScheme.error))),
+                    child: Notice(c.text('invalidTimer'), kind: NoticeKind.error, live: true)),
                   const SizedBox(height: 8),
                   Material(color: glowGlass, shape: RoundedRectangleBorder(
                     side: const BorderSide(color: glowLine), borderRadius: BorderRadius.circular(16)),
                     child: SwitchListTile(title: Text(c.text('fade')), value: _fade,
                       onChanged: (value) => setState(() => _fade = value))),
                   const SizedBox(height: 8),
-                  if (!c.ready) Text(c.text('connectFirst'), style: style.bodySmall),
+                  if (!c.ready) Notice(c.text('connectFirst'), kind: NoticeKind.warning),
                   FilledButton(onPressed: c.canSend ? _start : null, child: Text(c.text('startTimer'))),
                 ],
                 const SizedBox(height: 8),
-                Text(c.text('timerNote'), style: style.bodySmall),
+                Notice(c.text('timerNote')),
               ],
             ),
           )),

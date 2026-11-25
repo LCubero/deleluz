@@ -6,6 +6,7 @@ import 'glow_glass.dart';
 import 'glow_icon.dart';
 import 'home.dart';
 import 'scenes/scenes_screen.dart';
+import 'scroll_hint.dart';
 import 'settings/settings_screen.dart';
 
 class AppShell extends StatefulWidget {
@@ -61,10 +62,10 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               _show(_tab + ((_travel == 0 ? velocity : _travel) < 0 ? 1 : -1));
             },
             child: IndexedStack(index: _tab, sizing: StackFit.expand, children: [
-              HomeScreen(controller: controller, openScenes: () => _show(2)),
-              ColorScreen(controller: controller, active: _tab == 1),
-              ScenesScreen(controller: controller, active: _tab == 2),
-              SettingsScreen(controller: controller),
+              ScrollHint(child: HomeScreen(controller: controller, openScenes: () => _show(2))),
+              ScrollHint(child: ColorScreen(controller: controller, active: _tab == 1)),
+              ScrollHint(child: ScenesScreen(controller: controller, active: _tab == 2)),
+              ScrollHint(child: SettingsScreen(controller: controller)),
             ]),
           ),
         ),

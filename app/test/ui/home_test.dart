@@ -7,6 +7,7 @@ import 'package:deleluz/main.dart';
 import 'package:deleluz/model/models.dart';
 import 'package:deleluz/protocol.dart' as wire;
 import 'package:deleluz/ui/glow_glass.dart';
+import 'package:deleluz/ui/notice.dart';
 import 'package:deleluz/ui/color_disc.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
@@ -284,7 +285,7 @@ void main() {
   });
 
   for (final size in [const Size(320, 640), const Size(412, 915)]) {
-    testWidgets('device preview wraps both ways without changing tabs at $size', (tester) async {
+    testWidgets('connection card ignores horizontal drags at $size', (tester) async {
       await tester.binding.setSurfaceSize(size);
       tester.platformDispatcher.textScaleFactorTestValue = 1.5;
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -297,33 +298,101 @@ void main() {
       await tester.pumpAndSettle();
       ble.connections.clear();
       ble.disconnects.clear();
-      Future<void> swipe(String from, String to, double dx, int dot) async {
-        await tester.drag(find.text('Alias $from'), Offset(dx, 0));
+      for (final dx in [-85.0, 85.0]) {
+        await tester.drag(find.text('Alias A'), Offset(dx, 0));
         await tester.pumpAndSettle();
-        expect(find.text('Alias $to'), findsOneWidget);
-        for (var i = 0; i < 3; i++) {
-          final indicator = tester.widget<DecoratedBox>(find.byKey(ValueKey('strip-dot-$i')));
-          expect((indicator.decoration as BoxDecoration).color, i == dot ? glowViolet : glowFaint);
-        }
+        expect(find.text('Alias A').hitTestable(), findsOneWidget);
         expect(tester.takeException(), isNull);
       }
-      await swipe('A', 'B', -85, 1);
-      await swipe('B', 'C', -85, 2);
-      await swipe('C', 'A', -85, 0);
-      await swipe('A', 'C', 85, 2);
-      expect(find.text('Sin conexión'), findsOneWidget);
+      expect(find.text('Desconectar'), findsOneWidget);
       expect(c.setupDevice?.id, 'A');
       expect(ble.connections, isEmpty);
       expect(ble.disconnects, isEmpty);
       expect(ble.writes, isEmpty);
-      await tester.tap(find.text('Conectar'));
+      await tester.tap(find.text('Cambiar'));
+      await tester.pumpAndSettle();
+      final target = find.descendant(of: find.byKey(const ValueKey('C')), matching: find.text('Conectar'));
+      await tester.scrollUntilVisible(target, 100, scrollable: find.descendant(
+        of: find.byKey(const Key('strip-selector-list')), matching: find.byType(Scrollable)).first);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(target);
+      await tester.pumpAndSettle();
+      await tester.tap(target.hitTestable());
       await tester.pumpAndSettle();
       expect(ble.disconnects, ['A']);
       expect(ble.connections, ['C']);
       expect(c.setupDevice?.id, 'C');
+      await tester.tap(find.byTooltip('Volver a Inicio'));
+      await tester.pumpAndSettle();
+      expect(find.text('Alias C').hitTestable(), findsOneWidget);
       expect(find.text('Desconectar'), findsOneWidget);
     });
   }
+
+  testWidgets('notices show the corresponding leading icon and wrapped text', (tester) async {
+    await tester.pumpWidget(MaterialApp(theme: glowTheme(), home: const Scaffold(body: Column(children: [
+      Notice('Information'),
+      Notice('Warning', kind: NoticeKind.warning),
+      Notice('Error', kind: NoticeKind.error),
+    ]))));
+    for (final (text, icon) in [('Information', Icons.info_outline),
+      ('Warning', Icons.warning_amber_rounded), ('Error', Icons.error_outline)]) {
+      final notice = find.ancestor(of: find.text(text), matching: find.byType(Notice));
+      expect(find.descendant(of: notice, matching: find.byIcon(icon)), findsOneWidget);
+    }
+  });
+
+  for (final size in [const Size(320, 640), const Size(412, 915)]) {
+    testWidgets('command changes do not move quick actions at $size', (tester) async {
+      await tester.binding.setSurfaceSize(size);
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final c = await start(tester);
+      await c.connect(FakeBle.strip);
+      await tester.pumpAndSettle();
+      final quick = find.text('Acciones rápidas');
+      await tester.scrollUntilVisible(quick, 100);
+      await tester.pumpAndSettle();
+      final before = tester.getTopLeft(quick).dy;
+      expect(await c.setChipConfig('GRB', 1024), isTrue);
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(quick).dy, before);
+      final position = tester.state<ScrollableState>(find.byType(Scrollable)).position;
+      position.jumpTo(0);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('GRB · 1024 LEDs'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('Home chevron tracks remaining scroll extent and fitting content', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 480));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await start(tester);
+    final hint = find.byIcon(Icons.keyboard_arrow_down);
+    expect(hint, findsOneWidget);
+    await tester.scrollUntilVisible(find.byKey(const Key('brightness')), 100);
+    await tester.pumpAndSettle();
+    final position = tester.state<ScrollableState>(find.byType(Scrollable)).position;
+    position.jumpTo(position.maxScrollExtent);
+    await tester.pumpAndSettle();
+    expect(hint, findsNothing);
+    await tester.binding.setSurfaceSize(const Size(412, 1200));
+    await tester.pumpAndSettle();
+    expect(hint, findsNothing);
+  });
+
+  testWidgets('expanded quick actions keep the disabled speed control', (tester) async {
+    final c = await start(tester);
+    await tester.tap(find.text('Acciones rápidas'));
+    await tester.pumpAndSettle();
+    final speed = find.byKey(const Key('speed'));
+    await tester.scrollUntilVisible(speed, 100);
+    expect(tester.widget<Slider>(speed).onChanged, isNull);
+    final hint = find.ancestor(of: find.text(c.text('speedEffectsHint')), matching: find.byType(Notice));
+    expect(tester.widget<Notice>(hint).kind, NoticeKind.info);
+  });
 
   Future<void> connect(WidgetTester tester) async {
     await tester.tap(find.text('Conectar'));
@@ -655,6 +724,8 @@ void main() {
     final c = await start(tester);
     final quick = find.text('Acciones rápidas');
     await tester.scrollUntilVisible(quick, 100);
+    await tester.ensureVisible(quick);
+    await tester.pumpAndSettle();
     await tester.tap(quick);
     await tester.pumpAndSettle();
     final add = find.byTooltip('Agregar acción rápida');
@@ -1026,7 +1097,10 @@ void main() {
     await tester.enterText(minutes, '0');
     await tester.enterText(seconds, '0');
     await timerTap(tester, find.text(c.text('startTimer')));
-    expect(find.text(c.text('invalidTimer')), findsOneWidget);
+    for (final (key, kind) in [('invalidTimer', NoticeKind.error), ('timerNote', NoticeKind.info)]) {
+      final notice = find.ancestor(of: find.text(c.text(key)), matching: find.byType(Notice));
+      expect(tester.widget<Notice>(notice).kind, kind);
+    }
     await tester.enterText(seconds, '1');
     await timerTap(tester, find.text(c.text('startTimer')));
     expect(c.remaining, 1);
@@ -1309,7 +1383,7 @@ void main() {
 
   testWidgets('right swipe from Inicio wraps to Ajustes', (tester) async {
     await start(tester);
-    await tester.dragFrom(const Offset(250, 90), const Offset(180, 0));
+    await tester.dragFrom(const Offset(250, 35), const Offset(180, 0));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('settings-stripSettings')), findsOneWidget);
     await tester.dragFrom(const Offset(450, 90), const Offset(-180, 0));
@@ -1392,7 +1466,9 @@ void main() {
       await tester.tap(quick.hitTestable());
       await tester.pumpAndSettle();
       expect(find.text('Blanco cálido'), findsOneWidget);
-      expect(find.byKey(const Key('speed')), findsNothing);
+      final speed = find.byKey(const Key('speed'));
+      await tester.scrollUntilVisible(speed, 100);
+      expect(tester.widget<Slider>(speed).onChanged, isNull);
       expect(tester.takeException(), isNull);
     });
   }
