@@ -3,7 +3,7 @@ const _strings = <String, (String, String)>{
   'title': ('DeleLuz', 'DeleLuz'),
   'lastSent': ('Último comando enviado: {command}', 'Last command sent: {command}'),
   'lastSentShort': ('Último: {command}', 'Last sent: {command}'),
-  'permissionDenied': ('Permite el acceso a dispositivos cercanos para conectar.', 'Allow access to nearby devices to connect.'),
+  'permissionDenied': ('Permite el acceso a dispositivos cercanos (en Android 11 o anterior, a la ubicación) para conectar.', 'Allow access to nearby devices (location on Android 11 or older) to connect.'),
   'bluetoothOff': ('Activa Bluetooth para conectar.', 'Turn on Bluetooth to connect.'),
   'bluetoothOffTitle': ('Bluetooth apagado', 'Bluetooth is off'),
   'bluetoothOffBody': ('Actívalo para conectar con la tira.', 'Turn it on to connect to the strip.'),
