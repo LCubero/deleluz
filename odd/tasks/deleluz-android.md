@@ -14,6 +14,8 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - S7 — Privacy (L2): "recuerda no usar rutas ni datos personales, de ser necesario utiliza path genericos o con placeholders."
 - S8 — Project north (L2): "recuerda el alma y norte del proyecto en pro de eficiencia, seguridad, minimos recursos. menos es más, pero bien hecho."
 - S9 — Protocol: frames byte-identical to `lab/web/protocol.js`; plain GATT on `FFE0`, write without response to `FFE1`; no vendor handshake; commands spaced 50 ms; up to 4 connect tries 300 ms apart; the app shows what it last sent, not the strip state (`docs/CAPABILITIES.md`).
+- S10 — Home speed (L18): "si lo que está ativo no tiene velocidad, que se deshabilite velocidad del inicio, es decir que aparezca si escenas está contraido obvio pero tmb si lo que está activo tiene velodidad si se puede usar si no nno en gris o algo."
+- S11 — Strip preview (L18): "aveces cuando abro el app y la tira está encendida el idicador de led de inicio en la parte de conectar, no sale con luz, si no se puede saber cual está y si está contectado y todo bien que ponga una generica ahi multiclor o algo tranqui, y obvio que cambie cuando cambio en el app, como ya lo hace."
 
 ## Tasks
 
@@ -25,10 +27,8 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - T6 — S1, S3 — Escenas: included scenes, Mis escenas editor/player, Música — workers — done 991db58 (87 tests total)
 - T7 — S1, S3, S4 — Ajustes: strip settings, language, help, privacy — workers — done 991db58 (87 tests total)
 - T8 — S6 — Visual review at small to large phone widths; real-strip session with the user; debug APK build — inline + user — pending
+- T10 — S10, S11 — Home speed enabled only for effects; generic multicolor strip preview when connected and nothing sent — worker — pending
 - T9 — S7 — Docs: `app/README.md`, CHANGELOG, current state, roadmap — inline — pending
-
-- S10 — Home speed (L18): "si lo que está ativo no tiene velocidad, que se deshabilite velocidad del inicio, es decir que aparezca si escenas está contraido obvio pero tmb si lo que está activo tiene velodidad si se puede usar si no nno en gris o algo."
-- S11 — Strip preview (L18): "aveces cuando abro el app y la tira está encendida el idicador de led de inicio en la parte de conectar, no sale con luz, si no se puede saber cual está y si está contectado y todo bien que ponga una generica ahi multiclor o algo tranqui, y obvio que cambie cuando cambio en el app, como ya lo hace."
 
 ## Log
 
