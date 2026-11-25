@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeleLuz — Glow Glass</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg:#0a0918; --ink:#f5f3ff; --muted:#bdb6dc; --faint:#8f88b3;
+  --glass:rgba(255,255,255,.065); --glass-2:rgba(255,255,255,.11); --line:rgba(255,255,255,.14);
+  --violet:#a855f7; --magenta:#ec4899; --cyan:#22d3ee; --ok:#4ade80; --warn:#fbbf24; --bad:#f87171;
+  --grad:linear-gradient(135deg,#a855f7 0%,#ec4899 100%);
+  --grad-strong:linear-gradient(135deg,#7e22ce 0%,#be185d 100%);
+  --r-lg:24px; --r-md:16px;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --link:#f0abfc; --primary:#e3c2ff; --surface:#1b1636; --warn-surface:#251e2c; --nav:#0a0818;
+  --tile-gap:10px; --inset:16px; --gutter:18px; --target:48px;
+  --action-radius:14px; --item-radius:10px; --pill:99px;
+  --sheet:linear-gradient(#201840,#120e26);
+}
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font:15px/1.4 var(--font); }
+main { width:min(100%, 1440px); margin-inline:auto; padding:var(--inset) var(--gutter) var(--gutter);
+  background:radial-gradient(ellipse 147px 105px at 10% 0, #a855f74d, transparent),
+             radial-gradient(ellipse 140px 119px at 100% 70%, #ec48992e, transparent); }
+h1,h2,p,figure { margin:0; }
+h1,h2 { font-size:22px; letter-spacing:-.44px; font-weight:700; }
+h3 { font-size:15px; margin:0; }
+small,.subtle { font-size:13px; color:var(--muted); }
+:focus-visible { outline:2px solid var(--link); outline-offset:2px; }
+a { color:var(--link); }
+.stack { display:grid; gap:var(--tile-gap); }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%, 320px),1fr)); gap:var(--tile-gap); align-items:start; }
+.card { padding:var(--inset); border:1px solid var(--line); border-radius:var(--r-lg); background:var(--glass); min-width:0; }
+.swatches { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%, 104px),1fr)); gap:var(--tile-gap); }
+.swatches i { display:block; min-height:44px; background:var(--sample); border:1px solid var(--line); border-radius:var(--r-md); }
+figcaption { overflow-wrap:anywhere; }
+.samples { display:flex; flex-wrap:wrap; gap:var(--tile-gap); }
+.sample { display:grid; place-items:center; min-height:64px; padding:var(--tile-gap); background:var(--glass); border:1px solid var(--line); }
+.pill { display:inline-flex; align-items:center; gap:8px; min-height:36px; padding:6px 12px; background:var(--glass-2); border:1px solid var(--line); border-radius:var(--pill); font-size:13px; font-weight:600; }
+.dot { width:8px; height:8px; flex:none; border-radius:50%; background:var(--ok); box-shadow:0 0 10px var(--ok); }
+.action { display:grid; place-items:center; min-height:var(--target); padding-inline:var(--inset); border:0; border-radius:var(--action-radius); background:var(--grad-strong); color:white; text-align:center; font:700 15px var(--font); }
+.action-glow { box-shadow:0 8px 24px #ec489959; }
+fieldset { margin:0; min-width:0; }
+.segments { display:flex; flex-wrap:wrap; padding:4px; border:1px solid var(--line); border-radius:var(--action-radius); background:var(--glass); }
+.choices { display:flex; flex-wrap:wrap; gap:4px 8px; border:0; padding:0; }
+.choice { position:relative; min-width:var(--target); }
+.segments .choice { flex:1; }
+.choice input { position:absolute; opacity:0; inset:0; width:100%; height:100%; margin:0; cursor:pointer; }
+.choice span { min-height:var(--target); display:flex; align-items:center; justify-content:center; gap:4px; padding:8px; border:1px solid transparent; border-radius:var(--item-radius); color:var(--muted); font-weight:600; }
+.choices .choice span { border-radius:var(--pill); border-color:var(--line); }
+.choice b { visibility:hidden; }
+.choice input:checked + span { background:var(--glass-2); border-color:var(--link); color:var(--ink); }
+.choice input:checked + span b { visibility:visible; }
+.choice input:focus-visible + span { outline:2px solid var(--link); outline-offset:2px; }
+.value { display:flex; justify-content:space-between; gap:8px; font-weight:600; }
+input[type=range] { appearance:none; width:100%; height:var(--target); margin:0; background:transparent; cursor:pointer; }
+input[type=range]::-webkit-slider-runnable-track { height:10px; border-radius:var(--pill); background:linear-gradient(90deg, var(--violet), var(--magenta) var(--value), #ffffff1f var(--value)); }
+input[type=range]::-moz-range-track { height:10px; border-radius:var(--pill); background:linear-gradient(90deg, var(--violet), var(--magenta) var(--value), #ffffff1f var(--value)); }
+input[type=range]::-webkit-slider-thumb { appearance:none; width:28px; height:28px; margin-top:-9px; border:0; border-radius:50%; background:white; box-shadow:0 0 0 4px #a855f766, 0 4px 6px #0006; }
+input[type=range]::-moz-range-thumb { width:28px; height:28px; border:0; border-radius:50%; background:white; box-shadow:0 0 0 4px #a855f766, 0 4px 6px #0006; }
+.sheet { max-width:480px; background:var(--sheet); }
+summary { min-height:var(--target); padding-block:8px; cursor:pointer; font-size:22px; font-weight:700; letter-spacing:-.44px; }
+.warning { background:var(--warn-surface); border-color:var(--warn); padding:14px; }
+.warning h3 { color:var(--warn); }
+.warn-head { display:flex; gap:10px; align-items:start; }
+.warn-icon { flex:none; display:grid; place-items:center; width:44px; height:44px; border-radius:var(--action-radius); background:var(--bg); color:var(--warn); font-weight:700; }
+nav { background:var(--nav); border-top:1px solid var(--line); padding:6px 10px; }
+nav ul { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; max-width:480px; min-height:72px; padding:0; margin:0 auto; list-style:none; }
+nav a { min-height:var(--target); display:grid; justify-items:center; align-content:center; gap:4px; color:var(--faint); text-align:center; overflow-wrap:anywhere; font-size:12px; font-weight:600; }
+nav a[aria-current] { color:var(--ink); background:var(--glass-2); border-radius:var(--item-radius); }
+nav a[aria-current] span { color:var(--link); }
+</style>
+</head>
+<body>
+<main class="stack" id="home">
+  <header><h1>DeleLuz · Glow Glass</h1><p class="subtle">Android tokens and their web counterparts. Component previews are illustrative.</p></header>
+  <section class="card stack" id="color">
+    <h2>Palette and surfaces</h2>
+    <div class="swatches">
+      <figure style="--sample:var(--bg)"><i></i><figcaption>Background</figcaption></figure>
+      <figure style="--sample:var(--ink)"><i></i><figcaption>Ink</figcaption></figure>
+      <figure style="--sample:var(--muted)"><i></i><figcaption>Muted</figcaption></figure>
+      <figure style="--sample:var(--faint)"><i></i><figcaption>Faint</figcaption></figure>
+      <figure style="--sample:var(--violet)"><i></i><figcaption>Violet</figcaption></figure>
+      <figure style="--sample:var(--magenta)"><i></i><figcaption>Magenta</figcaption></figure>
+      <figure style="--sample:var(--cyan)"><i></i><figcaption>Cyan</figcaption></figure>
+      <figure style="--sample:var(--ok)"><i></i><figcaption>Success</figcaption></figure>
+      <figure style="--sample:var(--warn)"><i></i><figcaption>Warning</figcaption></figure>
+      <figure style="--sample:var(--bad)"><i></i><figcaption>Error</figcaption></figure>
+      <figure style="--sample:var(--glass)"><i></i><figcaption>Glass</figcaption></figure>
+      <figure style="--sample:var(--glass-2)"><i></i><figcaption>Selected glass</figcaption></figure>
+      <figure style="--sample:var(--line)"><i></i><figcaption>Glass line</figcaption></figure>
+      <figure style="--sample:var(--surface)"><i></i><figcaption>Material surface</figcaption></figure>
+      <figure style="--sample:var(--primary)"><i></i><figcaption>Material primary</figcaption></figure>
+      <figure style="--sample:var(--link)"><i></i><figcaption>Highlight</figcaption></figure>
+      <figure style="--sample:var(--grad)"><i></i><figcaption>Accent gradient</figcaption></figure>
+      <figure style="--sample:var(--grad-strong)"><i></i><figcaption>Strong gradient</figcaption></figure>
+    </div>
+  </section>
+  <div class="grid">
+    <section class="card stack">
+      <h2>Type scale</h2>
+      <p style="font-size:22px;font-weight:700;letter-spacing:-.44px">22 · Quick actions</p>
+      <p style="font-size:20px;font-weight:700;letter-spacing:-.2px">20 · DeleLuz</p>
+      <p><strong>15 · Device controls</strong></p><p>15 · Choose a light for this room.</p>
+      <p style="font-size:14px;font-weight:600">14 · Built-in effects</p>
+      <p class="subtle">13 · Connect a strip first.</p>
+      <p style="font-size:12px;font-weight:600">12 · Settings</p>
+    </section>
+    <section class="card stack">
+      <h2>Radii and spacing</h2>
+      <div class="samples">
+        <span class="sample" style="border-radius:var(--r-lg)">24 · Card</span>
+        <span class="sample" style="border-radius:var(--r-md)">16 · Tile</span>
+        <span class="sample" style="border-radius:var(--action-radius)">14 · Action</span>
+        <span class="sample" style="border-radius:var(--item-radius)">10 · Segment</span>
+        <span class="sample" style="border-radius:var(--pill)">99 · Pill</span>
+      </div>
+      <p class="subtle">18 screen gutter · 16 card inset · 10 tile padding and gap</p>
+    </section>
+    <section class="card stack">
+      <h2>Glows and status</h2>
+      <div class="samples"><span class="pill"><i class="dot" aria-hidden="true"></i>Connected</span>
+      <span class="action action-glow">Reconnect</span></div>
+      <p class="subtle">Status dot and primary action glow</p>
+    </section>
+  </div>
+  <div class="grid">
+    <section class="card stack" id="scenes">
+      <h2>Segments and slider</h2>
+      <fieldset class="segments"><legend>Color mode</legend>
+        <label class="choice"><input type="radio" name="mode" checked><span><b aria-hidden="true">✓</b>Fixed color</span></label>
+        <label class="choice"><input type="radio" name="mode"><span><b aria-hidden="true">✓</b>Built-in effects</span></label>
+      </fieldset>
+      <div class="value"><label for="brightness">Brightness</label><output id="level" for="brightness">65%</output></div>
+      <input id="brightness" type="range" min="0" max="100" value="65" aria-valuetext="65%" style="--value:65%">
+    </section>
+    <section class="card sheet stack" id="settings" aria-label="Bottom sheet example">
+      <details open>
+        <summary>Off timer</summary>
+        <div class="stack">
+          <fieldset class="choices"><legend>Duration</legend>
+            <label class="choice"><input type="radio" name="duration" checked><span><b aria-hidden="true">✓</b>15 minutes</span></label>
+            <label class="choice"><input type="radio" name="duration"><span><b aria-hidden="true">✓</b>30 minutes</span></label>
+            <label class="choice"><input type="radio" name="duration"><span><b aria-hidden="true">✓</b>Custom</span></label>
+          </fieldset>
+          <p class="subtle">The strip turns off when the timer ends.</p>
+          <span class="action">Start timer</span>
+        </div>
+      </details>
+    </section>
+    <section class="card warning stack">
+      <div class="warn-head"><span class="warn-icon" aria-hidden="true">!</span>
+        <div><h3>Bluetooth is off</h3><p class="subtle">Turn on Bluetooth to connect to your light strip.</p></div>
+      </div>
+      <span class="action">Turn on Bluetooth</span>
+    </section>
+  </div>
+  <nav aria-label="Bottom navigation example"><ul>
+    <li><a href="#home" aria-current="location"><span aria-hidden="true">⌂</span>Home</a></li>
+    <li><a href="#color"><span aria-hidden="true">◉</span>Color</a></li>
+    <li><a href="#scenes"><span aria-hidden="true">◇</span>Scenes</a></li>
+    <li><a href="#settings"><span aria-hidden="true">⚙</span>Settings</a></li>
+  </ul></nav>
+</main>
+<script>
+const brightness = document.querySelector('#brightness');
+brightness.addEventListener('input', () => {
+  const value = `${brightness.value}%`;
+  brightness.style.setProperty('--value', value);
+  brightness.setAttribute('aria-valuetext', value);
+  document.querySelector('#level').value = value;
+});
+const navigation = document.querySelectorAll('nav a');
+window.addEventListener('hashchange', () => {
+  for (const link of navigation) {
+    if (link.hash === (location.hash || '#home')) link.setAttribute('aria-current', 'location');
+    else link.removeAttribute('aria-current');
+  }
+});
+window.dispatchEvent(new Event('hashchange'));
+</script>
+</body>
+</html>
