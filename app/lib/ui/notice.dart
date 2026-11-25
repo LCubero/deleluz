@@ -6,13 +6,14 @@ enum NoticeKind { info, warning, error }
 
 class Notice extends StatelessWidget {
   const Notice(this.text, {super.key, this.kind = NoticeKind.info, this.live = false,
-    this.icon, this.heading, this.prominent = false, this.compact = false});
+    this.icon, this.heading, this.prominent = false, this.compact = false, this.action});
 
   final String text;
   final NoticeKind kind;
   final bool live;
   final IconData? icon;
   final String? heading;
+  final Widget? action;
   final bool prominent, compact;
 
   static const warningColor = Color(0xfffbbf24);
@@ -35,6 +36,7 @@ class Notice extends StatelessWidget {
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             if (heading != null) Text(heading!, style: theme.titleMedium?.copyWith(color: color)),
             Text(text, style: theme.bodySmall?.copyWith(color: glowMuted)),
+            ?action,
           ])),
         ]),
       ),

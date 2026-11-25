@@ -8,6 +8,21 @@ import 'glow_glass.dart';
 import 'glow_sheet.dart';
 import 'notice.dart';
 
+class TimerOffNotice extends StatelessWidget {
+  const TimerOffNotice(this.controller, {super.key});
+
+  final AppController controller;
+
+  @override
+  Widget build(BuildContext context) => Notice(controller.text('timerOffFailed'),
+    kind: NoticeKind.error, live: true,
+    action: OutlinedButton(
+      onPressed: controller.canRetryTimerOff ? controller.retryTimerOff : null,
+      style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
+      child: Text(controller.text('retryTimerOff'), textAlign: TextAlign.center),
+    ));
+}
+
 class TimerSheet extends StatefulWidget {
   const TimerSheet({super.key, required this.controller});
   final AppController controller;
@@ -73,11 +88,7 @@ class _TimerSheetState extends State<TimerSheet> {
                     onPressed: () => Navigator.pop(context)),
                 ]),
                 const SizedBox(height: 12),
-                if (c.message == 'timerOffFailed') ...[
-                  Notice(c.text('timerOffFailed'), kind: NoticeKind.error, live: true),
-                  OutlinedButton(onPressed: c.canRetryTimerOff ? c.retryTimerOff : null,
-                    child: Text(c.text('retryTimerOff'))),
-                ],
+                if (c.timerOffFailed) TimerOffNotice(c),
                 if (remaining != null && end != null) ...[
                   LayoutBuilder(builder: (context, constraints) {
                     final scale = MediaQuery.textScalerOf(context).scale(24) / 24;

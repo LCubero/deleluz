@@ -108,6 +108,45 @@ void main() {
     expect(tester.getBottomLeft(card).dy, lessThanOrEqualTo(tester.getBottomLeft(viewport).dy));
   }
 
+  for (final width in [320.0, 412.0]) {
+    for (final language in ['es', 'en']) {
+      testWidgets('Inicio timer OFF retry at $width dp in $language with large text', (tester) async {
+        await tester.binding.setSurfaceSize(Size(width, 900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final c = await start(tester);
+        c.setLanguage(language);
+        await c.connect(FakeBle.strip);
+        ble.failWrite = (_) => true;
+        c.startTimer(1, fade: false);
+        now += 1000;
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+        expect(find.text(c.text('timerOffFailed')), findsOneWidget);
+        final retry = find.widgetWithText(OutlinedButton, c.text('retryTimerOff'));
+        expect(retry, findsOneWidget);
+        c.setForeground(false);
+        await tester.pumpAndSettle();
+        expect(tester.widget<OutlinedButton>(retry).onPressed, isNull);
+        c.setForeground(true);
+        ble.failWrite = null;
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(retry);
+        await tester.pumpAndSettle();
+        expect(tester.getSize(retry).shortestSide, greaterThanOrEqualTo(48));
+        expect(find.bySemanticsLabel(c.text('retryTimerOff')), findsOneWidget);
+        now += 50; // Allow the next paced BLE write after the failed OFF.
+        await tester.tap(retry);
+        await tester.pumpAndSettle();
+        expect(ble.writes, [wire.power(false)]);
+        expect(retry, findsNothing);
+        expect(find.text(c.text('timerOffFailed')), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
   testWidgets('Inicio fits the whole brightness card on the owner phone', (tester) async {
     await tester.binding.setSurfaceSize(const Size(411, 842));
     addTearDown(() => tester.binding.setSurfaceSize(null));

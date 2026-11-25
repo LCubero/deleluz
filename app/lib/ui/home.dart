@@ -211,6 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 8),
         Notice(c.text(key), kind: NoticeKind.error, live: true),
       ],
+      if (c.timerOffFailed) TimerOffNotice(c),
     ]));
   }
 

@@ -199,15 +199,73 @@ void main() {
     ble.failWrite = (bytes) => bytes.toString() == wire.power(false).toString();
     c.startTimer(1, fade: false);
     await advance(tester, 1000);
-    expect(c.message, 'timerOffFailed');
+    expect(c.timerOffFailed, isTrue);
     expect(c.remaining, isNull);
     ble.failWrite = null;
     final retry = c.retryTimerOff();
     await drain(tester);
     await retry;
     expect(ble.writes.last, wire.power(false));
-    expect(c.message, isNull);
+    expect(c.timerOffFailed, isFalse);
     expect(c.remaining, isNull);
+  });
+
+  for (final command in ['ON', 'failed brightness']) {
+    testWidgets('timer OFF retry survives $command until manual OFF succeeds', (tester) async {
+      await c.connect(FakeBle.strip);
+      ble.failWrite = (bytes) => bytes.toString() == wire.power(false).toString();
+      c.startTimer(1, fade: false);
+      await advance(tester, 1000);
+      expect(c.canRetryTimerOff, isTrue);
+      if (command == 'ON') {
+        c.setPower(true);
+        await drain(tester);
+        expect(c.sentPower, isTrue);
+      } else {
+        ble.failWrite = (_) => true;
+        c.setBrightness(c.brightness - 1);
+        await drain(tester);
+        expect(c.message, 'commandFailed');
+      }
+      expect(c.canRetryTimerOff, isTrue);
+      c.setPower(false);
+      await drain(tester);
+      expect(c.canRetryTimerOff, isTrue);
+      ble.failWrite = null;
+      c.setPower(false);
+      await drain(tester);
+      expect(ble.writes.last, wire.power(false));
+      expect(c.canRetryTimerOff, isFalse);
+    });
+  }
+
+  testWidgets('starting a new timer dismisses the previous timer OFF retry', (tester) async {
+    await c.connect(FakeBle.strip);
+    ble.failWrite = (_) => true;
+    c.startTimer(1, fade: false);
+    await advance(tester, 1000);
+    expect(c.canRetryTimerOff, isTrue);
+    c.startTimer(60, fade: false);
+    expect(c.timerOffFailed, isFalse);
+    c.cancelTimer();
+  });
+
+  testWidgets('a late OFF failure does not restore the warning after a new timer starts', (tester) async {
+    final transport = StalledTimerOffBle();
+    final controller = AppController(transport, Store(), checkAccess: (_) async => null,
+      now: () => now);
+    addTearDown(transport.changes.close);
+    addTearDown(controller.dispose);
+    await controller.connect(FakeBle.strip);
+    controller.startTimer(1, fade: false);
+    await advance(tester, 1000);
+    expect(transport.offAttempts, 1);
+    controller.startTimer(60, fade: false);
+    transport.stalled.completeError(StateError('Late OFF failure'));
+    await tester.pump();
+    expect(controller.timerOffFailed, isFalse);
+    expect(controller.remaining, 60);
+    controller.cancelTimer();
   });
 
   for (final dropBeforeTimeout in [false, true]) {
@@ -221,10 +279,10 @@ void main() {
       addTearDown(controller.dispose);
       await controller.connect(FakeBle.strip);
       var warnings = 0;
-      String? previous;
+      var previous = false;
       controller.addListener(() {
-        if (controller.message == 'timerOffFailed' && previous != controller.message) warnings++;
-        previous = controller.message;
+        if (controller.timerOffFailed && !previous) warnings++;
+        previous = controller.timerOffFailed;
       });
       controller.startTimer(1, fade: false);
       await advance(tester, 1000);
@@ -238,7 +296,7 @@ void main() {
         await advance(tester, 2000);
         transport.stalled.complete();
       }
-      expect(controller.message, 'timerOffFailed');
+      expect(controller.timerOffFailed, isTrue);
       expect(controller.remaining, isNull);
       expect(controller.canRetryTimerOff, isFalse);
       await controller.retryTimerOff();
@@ -254,7 +312,7 @@ void main() {
       await retry;
       expect(transport.offAttempts, 2);
       expect(transport.writes, [wire.power(false)]);
-      expect(controller.message, isNull);
+      expect(controller.timerOffFailed, isFalse);
       expect(warnings, 1);
     });
   }
