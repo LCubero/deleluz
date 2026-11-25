@@ -76,24 +76,45 @@
       </div>
 
       <div data-panel="solid" class="stack">
-        <div class="wheel" data-bind="wheel" role="slider" tabindex="0" aria-label="Tono" data-i18n-aria="hue" aria-valuemin="0" aria-valuemax="359" aria-valuenow="0">
-          <div class="cur"></div><div class="handle"></div>
+        <div class="wheel color-disc" data-bind="disc" role="slider" tabindex="0" aria-label="Disco de color" data-i18n-aria="colorDisc" aria-describedby="disc-help" aria-valuemin="0" aria-valuemax="359" aria-valuenow="0">
+          <div class="handle" aria-hidden="true"></div>
+        </div>
+        <p id="disc-help" class="disc-help small muted" data-i18n="colorDiscHelp"></p>
+        <div class="glass pad stack" role="group" aria-labelledby="white-title">
+          <h2 id="white-title" data-i18n="whites">Blancos</h2>
+          <div class="white-presets" data-bind="whites"></div>
         </div>
         <div class="swatches" role="group" aria-label="Paleta de colores" data-i18n-aria="colorPalette" data-bind="swatches"></div>
       </div>
 
       <div data-panel="effects" class="stack" hidden>
-        <div class="glass pad stack">
-          <div class="slider-head"><span data-i18n="effect">Efecto</span><output data-bind="fx-out">1</output></div>
-          <div class="quick">
-            <button class="btn ghost" data-action="fx-prev" aria-label="Efecto anterior" data-i18n-aria="previousEffect">‹</button>
-            <input class="num grow" type="text" value="1" inputmode="numeric" aria-describedby="fx-name" aria-label="Número de efecto, del 1 al 210" data-i18n-aria="effectRange" data-bind="fx">
-            <button class="btn ghost" data-action="fx-next" aria-label="Efecto siguiente" data-i18n-aria="nextEffect">›</button>
+        <section class="glass pad stack" aria-labelledby="app-auto-title">
+          <h2 id="app-auto-title" data-i18n="appAuto">AUTO de la app</h2>
+          <div aria-live="polite" class="auto-current" data-bind="auto-current"></div>
+          <progress data-bind="auto-progress" aria-label="Progreso del efecto" data-i18n-aria="appAutoProgress" max="1" value="0" hidden></progress>
+          <div class="auto-options">
+            <label for="auto-duration" data-i18n="appAutoDuration">Duración por efecto</label>
+            <select id="auto-duration"></select>
+            <label for="auto-list" data-i18n="appAutoList">Lista de AUTO</label>
+            <select id="auto-list">
+              <option value="all" data-i18n="allEffects">Todos</option>
+              <option value="favorites" data-i18n="favorites">Favoritos</option>
+            </select>
           </div>
-          <p id="fx-name" class="fx-name" data-bind="fx-name" aria-live="polite">Forward Dreaming</p>
-          <button class="btn ghost" data-action="fx-auto" data-i18n="autoCycle" aria-pressed="false">Ciclo automático</button>
+          <p class="small muted" data-bind="auto-favorites-hint" data-i18n="appAutoFavoritesHint"></p>
+          <button class="btn primary" data-action="app-auto" data-i18n="appAutoStart">Iniciar AUTO</button>
+          <p class="small muted" data-i18n="appAutoNote"></p>
+        </section>
+        <section class="glass pad stack" aria-labelledby="fx-title">
+          <button class="btn ghost" data-action="fx-auto" data-i18n="stripCycle" aria-pressed="false">Ciclo de la tira</button>
+          <p class="small muted" data-bind="strip-cycle-current" data-i18n="autoCycleAll" hidden></p>
+          <h2 id="fx-title" data-i18n="effectCatalog">Catálogo</h2>
+          <label class="small muted" for="fx-search" data-i18n="effectSearch">Buscar por nombre o número</label>
+          <input id="fx-search" type="search" class="num" autocomplete="off">
+          <div class="effect-results" data-bind="effect-results"></div>
+          <p class="small muted" role="status" data-bind="effect-empty" data-i18n="effectSearchEmpty" hidden></p>
           <p class="small muted" data-i18n="effectsNote">El controlador incluye los efectos del 1 al 210. Los nombres son los de la app del fabricante.</p>
-        </div>
+        </section>
       </div>
 
       <section class="glass thumb" aria-label="Brillo" data-i18n-aria="brightness">

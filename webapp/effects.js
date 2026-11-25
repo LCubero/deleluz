@@ -1,6 +1,9 @@
 // Built-in effect names, in controller ID order (1-210).
 // Source: the vendor app's `dmx03_model` resource (LED LAMP 4.3.7), which shows these
 // English names in every locale except Chinese. ID 255 is AUTO (auto cycle).
+import { effect } from '../lab/web/protocol.js';
+import { readStoredJson, persistState } from './state.js';
+
 export const EFFECT_NAMES = Object.freeze([
   "Forward Dreaming",
   "Backward Dreaming",
@@ -216,4 +219,50 @@ export const EFFECT_NAMES = Object.freeze([
 
 export function effectName(id) {
   return Number.isInteger(id) && id >= 1 && id <= EFFECT_NAMES.length ? EFFECT_NAMES[id - 1] : null;
+}
+
+export const EFFECT_FAVORITES_KEY = 'deleluz.webapp.effectFavorites';
+export const AUTO_KEY = 'deleluz.webapp.auto';
+export const AUTO_DURATIONS = Object.freeze([10, 30, 60, 300]);
+const ids = EFFECT_NAMES.map((_, index) => index + 1);
+const fold = text => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+const names = EFFECT_NAMES.map(fold);
+export const formatEffect = id => `${String(id).padStart(2, '0')} · ${effectName(id)}`;
+
+export function effectGroups(query, favorites) {
+  const term = fold(query.trim());
+  const groups = [[], []];
+  for (const id of ids) {
+    if (names[id - 1].includes(term) || String(id).padStart(2, '0').includes(term)) groups[favorites.has(id) ? 0 : 1].push(id);
+  }
+  return groups;
+}
+
+export function autoFrames(favoritesOnly, favorites = new Set()) {
+  return (favoritesOnly ? ids.filter(id => favorites.has(id)) : ids).map(id => effect(id));
+}
+
+export function loadEffectFavorites(storage) {
+  const saved = readStoredJson(storage, EFFECT_FAVORITES_KEY);
+  if (saved === undefined) return new Set();
+  const valid = Array.isArray(saved) ? saved.filter(id => effectName(id) !== null) : [];
+  if (!Array.isArray(saved) || valid.length !== saved.length) storage.invalid?.();
+  return new Set(valid);
+}
+
+export function saveEffectFavorites(storage, favorites) {
+  const sorted = [...favorites].sort((a, b) => a - b);
+  return sorted.every(id => effectName(id) !== null) && persistState(EFFECT_FAVORITES_KEY, sorted, () => storage);
+}
+
+const validAuto = options => AUTO_DURATIONS.includes(options?.seconds) && typeof options?.favorites === 'boolean';
+export function loadAutoOptions(storage) {
+  const saved = readStoredJson(storage, AUTO_KEY);
+  if (validAuto(saved)) return { seconds: saved.seconds, favorites: saved.favorites };
+  if (saved !== undefined) storage.invalid?.();
+  return { seconds: 30, favorites: false };
+}
+
+export function saveAutoOptions(storage, options) {
+  return validAuto(options) && persistState(AUTO_KEY, { seconds: options.seconds, favorites: options.favorites }, () => storage);
 }

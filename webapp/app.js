@@ -1,6 +1,7 @@
 import { power, color, brightness, effect, speed, voiceMode, micSensitivity, CHIP_ORDERS, chipConfig } from '../lab/web/protocol.js';
 import { stripPixels, validPixels } from './strip-settings.js';
-import { effectName } from './effects.js';
+import { effectName, formatEffect, effectGroups, autoFrames, AUTO_DURATIONS,
+  loadEffectFavorites, saveEffectFavorites, loadAutoOptions, saveAutoOptions } from './effects.js';
 import { PRESETS, presetFrames } from '../lab/web/presets.js';
 import { createSender } from './sender.js';
 import { runStartup } from './startup.js';
@@ -14,7 +15,7 @@ import { MAX_SEQUENCES, MAX_COLORS, MAX_SEQUENCE_NAME, loadSequences, saveSequen
   removeSequence, setColor as setFrameColor, addColor, removeColor, moveColor, speedPercent, intervalFromSpeed } from './sequences.js';
 import { formatRemaining, fadeBrightness, parseTimerDuration } from './timer.js';
 import { createLink } from './ble.js';
-import { hueToRgb, hueFromPoint, rgbCss, rgbFromHex } from './color.js';
+import { hueToRgb, hueFromPoint, discRgb, rgbDiscPoint, WHITE_PRESETS, rgbCss, rgbFromHex } from './color.js';
 import { DEFAULT_PALETTE, PALETTE_KEY, PALETTE_LIMIT, loadPalette, addPaletteColor, replacePaletteColor, removePaletteColor, movePaletteColor, colorName } from './colors.js';
 
 import { LANGUAGE_KEY, loadLanguage, translate } from './i18n.js';
@@ -77,6 +78,7 @@ function stopPlayback() {
   player.stop();
   sender.cancel();
   activeSequence = null;
+  clearAppAuto();
   renderSequencePlayback();
 }
 
@@ -480,7 +482,58 @@ function chooseColor(rgb, label) {
   persist();
   render();
 }
-const renderColorWheel = createHueWheel(bind('wheel')[0], (rgb, degrees) => chooseColor(rgb, ['hueValue', { degrees }]));
+const disc = bind('disc')[0];
+const discHandle = disc.querySelector('.handle');
+let discHue = 0;
+let discSaturation = 0;
+const pickDisc = rgb => chooseColor(rgb, solidSelection(rgb).label);
+function discPoint(event) {
+  const r = disc.getBoundingClientRect();
+  return [(event.clientX - r.left) * 2 / r.width - 1, (event.clientY - r.top) * 2 / r.height - 1];
+}
+disc.addEventListener('pointerdown', event => {
+  if (event.button !== 0 || !event.isPrimary) return;
+  const point = discPoint(event);
+  if (Math.hypot(...point) > 1) return;
+  disc.setPointerCapture(event.pointerId);
+  pickDisc(discRgb(...point));
+});
+disc.addEventListener('pointermove', event => {
+  if (disc.hasPointerCapture(event.pointerId)) pickDisc(discRgb(...discPoint(event)));
+});
+disc.addEventListener('keydown', event => {
+  if (event.key === 'ArrowLeft') discHue = (discHue + 355) % 360;
+  else if (event.key === 'ArrowRight') discHue = (discHue + 5) % 360;
+  else if (event.key === 'ArrowUp') discSaturation = Math.min(1, discSaturation + 0.05);
+  else if (event.key === 'ArrowDown') discSaturation = Math.max(0, discSaturation - 0.05);
+  else if (event.key === 'Home') discSaturation = 0;
+  else if (event.key === 'End') discSaturation = 1;
+  else return;
+  event.preventDefault();
+  pickDisc(hueToRgb(discHue, discSaturation));
+});
+const whites = WHITE_PRESETS.map(([key, rgb]) => {
+  const button = document.createElement('button');
+  button.className = 'btn ghost white-preset';
+  button.style.setProperty('--sw', rgbCss(rgb));
+  const label = document.createElement('span');
+  label.dataset.i18n = key;
+  button.append(label);
+  button.addEventListener('click', () => chooseColor([...rgb], [key]));
+  bind('whites')[0].append(button);
+  return [button, rgb];
+});
+function renderColorDisc(rgb) {
+  const [x, y] = rgbDiscPoint(rgb);
+  discSaturation = Math.hypot(x, y);
+  if (discSaturation) discHue = hueFromPoint(x, y) % 360;
+  disc.style.setProperty('--c', rgbCss(rgb));
+  discHandle.style.left = `${50 + x * 50}%`;
+  discHandle.style.top = `${50 + y * 50}%`;
+  disc.setAttribute('aria-valuenow', String(discHue));
+  disc.setAttribute('aria-valuetext', t('discValue', { degrees: discHue, saturation: Math.round(discSaturation * 100), hex: hex(rgb) }));
+  for (const [button, white] of whites) button.setAttribute('aria-pressed', String(rgb.join() === white.join()));
+}
 
 // ---- built-in effects ----
 $$('[data-mode]').forEach(button => button.addEventListener('click', () => {
@@ -488,48 +541,166 @@ $$('[data-mode]').forEach(button => button.addEventListener('click', () => {
   $$('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== button.dataset.mode; });
   bind('effect-speed')[0].hidden = button.dataset.mode !== 'effects';
 }));
-const fxInput = bind('fx')[0];
-function playEffect(id) {
-  if (needsLink()) return;
+function selectEffect(id) {
   if (id !== 'AUTO') state.fx = id;
   const mode = { effect: id };
   Object.assign(state, { label: effectLabel(id), scene: `effect:${id}`, mode, on: true });
+  return mode;
+}
+function playEffect(id) {
+  if (needsLink()) return;
+  const mode = selectEffect(id);
   persist();
   render();
   startMode(mode);
 }
-const clampFx = n => Math.min(210, Math.max(1, Math.round(n) || 1));
 const fxAuto = $('[data-action="fx-auto"]');
-const isAutoEffect = () => state.on && state.mode?.effect === 'AUTO';
-function renderEffect() {
-  const auto = isAutoEffect();
-  const current = auto ? t('allEffects') : String(state.fx);
-  fxInput.value = auto ? '' : current;
-  fxInput.placeholder = auto ? current : '';
-  fxAuto.setAttribute('aria-pressed', String(auto));
-  text('fx-out', current);
-  text('fx-name', auto ? t('autoCycleAll') : effectName(state.fx));
-}
-fxInput.addEventListener('input', () => {
-  if (!isAutoEffect() && /^\d+$/.test(fxInput.value)) text('fx-name', effectName(clampFx(Number(fxInput.value))));
-});
-const wrapFx = n => ((n - 1 + 210) % 210) + 1;
-$('[data-action="fx-prev"]').addEventListener('click', () => playEffect(wrapFx(state.fx - 1)));
-$('[data-action="fx-next"]').addEventListener('click', () => playEffect(wrapFx(state.fx + 1)));
-// Typing a number applies it when done (Enter / Listo or leaving the field), like the arrows.
-fxInput.addEventListener('change', () => {
-  const value = fxInput.value.trim();
-  if (/^\d+$/.test(value)) playEffect(clampFx(Number(value)));
+fxAuto.addEventListener('click', () => playEffect('AUTO'));
+const effectFavorites = loadEffectFavorites(localStore);
+const fxSearch = $('#fx-search');
+const fxResults = bind('effect-results')[0];
+const effectRows = new Map();
+let selectedEffect;
+
+function renderEffectCatalog() {
+  const [favorites, others] = effectGroups(fxSearch.value, effectFavorites);
+  effectRows.clear();
+  selectedEffect = undefined;
+  const groups = [[favorites, 'favorites'], [others, 'effectCatalogAll']].filter(([ids]) => ids.length);
+  bind('effect-empty')[0].hidden = groups.length > 0;
+  fxResults.hidden = !groups.length;
+  fxResults.replaceChildren(...groups.flatMap(([ids, label]) => {
+    const heading = document.createElement('h3');
+    heading.textContent = t(label);
+    const list = document.createElement('ul');
+    for (const id of ids) {
+      const row = document.createElement('li');
+      const play = document.createElement('button');
+      play.textContent = formatEffect(id);
+      play.setAttribute('aria-pressed', 'false');
+      play.addEventListener('click', () => playEffect(id));
+      effectRows.set(id, play);
+      const star = document.createElement('button');
+      star.className = 'effect-star';
+      star.dataset.effectStar = id;
+      star.textContent = effectFavorites.has(id) ? '★' : '☆';
+      star.setAttribute('aria-label', t('effectFavorite', { effect: formatEffect(id) }));
+      star.setAttribute('aria-pressed', String(effectFavorites.has(id)));
+      star.addEventListener('click', () => toggleEffectFavorite(id));
+      row.append(play, star);
+      list.append(row);
+    }
+    return [heading, list];
+  }));
   renderEffect();
+}
+function toggleEffectFavorite(id) {
+  if (!effectFavorites.delete(id)) effectFavorites.add(id);
+  if (!saveEffectFavorites(localStore, effectFavorites)) toast('storageFailed', true);
+  if (autoRunning && autoOptions.favorites && !effectFavorites.size) stopPlayback();
+  renderEffectCatalog();
+  const replacement = fxResults.querySelector(`[data-effect-star="${id}"]`);
+  replacement?.focus({ preventScroll: true });
+  const listRect = fxResults.getBoundingClientRect();
+  const starRect = replacement?.getBoundingClientRect();
+  if (starRect && starRect.top < listRect.top) fxResults.scrollTop -= listRect.top - starRect.top;
+  if (starRect && starRect.bottom > listRect.bottom) fxResults.scrollTop += starRect.bottom - listRect.bottom;
+}
+fxSearch.addEventListener('input', () => {
+  renderEffectCatalog();
+  fxResults.scrollTop = 0;
 });
-fxInput.addEventListener('keydown', event => {
-  if (event.key === 'Enter') { event.preventDefault(); fxInput.blur(); }
-  if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-    event.preventDefault();
-    playEffect(clampFx(state.fx + (event.key === 'ArrowUp' ? 1 : -1)));
+function renderEffect() {
+  const current = state.on && !autoRunning ? state.mode?.effect : undefined;
+  fxAuto.setAttribute('aria-pressed', String(current === 'AUTO'));
+  bind('strip-cycle-current')[0].hidden = current !== 'AUTO';
+  if (current !== selectedEffect) {
+    effectRows.get(selectedEffect)?.setAttribute('aria-pressed', 'false');
+    effectRows.get(current)?.setAttribute('aria-pressed', 'true');
+    selectedEffect = current;
+  }
+  renderAppAuto();
+}
+
+let autoOptions = loadAutoOptions(localStore);
+let autoRunning = false;
+let autoCurrent;
+let autoStartedAt;
+let autoProgressTimer;
+const autoButton = $('[data-action="app-auto"]');
+const autoDuration = $('#auto-duration');
+const autoList = $('#auto-list');
+const autoProgress = bind('auto-progress')[0];
+const canRunAuto = () => !document.hidden && link.ready;
+function updateAutoProgress() {
+  autoProgress.value = Math.min(1, (performance.now() - autoStartedAt) / (autoOptions.seconds * 1000));
+}
+function renderAppAuto() {
+  autoDuration.value = String(autoOptions.seconds);
+  autoDuration.disabled = autoList.disabled = autoRunning;
+  autoList.value = autoOptions.favorites ? 'favorites' : 'all';
+  autoList.options[1].disabled = !effectFavorites.size;
+  bind('auto-favorites-hint')[0].hidden = effectFavorites.size > 0;
+  autoButton.disabled = !autoRunning && (!canRunAuto() || (autoOptions.favorites && !effectFavorites.size));
+  const action = autoRunning ? 'appAutoStop' : 'appAutoStart';
+  autoButton.dataset.i18n = action;
+  autoButton.textContent = t(action);
+  const label = autoCurrent ? t('appAutoCurrent', { effect: formatEffect(autoCurrent) }) : '';
+  const current = bind('auto-current')[0];
+  if (current.textContent !== label) current.textContent = label;
+  autoProgress.hidden = !autoCurrent;
+}
+function clearAppAuto() {
+  if (!autoRunning) return;
+  autoRunning = false;
+  autoCurrent = undefined;
+  clearInterval(autoProgressTimer);
+  autoProgressTimer = undefined;
+  renderEffect();
+}
+function changeAutoOptions() {
+  if (autoRunning) return;
+  autoOptions = { seconds: Number(autoDuration.value), favorites: autoList.value === 'favorites' };
+  if (!saveAutoOptions(localStore, autoOptions)) toast('storageFailed', true);
+  renderAppAuto();
+}
+autoDuration.addEventListener('change', changeAutoOptions);
+autoList.addEventListener('change', changeAutoOptions);
+autoButton.addEventListener('click', async () => {
+  if (autoRunning) { stopPlayback(); return; }
+  const frames = autoFrames(autoOptions.favorites, effectFavorites);
+  if (!canRunAuto() || !frames.length) return;
+  stopPlayback();
+  const run = playback;
+  const canPlay = () => run === playback && canRunAuto();
+  autoRunning = true;
+  renderEffect();
+  try {
+    const ready = await runStartup(send, [
+      { bytes: power(true), key: 'power' },
+      { bytes: brightness(targetBrightness()), key: 'brightness' },
+    ], canPlay);
+    if (!ready) return;
+    await player.play(frames, autoOptions.seconds * 1000, {
+      dwell: true,
+      canPlay,
+      write: bytes => send(bytes, 'effect'),
+      onFrame(bytes) {
+        autoCurrent = bytes[3];
+        selectEffect(autoCurrent);
+        persist();
+        autoStartedAt = performance.now();
+        updateAutoProgress();
+        autoProgressTimer ??= setInterval(updateAutoProgress, 200);
+        render();
+      },
+    });
+  } catch (error) {
+    if (canPlay() && !(error instanceof SendFailure)) toast('sceneFailed', true);
+  } finally {
+    if (run === playback) clearAppAuto();
   }
 });
-fxAuto.addEventListener('click', () => playEffect('AUTO'));
 const voiceButtons = $$('[data-voice]');
 voiceButtons.forEach(button => button.addEventListener('click', () => {
   if (needsLink()) return;
@@ -655,7 +826,7 @@ function render() {
   renderStrip();
   $$('.tile[data-scene]').forEach(t => t.setAttribute('aria-pressed', String(state.on && t.dataset.scene === quickId)));
   $$('.swatch[data-rgb]').forEach(s => s.setAttribute('aria-pressed', String(s.dataset.rgb === state.rgb.join(','))));
-  renderColorWheel(state.rgb);
+  renderColorDisc(state.rgb);
   voiceButtons.forEach(button => button.setAttribute('aria-pressed', String(state.on && state.mode?.voice === Number(button.dataset.voice))));
   renderEffect();
   renderSpeed();
@@ -1391,7 +1562,11 @@ function route() {
 }
 addEventListener('hashchange', route);
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && player.playing) toast('backgroundPause', true);
+  if (document.hidden && (player.playing || autoRunning)) {
+    stopPlayback();
+    toast('backgroundPause', true);
+  }
+  renderAppAuto();
   if (!document.hidden) { updateTimer(); requestWakeLock(); }
 });
 
@@ -1497,6 +1672,9 @@ function renderLanguage() {
   renderSwatches();
   renderScenes();
   renderSequences();
+  autoDuration.replaceChildren(...AUTO_DURATIONS.map(seconds => new Option(
+    t(seconds < 60 ? 'durationShortSeconds' : 'durationShortMinutes', { value: seconds < 60 ? seconds : seconds / 60 }), seconds)));
+  renderEffectCatalog();
   render();
   renderLinkText();
   renderTimer(timer ? (timer.end - performance.now()) / 1000 : 0);
