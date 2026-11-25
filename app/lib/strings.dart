@@ -1,6 +1,15 @@
 // Paired in the same order as webapp/i18n.js: Spanish, then English.
 const _strings = <String, (String, String)>{
   'title': ('DeleLuz', 'DeleLuz'),
+  'lastSent': ('Último comando enviado: {command}', 'Last command sent: {command}'),
+  'permissionDenied': ('Permite el acceso a dispositivos cercanos para conectar.', 'Allow access to nearby devices to connect.'),
+  'bluetoothOff': ('Activa Bluetooth para conectar.', 'Turn on Bluetooth to connect.'),
+  'scanFailed': ('No se pudo buscar tiras.', 'Could not scan for strips.'),
+  'scanning': ('Buscando tiras…', 'Scanning for strips…'),
+  'noStrips': ('No se encontraron tiras.', 'No strips found.'),
+  'switchStrip': ('Buscar otra tira', 'Find another strip'),
+  'forgetStrip': ('Olvidar tira', 'Forget strip'),
+  'appStorageFailed': ('No se pudo guardar en este dispositivo.', 'Could not save on this device.'),
   'offTimer': ('Temporizador de apagado', 'Off timer'),
   'device': ('Dispositivo', 'Device'),
   'idle': ('Sin conexión', 'Not connected'),
