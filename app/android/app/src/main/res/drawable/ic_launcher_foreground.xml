@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- DeleLuz wave on a glass square, inside the 66 dp adaptive-icon safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:pathData="M34,24h40a10,10 0 0 1 10,10v40a10,10 0 0 1 -10,10h-40a10,10 0 0 1 -10,-10v-40a10,10 0 0 1 10,-10z"
+        android:fillColor="#14FFFFFF" android:strokeColor="#26FFFFFF" android:strokeWidth="1" />
+    <path android:pathData="M33,58 C38,40 48,40 54,54 S70,68 75,50"
+        android:strokeWidth="7" android:strokeLineCap="round" android:fillColor="#00000000">
+        <aapt:attr name="android:strokeColor">
+            <gradient android:type="linear" android:startX="33" android:startY="54"
+                android:endX="75" android:endY="54"
+                android:startColor="#A855F7" android:endColor="#EC4899" />
+        </aapt:attr>
+    </path>
+</vector>
