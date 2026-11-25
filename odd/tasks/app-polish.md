@@ -33,6 +33,9 @@ Phase 1 of `docs/PLAN.md`: white tones and saturation, effect list with search a
 - S23 (no speed on Inicio): "y quitemos velocidad del inicio, la verdad que no si si está que esté abajo de brillo."
 - S24 (robust error handling): "y revisa que si hay errores no se quede loop o bug, manejo de errores, cantidad de escensa, etc etc etc, porfa"
 
+- S25 (strip card gestures): "perdismos el modo de cambiar el led haciedno slide o swipe en inicio en el area de conectar, nada más era desactivar el slide para cambiar de pestaña en esa zona no quitarle la funcion, además quiero que al tocar ese card entre a elegir tira y quiero que cuando toco el card de la tira en elegir tira se conecte a esa q toque,"
+- S26 (snackbar style): "el aviso de "Conectate a la tira primero, sale un fondo blanco que feo, eso nada que ver. mejor algo negro trslucido blur que se yo, el estilo del app."
+
 Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect is running; no per-effect duration command exists; app-driven AUTO works only while the app is open and connected; white is plain RGB.
 
 ## Tasks
@@ -55,6 +58,7 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - T17 [S20] Final phone compatibility pass, only after the owner tests and approves on his phone: widget tests and screenshots across common phone sizes/densities, Android API levels, text scales and navigation modes; tablets out of scope. Commit: -
 - T18 [S22, S23, S18] Fit and polish (Android): remove Velocidad from Inicio (it stays in Color → Efectos integrados, below Brillo); Brillo fits on the first screen of Inicio and Color on the owner's phone again; fix build 2007 findings (tab check alignment, no check in the bottom nav, quick-action sheets use the same Glow Glass surface as the timer sheet). Commit: -
 - T19 [S24] Robustness audit and fixes (Android): error handling, no loops or stuck states, limits (scenes, steps, quick actions, favorites), storage and BLE failures. Commit: -
+- T20 [S25, S26, S16, S18] Strip card: horizontal swipe switches saved strips again (but never switches tabs); tapping the card opens Elegir tira; tapping a strip card in Elegir tira connects to it. All transient messages (snackbars) use a dark translucent blurred Glow Glass surface. Commit: -
 - T7a [S1, S3, S4, S7] Webapp: color disc + whites, effect list with favorites, app-driven AUTO. Route: worker + parent visual check. Commit: 2fbcecb [x]
 - T7b [S2, S5, S7] Webapp: scene steps (stored-format change, backward compatible) and timer sheet. Commit: -
 - T7c [S8-S11] Webapp: quick actions and Bluetooth notice, after T9/T10. Commit: -
@@ -105,3 +109,4 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - L42 (2026-11-25, owner, verbatim): "parece que todo ok" (owner tested build 2010) -> app/UI approved on the owner phone; start T17.
 - L43 (2026-11-25): T17 compat matrix (app/test/ui/compat_test.dart): 16 phone sizes incl. current Samsung/Motorola/Pixel classes, text 1.0/1.3 (2.0 on two sizes), bottom inset 0/24, es+en; 312 tests pass. Fixed: wrapping connection status, scene duration label, 48 dp sliders/timer/Favoritos targets, Quick Actions single column at large text. Owner-phone measurements unchanged (disc 216 dp, Brillo above nav). Permissions: API 24-30 use location permission; the denial notice says "nearby devices", misleading there. Not verified on legacy hardware.
 - L44 (2026-11-25, owner, verbatim): "Tu eres quien puede leer todo y el repo y toda la doc y asegurarte no? ... menos es más, pero bien hecho" -> agent decides small in-scope fixes itself. Permission notice now names location for Android 11 and older (0637567; its test expectation updated in 4ffa859 after commit 0637567 was made with that one test failing). Full suite 312/312, analyze clean. Phase 1 Android complete on the branch; delivery (push/PR/release) is the owner's decision.
+- L45 (2026-11-25, owner, verbatim): see S25-S26. Correction of S16: the owner wanted only the tab-change swipe disabled on the strip card, not the strip-switch swipe (removed in 436fefc by misreading).
