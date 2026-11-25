@@ -73,7 +73,7 @@ void main() {
     await tap(tester, 'favorite-plus');
     expect(controller.models.loadPalette(), ['#00ffff', ...defaultPalette.skip(1), '#0000ff']);
     expect(ble.writes, isEmpty);
-    expect(find.text(controller.text('noCommand')), findsOneWidget);
+    expect(find.text(controller.text('noCommand')), findsNothing);
   });
 
   testWidgets('Favorites at 15 can replace; long drag reorders and deletes', (tester) async {
@@ -131,7 +131,7 @@ void main() {
     await flush(tester);
     expect(ble.writes.last, wire.effect(wire.autoEffect));
     expect(find.text(controller.text('allEffects')), findsOneWidget);
-    expect(find.textContaining(controller.text('lastSent', {'command': ''})), findsOneWidget);
+    expect(find.textContaining(controller.text('lastSent', {'command': ''})), findsNothing);
   });
 
   testWidgets('brightness, speed and color keep only the latest queued value per key', (tester) async {

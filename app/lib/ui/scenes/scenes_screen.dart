@@ -61,8 +61,6 @@ class _ScenesScreenState extends State<ScenesScreen> {
         padding: glowScreenPadding,
         children: [
           GlowHeader(title: c.text('scenes'), controller: c),
-          const SizedBox(height: 12),
-          _LastSent(transport: _transport),
           if (_transport.failed)
             Text(c.text('commandFailed'), textAlign: TextAlign.center),
           const SizedBox(height: 12),
@@ -181,7 +179,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
     const SizedBox(height: 18),
     _SceneSlider(controller: c, id: 'scene-sensitivity', label: 'micSensitivity',
       value: _transport.sensitivity, onChanged: _transport.changeSensitivity,
-      onChangeEnd: (_) => c.saveSelection(), enabled: _transport.ready),
+      onChangeEnd: (_) => c.saveSelection()),
   ]));
 }
 
@@ -200,13 +198,11 @@ class _LastSent extends StatelessWidget {
 
 class _SceneSlider extends StatelessWidget {
   const _SceneSlider({required this.controller, required this.id, required this.label,
-    required this.value, required this.onChanged, this.onChangeEnd, this.min = 0,
-    this.enabled = true});
+    required this.value, required this.onChanged, this.onChangeEnd, this.min = 0});
 
   final AppController controller;
   final String id, label;
   final int value, min;
-  final bool enabled;
   final ValueChanged<int> onChanged;
   final ValueChanged<double>? onChangeEnd;
 
@@ -218,7 +214,7 @@ class _SceneSlider extends StatelessWidget {
       Semantics(label: controller.text(label), child: Slider(key: Key(id),
         value: value.toDouble(), min: min.toDouble(), max: 100,
         label: percent(value), semanticFormatterCallback: (value) => percent(value.round()),
-        onChanged: enabled ? (value) => onChanged(value.round()) : null, onChangeEnd: onChangeEnd)),
+        onChanged: (value) => onChanged(value.round()), onChangeEnd: onChangeEnd)),
     ]);
   }
 }

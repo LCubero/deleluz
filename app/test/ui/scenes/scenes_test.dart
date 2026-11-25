@@ -116,7 +116,8 @@ void main() {
       await tick(tester);
       expect(ble.writes.last.sublist(2, 4), [12, value.toInt()]);
     }
-    expect(find.textContaining(c.text('micSensitivity'), findRichText: true), findsAtLeastNWidgets(2));
+    expect(find.text(c.text('micSensitivity')), findsOneWidget);
+    expect(find.textContaining(c.text('lastSent', {'command': ''})), findsNothing);
   });
 
   testWidgets('draft player stops when the app loses foreground', (tester) async {
@@ -200,7 +201,7 @@ void main() {
     await tap(tester, 'scenes-music');
     await tap(tester, 'scene-voice-1');
     final slider = tester.widget<Slider>(key('scene-sensitivity'));
-    expect(slider.onChanged, isNull);
+    slider.onChanged!(72);
     await tester.pumpAndSettle();
     await tap(tester, 'scenes-mine');
     await tap(tester, 'scene-new');
@@ -209,7 +210,7 @@ void main() {
     await tap(tester, 'scene-close');
     expect(c.models.loadSequences(), isEmpty);
     expect(ble.writes, isEmpty);
-    expect(c.models.loadState()['micSens'], 50);
+    expect(c.models.loadState()['micSens'], 72);
   });
 
   testWidgets('saved scenes are capped at twelve', (tester) async {

@@ -125,7 +125,7 @@ class _ColorFavoritesState extends State<ColorFavorites> {
     final trash = _dragging != null;
     final style = Theme.of(context).textTheme.bodySmall;
     return GlowDisclosure(titleKey: const Key('color-favorites'), minHeight: 44,
-      titleStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: glowMuted),
+      inlineChevron: true,
       title: c.text('favorites'), initiallyExpanded: _open, onExpansionChanged: (open) {
         setState(() => _open = open);
         unawaited(_persistOpen(open));

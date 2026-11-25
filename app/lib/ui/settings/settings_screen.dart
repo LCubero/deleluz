@@ -195,7 +195,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16),
       side: const BorderSide(color: glowLine)),
     clipBehavior: Clip.antiAlias,
-    child: GlowDisclosure(titleKey: ValueKey('settings-$key'), title: _text(key),
+    child: GlowDisclosure(titleKey: ValueKey('settings-$key'), title: _text(key), smallChevron: true,
       padding: const EdgeInsets.symmetric(horizontal: glassInset + 1),
       children: [Padding(padding: const EdgeInsets.fromLTRB(glassInset + 1, 0, glassInset + 1, 14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 12, children: children))],
@@ -203,7 +203,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   );
 
   Widget _symptom(String key, List<String> steps) => GlowDisclosure(
-    title: _text(key),
+    title: _text(key), smallChevron: true,
     children: [Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
       for (final (index, step) in steps.indexed) Text('${index + 1}. ${_text(step)}'),
     ])],

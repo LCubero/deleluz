@@ -345,7 +345,11 @@ class AppController extends ChangeNotifier {
       onSent: () => sentBrightness = value);
 
   void setBrightness(int value) {
-    if (!canSend || value == brightness) return;
+    if (value == brightness) return;
+    if (!canSend) {
+      _select({'bri': value});
+      return;
+    }
     stopPlayback();
     _select({'bri': value}, save: false);
     unawaited(_sendBrightness(value));
@@ -354,7 +358,11 @@ class AppController extends ChangeNotifier {
   void saveSelection() => unawaited(_save(models.saveState(_selection)));
 
   void setSpeed(int value) {
-    if (!canSend || value == speed || value < 1 || value > 100) return;
+    if (value == speed || value < 1 || value > 100) return;
+    if (!canSend) {
+      _select({'speed': value});
+      return;
+    }
     stopPlayback();
     _select({'speed': value}, save: false);
     unawaited(_send(wire.speed(value), 'speed',
@@ -400,7 +408,11 @@ class AppController extends ChangeNotifier {
       'micSensitivity', key: 'micSensitivity', values: {'value': value});
 
   void setMicSensitivity(int value) {
-    if (!canSend || value < 0 || value > 100 || value == sensitivity) return;
+    if (value < 0 || value > 100 || value == sensitivity) return;
+    if (!canSend) {
+      _select({'micSens': value});
+      return;
+    }
     stopPlayback();
     _select({'micSens': value}, save: false);
     unawaited(_sendSensitivity(value));

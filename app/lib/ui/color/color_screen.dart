@@ -104,11 +104,6 @@ class _ColorScreenState extends State<ColorScreen> {
     await c.setEffect(id);
   }
 
-  String _lastSent() => switch (c.lastSentLabel) {
-    final command? => c.text('lastSent', {'command': command}),
-    null => c.text('noCommand'),
-  };
-
   Widget _effectCard() {
     final preview = _dirty ? _typed : null;
     return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -154,8 +149,8 @@ class _ColorScreenState extends State<ColorScreen> {
       Semantics(label: c.text(key), child: Slider(key: Key('color-$key'),
         min: 1, max: 100, divisions: 99, value: shown.toDouble(),
         semanticFormatterCallback: (value) => c.text('percent', {'value': value.round()}),
-        onChanged: c.canSend ? (value) => change(value.round()) : null,
-        onChangeEnd: c.canSend ? (_) => c.saveSelection() : null)),
+        onChanged: (value) => change(value.round()),
+        onChangeEnd: (_) => c.saveSelection())),
       if (key == 'brightness') Text(c.text('dragNote'), style: Theme.of(context).textTheme.bodySmall),
     ]));
   }
@@ -169,9 +164,6 @@ class _ColorScreenState extends State<ColorScreen> {
       child: SingleChildScrollView(padding: glowScreenPadding, child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           GlowHeader(title: c.text('color'), controller: c),
-          const SizedBox(height: 8),
-          Semantics(liveRegion: true, child: Text(_lastSent(),
-            textAlign: TextAlign.center, style: style.bodySmall)),
           if (c.message == 'commandFailed')
             Text(c.text('commandFailed'), textAlign: TextAlign.center, style: style.bodySmall),
           const SizedBox(height: 12),

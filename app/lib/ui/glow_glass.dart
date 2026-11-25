@@ -232,7 +232,7 @@ class GlowHeader extends StatelessWidget {
     final titleStyle = leading == null ? theme.titleLarge
       : theme.titleLarge?.copyWith(fontSize: 20, letterSpacing: -.2);
     final chipWidth = widthOf(controller.text(controller.link.status.name), ConnectionChip.textStyle)
-        + ConnectionChip.horizontalChrome;
+        + ConnectionChip.horizontalChrome + 12; // Margin: measured text can differ from the rendered font.
     final inline = showStatus && widthOf(title, titleStyle) + (leading == null ? 0 : 38)
         + 48 * actions.length + 8 + chipWidth <= constraints.maxWidth;
     final row = ConstrainedBox(constraints: const BoxConstraints(minHeight: 48),
@@ -240,7 +240,7 @@ class GlowHeader extends StatelessWidget {
         if (leading != null) ...[SizedBox(width: 30, child: leading), const SizedBox(width: 8)],
         Expanded(child: Text(title, style: titleStyle)),
         for (final action in actions) SizedBox(width: 48, child: action),
-        if (inline) ...[const SizedBox(width: 8), SizedBox(width: chipWidth, child: chip)],
+        if (inline) ...[const SizedBox(width: 8), chip],
       ]));
     return inline || !showStatus ? row : Column(crossAxisAlignment: CrossAxisAlignment.end,
       children: [row, const SizedBox(height: 4), chip]);
@@ -262,7 +262,8 @@ class GlowValueLabel extends StatelessWidget {
 class GlowDisclosure extends StatelessWidget {
   const GlowDisclosure({super.key, required this.title, required this.children,
     this.titleKey, this.initiallyExpanded = false, this.onExpansionChanged,
-    this.padding = EdgeInsets.zero, this.minHeight = 56, this.titleStyle});
+    this.padding = EdgeInsets.zero, this.minHeight = 56,
+    this.inlineChevron = false, this.smallChevron = false});
   final String title;
   final Key? titleKey;
   final List<Widget> children;
@@ -270,20 +271,27 @@ class GlowDisclosure extends StatelessWidget {
   final ValueChanged<bool>? onExpansionChanged;
   final EdgeInsets padding;
   final double minHeight;
-  final TextStyle? titleStyle;
+  final bool inlineChevron, smallChevron;
+  static const _chevron = Icon(Icons.chevron_right, size: 18);
 
   @override
-  Widget build(BuildContext context) => ExpansionTile(
-    tilePadding: padding,
-    minTileHeight: minHeight,
-    shape: const Border(), collapsedShape: const Border(),
-    controlAffinity: ListTileControlAffinity.trailing,
-    title: Text(title, key: titleKey, style: titleStyle ?? const TextStyle(
-      fontSize: 15, fontWeight: FontWeight.w600, color: glowInk)),
-    initiallyExpanded: initiallyExpanded,
-    onExpansionChanged: onExpansionChanged,
-    children: children,
-  );
+  Widget build(BuildContext context) {
+    final label = Text(title, key: titleKey, style: TextStyle(fontSize: 15,
+      fontWeight: inlineChevron ? FontWeight.w700 : FontWeight.w600,
+      color: inlineChevron ? Colors.white : glowInk));
+    return ExpansionTile(
+      tilePadding: padding,
+      minTileHeight: minHeight,
+      shape: const Border(), collapsedShape: const Border(),
+      controlAffinity: ListTileControlAffinity.trailing,
+      showTrailingIcon: !inlineChevron,
+      trailing: smallChevron ? _chevron : null,
+      title: inlineChevron ? Row(children: [Flexible(child: label), _chevron]) : label,
+      initiallyExpanded: initiallyExpanded,
+      onExpansionChanged: onExpansionChanged,
+      children: children,
+    );
+  }
 }
 
 class GlowSegments<T> extends StatelessWidget {
@@ -346,7 +354,8 @@ class ConnectionChip extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle,
             boxShadow: status == LinkStatus.idle ? null : [BoxShadow(color: color, blurRadius: 10)])),
         const SizedBox(width: _gap),
-        Flexible(child: Text(controller.text(status.name), style: textStyle)),
+        Flexible(child: Text(controller.text(status.name), style: textStyle,
+          maxLines: 1, softWrap: false, overflow: TextOverflow.ellipsis)),
       ]),
     );
   }

@@ -92,7 +92,7 @@ void main() {
       tester.platformDispatcher.clearTextScaleFactorTestValue();
       await tester.binding.setSurfaceSize(null);
     });
-    await start(tester);
+    final controller = await start(tester);
     final header = find.byType(GlowHeader);
     for (final (tab, title) in [('Inicio', 'DeleLuz'), ('Color', 'Color'),
       ('Escenas', 'Escenas'), ('Ajustes', 'Ajustes')]) {
@@ -100,7 +100,12 @@ void main() {
         matching: find.text(tab)).hitTestable().last);
       await tester.pumpAndSettle();
       expect(find.descendant(of: header, matching: find.text(title)).hitTestable(), findsOneWidget);
-      expect(find.byType(ConnectionChip).hitTestable(), findsOneWidget);
+      final chip = find.byType(ConnectionChip).hitTestable();
+      expect(chip, findsOneWidget);
+      final status = find.descendant(of: chip, matching: find.text('Sin conexión'));
+      expect(tester.widget<Text>(status).maxLines, 1);
+      expect(find.text(controller.text('noCommand')).hitTestable(),
+        tab == 'Inicio' ? findsOneWidget : findsNothing);
       expect(find.descendant(of: header, matching: find.byType(ConnectionChip)).hitTestable(),
         tab == 'Inicio' ? findsNothing : findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -112,6 +117,13 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await start(tester);
     expect(find.text('Apagado'), findsOneWidget);
+    final header = find.byType(GlowHeader);
+    final action = find.descendant(of: header, matching: find.byType(IconButton));
+    expect(action, findsOneWidget);
+    final size = tester.getSize(action);
+    expect(size.width, size.height);
+    final preview = find.byType(GlowStrip).first;
+    expect(tester.getTopRight(find.byType(ConnectionChip)).dx, tester.getTopRight(preview).dx);
     expect(find.byWidgetPredicate((w) => w is Semantics && w.properties.label == 'Vista previa de la tira'),
       findsOneWidget);
     expect(find.text('Todas las escenas'), findsOneWidget);
@@ -216,8 +228,14 @@ void main() {
   testWidgets('Spanish default, English selection is persisted', (tester) async {
     await start(tester);
     expect(find.text('Inicio'), findsOneWidget);
-    await tester.tap(find.byTooltip('Idioma'));
+    expect(find.byTooltip('Idioma'), findsNothing);
+    await tester.tap(find.text('Ajustes'));
     await tester.pumpAndSettle();
+    final language = find.byKey(const Key('settings-settingsLanguage'));
+    await tester.ensureVisible(language);
+    await tester.tap(language);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('English'));
     await tester.tap(find.text('English'));
     await tester.pumpAndSettle();
     expect(find.text('Home'), findsOneWidget);

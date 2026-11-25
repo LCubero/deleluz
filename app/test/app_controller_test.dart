@@ -27,6 +27,17 @@ void main() {
     }
   }
 
+  test('offline sliders persist selection without sending', () {
+    c.setBrightness(32);
+    c.setSpeed(75);
+    c.setMicSensitivity(88);
+    expect([c.brightness, c.speed, c.sensitivity], [32, 75, 88]);
+    final saved = c.models.loadState();
+    expect([saved['bri'], saved['speed'], saved['micSens']], [32, 75, 88]);
+    expect(ble.writes, isEmpty);
+    expect(c.lastCommand, isNull);
+  });
+
   for (final (label, frame, action) in <(String, List<int>, void Function(AppController))>[
     ('effectNamed', wire.effect(210), (c) => unawaited(c.setEffect(210))),
     ('autoCycle', wire.effect(wire.autoEffect), (c) => unawaited(c.setEffect(wire.autoEffect))),
@@ -36,7 +47,11 @@ void main() {
     ('chipConfig', wire.chipConfig('GRB', 200), (c) => unawaited(c.setChipConfig('GRB', 200))),
   ]) {
     testWidgets('$label is gated offline and supersedes scene playback', (tester) async {
-      action(c);
+      switch (label) {
+        case 'speed': c.setSpeed(74);
+        case 'micSensitivity': c.setMicSensitivity(87);
+        default: action(c);
+      }
       await drain(tester);
       expect(ble.writes, isEmpty);
       expect(c.lastCommand, isNull);
@@ -46,6 +61,7 @@ void main() {
       expect(ble.writes.last, wire.color(255, 0, 0));
       final commands = <String?>[];
       c.addListener(() => commands.add(c.lastCommand));
+      // Use a different offline value so the connected action is a change.
       action(c);
       await drain(tester);
       expect(ble.writes, contains(equals(frame)));

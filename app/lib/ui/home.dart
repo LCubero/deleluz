@@ -39,14 +39,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return ListView(padding: glowScreenPadding, children: [
       GlowHeader(title: c.text('title'), controller: c, showStatus: false,
         leading: const GlowIcon(GlowGlyph.wave), actions: [
-        PopupMenuButton<String>(tooltip: c.text('settingsLanguage'),
-          icon: const Icon(Icons.language), onSelected: c.setLanguage, itemBuilder: (_) => [
-            PopupMenuItem(value: 'es', child: Text(c.text('spanish'))),
-            PopupMenuItem(value: 'en', child: Text(c.text('english'))),
-          ]),
-        IconButton(tooltip: c.text('offTimer'), icon: const GlowIcon(GlowGlyph.timer),
+        Center(child: IconButton(tooltip: c.text('offTimer'),
+          icon: const GlowIcon(GlowGlyph.timer, size: 22),
+          style: IconButton.styleFrom(backgroundColor: glowGlass,
+            fixedSize: const Size.square(44), padding: EdgeInsets.zero,
+            side: const BorderSide(color: glowLine),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
           onPressed: () => showDialog<void>(context: context,
-            builder: (_) => _TimerDialog(controller: c))),
+            builder: (_) => _TimerDialog(controller: c)))),
       ]),
       if (c.remaining case final seconds?)
         Text(c.text('offIn', {'time': formatRemaining(seconds)}), style: style.bodySmall),
@@ -145,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: label == 'brightness' ? const GlowIcon(GlowGlyph.sun, size: 20) : null),
       const SizedBox(height: 10),
       Semantics(label: c.text(label), child: Slider(key: Key(label), value: value.toDouble(), max: 100,
-        onChanged: c.ready ? (value) => change(value.round()) : null,
+        onChanged: (value) => change(value.round()),
         onChangeEnd: (_) => c.saveSelection())),
     ]));
 
@@ -157,12 +157,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final previewColors = preview == null || rgb == null ? const <List<int>>[] : [rgb];
     final theme = Theme.of(context).textTheme;
     return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: [
-      Row(spacing: 12, children: [
+      Row(spacing: 12, crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(strip?.name ?? 'LEDDMX', style: theme.titleMedium),
           Text(c.text(c.link.status == LinkStatus.lost ? 'keepsColor' : 'controller'), style: theme.bodySmall),
         ])),
-        Flexible(child: ConnectionChip(controller: c)),
+        Flexible(child: Align(alignment: AlignmentDirectional.topEnd,
+          widthFactor: 1, heightFactor: 1, child: ConnectionChip(controller: c))),
       ]),
       Semantics(container: true, image: true, label: c.text('stripPreview'), child: GlowStrip(
         colors: previewColors, height: 14, glow: preview)),

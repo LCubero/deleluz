@@ -180,7 +180,7 @@ class _SceneEditorState extends State<_SceneEditor> {
         const SizedBox(height: 14),
         _wheel(),
         const SizedBox(height: 8),
-        GlowDisclosure(title: c.text('favorites'), children: [
+        GlowDisclosure(title: c.text('favorites'), minHeight: 44, inlineChevron: true, children: [
           Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [
             for (final hex in c.models.loadPalette())
               IconButton.outlined(tooltip: c.text('paletteColorHex', {'hex': hex.toUpperCase()}),
