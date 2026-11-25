@@ -57,7 +57,7 @@ Checked at 320, 360, 412, 768, 1024, 1366 and 1920 px wide with device emulation
 
 Each phase gets its own ODD task document when it starts.
 
-1. **App polish** (Android first, then the same in the webapp): saturation and white tones in Color; an effect list with search and favorites, with effects allowed in quick scenes; effect steps in "Mis escenas"; app-driven AUTO with the effect name and per-effect duration; timer sheet redesign.
+1. **App polish** (Android only; the webapp follows once the Android app is complete and tested): saturation and white tones in Color; an effect list with search and favorites, with effects allowed in quick scenes; effect steps in "Mis escenas"; app-driven AUTO with the effect name and per-effect duration; timer sheet redesign.
 2. **Two-strip spike, then groups:** open 2 links from Android, fan out one command, log the skew and reconnects. Build groups only if this holds up.
 3. **Webapp parity and responsive layouts:** port phase 1, add the strip list, then the tablet layout, the desktop layout and a home dashboard. Check every width with screenshots.
 4. **Hub spike on the Pi 3B+:** a Python service that talks BLE to the strips and serves a small local HTTP API (local network only, no cloud). Then move it to the ESP32-S3.

@@ -1,6 +1,6 @@
 # App polish (phase 1, roadmap RH-W-0001)
 
-Phase 1 of `docs/PLAN.md`: white tones and saturation, effect list with search and favorites, effects in scenes and quick scenes, app-driven AUTO, timer redesign. Android first, then the same in `webapp/`. Designs are approved before code.
+Phase 1 of `docs/PLAN.md`: white tones and saturation, effect list with search and favorites, effects in scenes and quick scenes, app-driven AUTO, timer redesign. Android only. The webapp is ported later, once the Android app has everything the owner wants and is tested (L15). Designs are approved before code.
 
 ## Specs
 
@@ -50,3 +50,5 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - L12 (2026-11-25): T7a done (2fbcecb): node --test 97/97. Visual check at 412x915 and 320x640 (device emulation): no horizontal overflow or off-screen controls. Minor, left for T7b: the scroll-hint chevron overlaps content at the fold; "Efectos integrados" tab wraps to two lines at 320 px.
 - L13 (2026-11-25, owner, verbatim): "pero mi rey primero concentrados en el app"
 - L14 (2026-11-25): webapp work paused (T7b, T7c). T7b partial edits saved as `git stash` "T7b partial webapp work (paused: app first)". Next: T9/T10 on Android after the owner picks 08/09 and 10/11.
+- L15 (2026-11-25, owner, verbatim): "esq nunca te dije que hicieramos lo web, era fase 1, y todo es para el app de android, la web lo hacemos cuando ya la app de android esté con todo como quiero y probada, lol"
+- L16 (2026-11-25): scope corrected: phase 1 is Android only. T7a (2fbcecb) was out of scope; kept on the branch untouched for the later webapp phase unless the owner asks to revert it. T7b/T7c deferred to the webapp phase.
