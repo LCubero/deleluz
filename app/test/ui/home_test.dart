@@ -5,6 +5,7 @@ import 'package:deleluz/app_controller.dart';
 import 'package:deleluz/link.dart';
 import 'package:deleluz/main.dart';
 import 'package:deleluz/model/models.dart';
+import 'package:deleluz/ui/glow_glass.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -83,6 +84,27 @@ void main() {
     expect(find.text('Buscando tiras…'), findsNothing);
     expect(find.text('No se pudo conectar.'), findsNothing);
   }
+
+  testWidgets('each tab renders the shared header', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    tester.platformDispatcher.textScaleFactorTestValue = 1.4;
+    addTearDown(() async {
+      tester.platformDispatcher.clearTextScaleFactorTestValue();
+      await tester.binding.setSurfaceSize(null);
+    });
+    await start(tester);
+    final header = find.byType(GlowHeader);
+    for (final (tab, title) in [('Inicio', 'DeleLuz'), ('Color', 'Color'),
+      ('Escenas', 'Escenas'), ('Ajustes', 'Ajustes')]) {
+      await tester.tap(find.descendant(of: find.byType(InkWell),
+        matching: find.text(tab)).hitTestable().last);
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: header, matching: find.text(title)).hitTestable(), findsOneWidget);
+      expect(find.descendant(of: header, matching: find.byType(ConnectionChip)).hitTestable(),
+        findsOneWidget);
+      expect(tester.takeException(), isNull);
+    }
+  });
 
   testWidgets('disconnected power cannot send', (tester) async {
     await start(tester);

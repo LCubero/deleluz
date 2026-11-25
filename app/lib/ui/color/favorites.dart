@@ -124,13 +124,11 @@ class _ColorFavoritesState extends State<ColorFavorites> {
     final colors = _open ? c.models.loadPalette() : const <String>[];
     final trash = _dragging != null;
     final style = Theme.of(context).textTheme.bodySmall;
-    return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      TextButton(key: const Key('color-favorites'), onPressed: () {
-        setState(() => _open = !_open);
-        unawaited(_persistOpen(_open));
-      }, child: Wrap(alignment: WrapAlignment.center, crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 8, children: [Text(c.text('favorites')),
-          Icon(_open ? Icons.expand_less : Icons.expand_more)])),
+    return GlassCard(child: GlowDisclosure(titleKey: const Key('color-favorites'),
+      title: c.text('favorites'), initiallyExpanded: _open, onExpansionChanged: (open) {
+        setState(() => _open = open);
+        unawaited(_persistOpen(open));
+      }, children: [
       if (_open) ...[
         const SizedBox(height: 8),
         Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [

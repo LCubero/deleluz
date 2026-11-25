@@ -180,7 +180,7 @@ class _SceneEditorState extends State<_SceneEditor> {
         const SizedBox(height: 14),
         _wheel(),
         const SizedBox(height: 8),
-        ExpansionTile(title: Text(c.text('favorites')), tilePadding: EdgeInsets.zero, children: [
+        GlowDisclosure(title: c.text('favorites'), children: [
           Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [
             for (final hex in c.models.loadPalette())
               IconButton.outlined(tooltip: c.text('paletteColorHex', {'hex': hex.toUpperCase()}),

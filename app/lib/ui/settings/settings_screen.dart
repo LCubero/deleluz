@@ -140,15 +140,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ? c.text('lastSent', {'command': c.lastSentLabel})
         : _text('stripNotSent');
     return SafeArea(child: SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+      padding: glowScreenPadding,
       child: Center(child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 12, children: [
-          Wrap(spacing: 12, runSpacing: 8, alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center, children: [
-              Text(_text('settings'), style: theme.titleLarge),
-              ConnectionChip(controller: c),
-            ]),
+          GlowHeader(title: _text('settings'), controller: c),
           _section('stripSettings', [
             Text(_text('stripOrder')),
             DropdownButton<String>(
@@ -195,16 +191,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ));
   });
 
-  Widget _section(String key, List<Widget> children) => GlassCard(child: ExpansionTile(
-    key: ValueKey('settings-$key'),
-    tilePadding: EdgeInsets.zero,
-    title: Text(_text(key)),
+  Widget _section(String key, List<Widget> children) => GlassCard(child: GlowDisclosure(
+    titleKey: ValueKey('settings-$key'),
+    title: _text(key),
     children: [Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 12, children: children)],
   ));
 
-  Widget _symptom(String key, List<String> steps) => ExpansionTile(
-    tilePadding: EdgeInsets.zero,
-    title: Text(_text(key)),
+  Widget _symptom(String key, List<String> steps) => GlowDisclosure(
+    title: _text(key),
     children: [Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
       for (final (index, step) in steps.indexed) Text('${index + 1}. ${_text(step)}'),
     ])],
@@ -222,12 +216,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ]);
 
   Widget _segments(String label, List<String> keys, int selected, ValueChanged<int> onSelect) =>
-      Semantics(container: true, label: _text(label), child: SegmentedButton<int>(
-        showSelectedIcon: false,
-        style: SegmentedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10)),
+      Semantics(container: true, label: _text(label), child: GlowSegments<int>(
         segments: [for (final (index, key) in keys.indexed)
           ButtonSegment(value: index, label: Text(_text(key), textAlign: TextAlign.center))],
-        selected: {selected},
-        onSelectionChanged: (value) => onSelect(value.single),
+        selected: selected,
+        onSelected: onSelect,
       ));
 }

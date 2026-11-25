@@ -150,9 +150,7 @@ class _ColorScreenState extends State<ColorScreen> {
   Widget _slider(String key, int value, ValueChanged<int> change) {
     final shown = value.clamp(1, 100);
     return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Wrap(alignment: WrapAlignment.spaceBetween, spacing: 12, runSpacing: 4, children: [
-        Text(c.text(key)), Text(c.text('percent', {'value': shown})),
-      ]),
+      GlowValueLabel(label: c.text(key), value: c.text('percent', {'value': shown})),
       Semantics(label: c.text(key), child: Slider(key: Key('color-$key'),
         min: 1, max: 100, divisions: 99, value: shown.toDouble(),
         semanticFormatterCallback: (value) => c.text('percent', {'value': value.round()}),
@@ -168,23 +166,22 @@ class _ColorScreenState extends State<ColorScreen> {
     final style = Theme.of(context).textTheme;
     return SafeArea(child: Align(alignment: Alignment.topCenter, child: ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 480),
-      child: SingleChildScrollView(padding: const EdgeInsets.all(18), child: Column(
+      child: SingleChildScrollView(padding: glowScreenPadding, child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Center(child: ConnectionChip(controller: c)),
-          const SizedBox(height: 12),
-          Text(c.text('color'), textAlign: TextAlign.center, style: style.titleLarge),
+          GlowHeader(title: c.text('color'), controller: c),
           const SizedBox(height: 8),
           Semantics(liveRegion: true, child: Text(_lastSent(),
             textAlign: TextAlign.center, style: style.bodySmall)),
           if (c.message == 'commandFailed')
             Text(c.text('commandFailed'), textAlign: TextAlign.center, style: style.bodySmall),
           const SizedBox(height: 12),
-          Center(child: Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [
-            ChoiceChip(key: const Key('color-solid'), label: Text(c.text('solid')),
-              selected: !_effects, onSelected: (_) => setState(() => _effects = false)),
-            ChoiceChip(key: const Key('color-effects'), label: Text(c.text('builtIn')),
-              selected: _effects, onSelected: (_) => setState(() => _effects = true)),
-          ])),
+          GlowSegments<bool>(selected: _effects,
+            onSelected: (effects) => setState(() => _effects = effects), segments: [
+              ButtonSegment(value: false, label: Text(c.text('solid'),
+                key: const Key('color-solid'), textAlign: TextAlign.center)),
+              ButtonSegment(value: true, label: Text(c.text('builtIn'),
+                key: const Key('color-effects'), textAlign: TextAlign.center)),
+            ]),
           const SizedBox(height: 16),
           if (_effects) _effectCard() else ...[
             HueWheel(hue: HSVColor.fromColor(color).hue, label: c.text('hue'),

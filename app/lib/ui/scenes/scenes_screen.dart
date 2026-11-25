@@ -54,20 +54,21 @@ class _ScenesScreenState extends State<ScenesScreen> {
     listenable: _transport,
     builder: (context, _) {
       return SafeArea(bottom: false, child: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+        padding: glowScreenPadding,
         children: [
-          Center(child: ConnectionChip(controller: c)),
+          GlowHeader(title: c.text('scenes'), controller: c),
           const SizedBox(height: 12),
           _LastSent(transport: _transport),
           if (_transport.failed)
             Text(c.text('commandFailed'), textAlign: TextAlign.center),
           const SizedBox(height: 12),
-          Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 4, children: [
-            for (final (id, label) in const [('included', 'includedScenes'),
-              ('mine', 'myScenes'), ('music', 'music')])
-              ChoiceChip(key: Key('scenes-$id'), label: Text(c.text(label)),
-                selected: _panel == id, onSelected: (_) => setState(() => _panel = id)),
-          ]),
+          GlowSegments<String>(selected: _panel,
+            onSelected: (panel) => setState(() => _panel = panel), segments: [
+              for (final (id, label) in const [('included', 'includedScenes'),
+                ('mine', 'myScenes'), ('music', 'music')])
+                ButtonSegment(value: id, label: Text(c.text(label),
+                  key: Key('scenes-$id'), textAlign: TextAlign.center)),
+            ]),
           const SizedBox(height: 12),
           ...switch (_panel) {
             'mine' => _mine(),
@@ -152,20 +153,24 @@ class _ScenesScreenState extends State<ScenesScreen> {
     padding: const EdgeInsets.only(bottom: 8),
     child: Material(color: glowGlass, shape: RoundedRectangleBorder(
       side: const BorderSide(color: glowLine), borderRadius: BorderRadius.circular(16),
-    ), child: Row(children: [
-      Expanded(child: InkWell(key: Key(key), onTap: tap, onLongPress: hold,
-        borderRadius: BorderRadius.circular(16), child: Container(
-          constraints: const BoxConstraints(minHeight: 72),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(children: [
-            Expanded(child: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis)),
-            const SizedBox(width: 8),
-            SizedBox(width: 58, height: 10, child: _swatchStrip(colors)),
-          ]),
-        ),
-      )),
-      ?trailing,
-    ])),
+    ), child: Padding(
+      // Match GlassCard's content inset, including its 1 dp border.
+      padding: const EdgeInsets.symmetric(horizontal: glassInset + 1),
+      child: Row(children: [
+        Expanded(child: InkWell(key: Key(key), onTap: tap, onLongPress: hold,
+          borderRadius: BorderRadius.circular(16), child: Container(
+            constraints: const BoxConstraints(minHeight: 72),
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(children: [
+              Expanded(child: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis)),
+              const SizedBox(width: 8),
+              SizedBox(width: 58, height: 10, child: _swatchStrip(colors)),
+            ]),
+          ),
+        )),
+        ?trailing,
+      ]),
+    )),
   );
 
   Widget _music() => GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -222,7 +227,7 @@ class _SceneSlider extends StatelessWidget {
   Widget build(BuildContext context) {
     String percent(int n) => controller.text('percent', {'value': n});
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text('${controller.text(label)} · ${percent(value)}'),
+      GlowValueLabel(label: controller.text(label), value: percent(value)),
       Semantics(label: controller.text(label), child: Slider(key: Key(id),
         value: value.toDouble(), min: min.toDouble(), max: 100,
         label: percent(value), semanticFormatterCallback: (value) => percent(value.round()),
@@ -298,7 +303,7 @@ class _IncludedPreviewState extends State<_IncludedPreview> with WidgetsBindingO
             borderRadius: BorderRadius.circular(8))),
           const SizedBox(height: 10),
           if (widget.preset != null) ...[
-            Text('${c.text('stepInterval')} · $_interval ms'),
+            GlowValueLabel(label: c.text('stepInterval'), value: '$_interval ms'),
             Semantics(label: c.text('stepInterval'), child: Slider(
               min: 150, max: 2000, divisions: 185, value: _interval.toDouble(),
               semanticFormatterCallback: (value) => '${value.round()} ms',

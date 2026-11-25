@@ -31,11 +31,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final on = c.sentPower == true;
     final style = Theme.of(context).textTheme;
     final last = c.lastSentLabel;
-    return ListView(padding: const EdgeInsets.fromLTRB(18, 10, 18, 18), children: [
-      Row(children: [
-        const Icon(Icons.light_mode_outlined, color: Color(0xffe3c2ff)),
-        const SizedBox(width: 8),
-        Expanded(child: Text(c.text('title'), style: style.titleLarge)),
+    return ListView(padding: glowScreenPadding, children: [
+      GlowHeader(title: c.text('title'), controller: c,
+        leading: const Icon(Icons.light_mode_outlined, color: Color(0xffe3c2ff)), actions: [
         PopupMenuButton<String>(tooltip: c.text('settingsLanguage'),
           icon: const Icon(Icons.language), onSelected: c.setLanguage, itemBuilder: (_) => [
             PopupMenuItem(value: 'es', child: Text(c.text('spanish'))),
@@ -64,9 +62,8 @@ class _HomeScreenState extends State<HomeScreen> {
       Text(last == null ? c.text('noCommand') : c.text('lastSent', {'command': last}),
         textAlign: TextAlign.center, style: style.bodySmall),
       const SizedBox(height: 16),
-      GlassCard(child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        title: Text(c.text('quickScenes')),
+      GlassCard(child: GlowDisclosure(
+        title: c.text('quickScenes'),
         onExpansionChanged: (value) => setState(() => _quickOpen = value),
         children: [
           Align(alignment: AlignmentDirectional.centerStart,
@@ -97,9 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _slider(BuildContext context, String label, int value, ValueChanged<int> change) =>
     GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Wrap(spacing: 12, children: [
-        Text(c.text(label)), Text(c.text('percent', {'value': value})),
-      ]),
+      GlowValueLabel(label: c.text(label), value: c.text('percent', {'value': value})),
       Semantics(label: c.text(label), child: Slider(key: Key(label), value: value.toDouble(), max: 100,
         onChanged: c.ready ? (value) => change(value.round()) : null,
         onChangeEnd: (_) => c.saveSelection())),
@@ -107,19 +102,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _device(BuildContext context) {
     final rgb = c.sentColor;
-    final preview = c.sentPower == true && rgb != null
-        ? Color.fromARGB(255, rgb[0], rgb[1], rgb[2]) : const Color(0xff2a2540);
+    final preview = c.link.ready && c.sentPower == true && rgb != null
+        ? Color.fromARGB(255, rgb[0], rgb[1], rgb[2]) : null;
     final strip = c.link.ready ? c.link.strip : c.remembered;
     return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Wrap(spacing: 12, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
-        Text(strip?.name ?? c.text('device'), style: Theme.of(context).textTheme.titleMedium),
-        ConnectionChip(controller: c),
-      ]),
-      const SizedBox(height: 14),
-      Semantics(label: c.text('stripPreview'), child: Container(height: 14,
-        decoration: BoxDecoration(color: preview, borderRadius: BorderRadius.circular(99),
-          boxShadow: c.sentPower == true && rgb != null
-            ? [BoxShadow(color: preview.withAlpha(120), blurRadius: 16)] : null))),
+      Text(strip?.name ?? c.text('device'), style: Theme.of(context).textTheme.titleMedium),
+      if (preview != null) ...[
+        const SizedBox(height: 14),
+        Semantics(label: c.text('stripPreview'), child: Container(height: 14,
+          decoration: BoxDecoration(color: preview, borderRadius: BorderRadius.circular(99),
+            boxShadow: [BoxShadow(color: preview.withAlpha(120), blurRadius: 16)]))),
+      ],
       const SizedBox(height: 12),
       Wrap(spacing: 8, runSpacing: 6, children: [
         if (!c.link.ready && c.remembered != null)
