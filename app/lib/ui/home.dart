@@ -4,6 +4,7 @@ import '../app_controller.dart';
 import '../link.dart';
 import '../model/models.dart';
 import '../model/timer.dart';
+import 'bluetooth_card.dart';
 import 'glow_glass.dart';
 import 'glow_icon.dart';
 import 'quick_actions_sheet.dart';
@@ -30,7 +31,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final on = c.link.ready && c.sentPower == true;
+    final off = c.bluetoothOff;
+    final on = !off && c.link.ready && c.sentPower == true;
+    Widget dim(Widget child) => Opacity(opacity: off ? .55 : 1, child: child);
     final height = MediaQuery.sizeOf(context).height;
     final diameter = height <= 720 ? (height * .09).clamp(48.0, 72.0).toDouble()
       : height <= 820 ? (height * .12).clamp(72.0, 100.0).toDouble() : 120.0;
@@ -45,12 +48,16 @@ class _HomeScreenState extends State<HomeScreen> {
             fixedSize: const Size.square(44), padding: EdgeInsets.zero,
             side: const BorderSide(color: glowLine),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-          onPressed: () => TimerSheet.open(context, c))),
+          onPressed: off ? null : () => TimerSheet.open(context, c))),
       ]),
       if (c.remaining case final seconds?)
         Text(c.text('offIn', {'time': formatRemaining(seconds)}), style: style.bodySmall),
       const SizedBox(height: 12),
-      _device(context),
+      if (off) ...[
+        BluetoothCard(controller: c),
+        const SizedBox(height: 12),
+      ],
+      dim(_device(context)),
       const SizedBox(height: 12),
       Center(child: Opacity(opacity: c.ready ? 1 : .5, child: DecoratedBox(
         decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xff1b1636),
@@ -66,21 +73,21 @@ class _HomeScreenState extends State<HomeScreen> {
             color: on ? Colors.white : glowFaint)),
       ))),
       const SizedBox(height: 6),
-      Text(c.text(on ? 'on' : 'off'),
+      Text(c.text(off ? 'stripControlsUnavailable' : on ? 'on' : 'off'),
         textAlign: TextAlign.center,
         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       const SizedBox(height: 6),
       Text(last == null ? c.text('noCommand') : c.text('lastSent', {'command': last}),
         textAlign: TextAlign.center, style: style.bodySmall),
       const SizedBox(height: 12),
-      _quick(context),
+      dim(ExcludeFocus(excluding: off, child: AbsorbPointer(absorbing: off, child: _quick(context)))),
       if (!_quickOpen) ...[
         const SizedBox(height: 12),
-        _slider('speed', c.speed, c.hasActiveEffect ? c.setSpeed : null,
-          hint: c.hasActiveEffect ? null : c.text('speedEffectsHint')),
+        dim(_slider('speed', c.speed, !off && c.hasActiveEffect ? c.setSpeed : null,
+          hint: c.hasActiveEffect ? null : c.text('speedEffectsHint'))),
       ],
       const SizedBox(height: 12),
-      _slider('brightness', c.brightness, c.setBrightness),
+      dim(_slider('brightness', c.brightness, off ? null : c.setBrightness)),
     ]);
   }
 
@@ -157,7 +164,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final index = previewIndex < 0 ? 0 : previewIndex;
     final strip = saved.isEmpty ? null : saved[index];
     final showingRemembered = strip?.id == remembered?.id;
-    final connected = c.link.ready && c.link.strip?.id == strip?.id;
+    final off = c.bluetoothOff;
+    final connected = !off && c.link.ready && c.link.strip?.id == strip?.id;
     final pending = c.connectingId != null;
     final status = c.connectingId == strip?.id && pending ? LinkStatus.connecting
         : connected ? LinkStatus.connected
@@ -193,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ]);
     return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: [
       Row(spacing: 12, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(child: saved.length < 2 ? name : SliderZone(child: name,
+        Expanded(child: off || saved.length < 2 ? name : SliderZone(child: name,
           onHorizontalDragStart: (details) => _swipeStart = details.globalPosition.dx,
           onHorizontalDragEnd: (details) {
             final dx = details.globalPosition.dx - _swipeStart;
@@ -212,13 +220,13 @@ class _HomeScreenState extends State<HomeScreen> {
       Row(spacing: 8, children: [
         Expanded(child: _connectButton(c.text(pending ? 'cancel' : connected ? 'disconnect'
             : strip != null && previewIndex < 0 ? 'reconnect' : 'connect'), neutral: pending,
-          pending ? c.cancelConnection : c.busy ? null : connected ? c.disconnect
+          off ? null : pending ? c.cancelConnection : c.busy ? null : connected ? c.disconnect
             : strip == null ? _chooseStrip : showingRemembered ? c.reconnect : () => c.connect(strip))),
-        TextButton(onPressed: c.busy ? null : _chooseStrip,
+        TextButton(onPressed: off || c.busy ? null : _chooseStrip,
           style: TextButton.styleFrom(foregroundColor: glowLink,
             padding: const EdgeInsets.symmetric(horizontal: 8)), child: Text(c.text('changeStrip'))),
       ]),
-      if (c.message case final key?) ...[
+      if (c.message case final key? when key != 'bluetoothOff' && key != 'bluetoothEnableFailed') ...[
         const SizedBox(height: 8),
         Semantics(liveRegion: true, child: Text(c.text(key), style: const TextStyle(color: Color(0xffffb4ba)))),
       ],

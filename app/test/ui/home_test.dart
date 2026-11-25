@@ -11,6 +11,7 @@ import 'package:deleluz/ui/color_disc.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:universal_ble/universal_ble.dart' show AvailabilityState;
 
 class Store implements LocalStore {
   final values = <String, String>{};
@@ -81,15 +82,83 @@ void main() {
     accessProblem = null;
   });
 
-  Future<AppController> start(WidgetTester tester) async {
+  Future<AppController> start(WidgetTester tester, {
+    Future<AvailabilityState> Function()? readBluetooth,
+    Stream<AvailabilityState>? bluetoothChanges,
+    Future<void> Function()? requestBluetooth,
+  }) async {
     final controller = AppController(ble, store, checkAccess: (request) async {
       accessChecks.add(request);
       return accessProblem;
-    }, now: () => now, wallClock: () => DateTime(2026, 1, 1, 23, 55, 1));
+    }, readBluetooth: readBluetooth, bluetoothChanges: bluetoothChanges, requestBluetooth: requestBluetooth,
+      now: () => now, wallClock: () => DateTime(2026, 1, 1, 23, 55, 1));
     addTearDown(controller.dispose);
     await tester.pumpWidget(MainApp(controller: controller));
     await tester.pumpAndSettle();
     return controller;
+  }
+
+  for (final size in [const Size(320, 640), const Size(412, 915)]) {
+    testWidgets('Home Bluetooth warning and enable request at $size', (tester) async {
+      await tester.binding.setSurfaceSize(size);
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final radio = StreamController<AvailabilityState>.broadcast();
+      addTearDown(radio.close);
+      var requests = 0;
+      final c = await start(tester, readBluetooth: () async => AvailabilityState.poweredOff,
+        bluetoothChanges: radio.stream, requestBluetooth: () async { requests++; });
+      final title = find.text('Bluetooth apagado');
+      expect(title.hitTestable(), findsOneWidget);
+      expect(find.text('Actívalo para conectar con la tira.').hitTestable(), findsOneWidget);
+      final warningSurface = tester.widget<Material>(find.ancestor(of: title, matching: find.byType(Material)).first).color!;
+      for (final label in [title, find.text('Actívalo para conectar con la tira.')]) {
+        final textColor = tester.widget<Text>(label).style!.color!;
+        expect((textColor.computeLuminance() + .05) / (warningSurface.computeLuminance() + .05),
+          greaterThanOrEqualTo(4.5));
+      }
+      final brightness = find.byKey(const Key('brightness'));
+      final unavailable = find.text('Control no disponible');
+      final power = find.byKey(const Key('power'));
+      final change = find.widgetWithText(TextButton, 'Cambiar');
+      Future<void> show(Finder target, double delta) async {
+        await tester.scrollUntilVisible(target, delta);
+        await tester.pumpAndSettle();
+      }
+      await show(change, 100);
+      expect(tester.widget<TextButton>(change).onPressed, isNull);
+      await show(power, 100);
+      expect(tester.widget<IconButton>(power).onPressed, isNull);
+      await show(unavailable, 100);
+      expect(unavailable.hitTestable(), findsOneWidget);
+      await show(brightness, 100);
+      expect(tester.widget<Slider>(brightness).onChanged, isNull);
+      final enable = find.text('Activar Bluetooth');
+      await show(enable, -100);
+      await tester.tap(enable);
+      await tester.pumpAndSettle();
+      expect(requests, 1);
+      expect(title, findsOneWidget); // Request completion alone does not mean Bluetooth is on.
+      radio.add(AvailabilityState.poweredOn);
+      await tester.pumpAndSettle();
+      expect(title, findsNothing);
+      await show(change, 100);
+      expect(tester.widget<TextButton>(change).onPressed, isNotNull);
+      await show(brightness, 100);
+      expect(tester.widget<Slider>(brightness).onChanged, isNotNull);
+      await c.connect(FakeBle.strip);
+      await tester.pumpAndSettle();
+      await show(power, -100);
+      expect(tester.widget<IconButton>(power).onPressed, isNotNull);
+      c.setLanguage('en');
+      radio.add(AvailabilityState.poweredOff);
+      await tester.pumpAndSettle();
+      await show(find.text('Turn on Bluetooth'), -100);
+      expect(find.text('Bluetooth is off'), findsOneWidget);
+      expect(find.text('Turn it on to connect to the strip.'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   }
 
   for (final (state, connect) in [
@@ -486,8 +555,11 @@ void main() {
       await editEffect();
       await tap(find.widgetWithText(SimpleDialogOption, c.text('changeShortcut')));
       await tap(color);
+      await tap(find.widgetWithText(ChoiceChip, 'Noche'));
       await tap(find.widgetWithText(FilledButton, 'Cambiar'));
-      expect(c.shortcuts.first['kind'], 'color');
+      const night = {'kind': 'color', 'name': 'night', 'rgb': [32, 4, 0]};
+      expect(c.shortcuts.first, night);
+      expect(c.models.loadShortcuts().first, night);
       final scene = find.text(c.text('rasta'));
       await tester.ensureVisible(scene);
       await tester.pumpAndSettle();
@@ -497,6 +569,44 @@ void main() {
       expect(c.shortcuts.map((item) => item['kind']), ['color', 'color', 'sequence']);
     });
   }
+
+  testWidgets('compact quick effect picker can select and confirm above keyboard', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 420);
+    tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetViewInsets);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final c = await start(tester);
+    final quick = find.text('Acciones rápidas');
+    await tester.scrollUntilVisible(quick, 100);
+    await tester.tap(quick);
+    await tester.pumpAndSettle();
+    final add = find.byTooltip('Agregar acción rápida');
+    await tester.ensureVisible(add);
+    await tester.tap(add);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('quick-type-effect')));
+    await tester.pumpAndSettle();
+    final search = find.byKey(const Key('effect-search'));
+    await tester.tap(search);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(search.hitTestable(), findsOneWidget);
+    await tester.enterText(search, '210');
+    await tester.pumpAndSettle();
+    for (final target in [find.byKey(const Key('effect-row-210')), find.widgetWithText(FilledButton, 'Agregar')]) {
+      await tester.ensureVisible(target);
+      await tester.pumpAndSettle();
+      expect(target.hitTestable(), findsOneWidget);
+      await tester.tap(target);
+      await tester.pumpAndSettle();
+    }
+    expect(c.shortcuts.last, {'kind': 'effect', 'effect': 210});
+    expect(tester.takeException(), isNull);
+  });
 
   final selectorScroll = find.descendant(of: find.byKey(const Key('strip-selector-list')),
     matching: find.byType(Scrollable), matchRoot: false).first;

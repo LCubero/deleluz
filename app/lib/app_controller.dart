@@ -55,9 +55,13 @@ Future<String?> bluetoothAccess(bool request) async {
 class AppController extends ChangeNotifier {
   AppController(this._ble, LocalStore store, {
     required this.checkAccess,
+    Future<AvailabilityState> Function()? readBluetooth,
+    Stream<AvailabilityState>? bluetoothChanges,
+    Future<void> Function()? requestBluetooth,
     double Function()? now,
     DateTime Function()? wallClock,
   }) : models = Models(store, presetIds: homePresets.keys.toSet()),
+       _requestBluetooth = requestBluetooth ?? (_ble is AppBleApi ? _enableSystemBluetooth : null),
        _now = now ?? _monotonicClock(),
        _wallClock = wallClock ?? DateTime.now {
     _lastTimerDuration = loadTimerDuration(store);
@@ -73,6 +77,63 @@ class AppController extends ChangeNotifier {
     final saved = remembered;
     _setupMigration = _save(models.migrateStripSettings(saved?.id));
     if (saved != null) link.restore(saved);
+    final production = _ble is AppBleApi;
+    final changes = bluetoothChanges ?? (production ? UniversalBle.availabilityStream : null);
+    final read = readBluetooth ?? (production ? UniversalBle.getBluetoothAvailabilityState : null);
+    var receivedChange = false;
+    _bluetoothChanges = changes?.listen((state) {
+      receivedChange = true;
+      _updateBluetooth(state);
+    }, onError: (Object _) {});
+    if (read != null) {
+      unawaited(_readBluetooth(read, () => !receivedChange));
+    }
+  }
+
+  final Future<void> Function()? _requestBluetooth;
+  StreamSubscription<AvailabilityState>? _bluetoothChanges;
+  bool _bluetoothOff = false;
+  bool get bluetoothOff => _bluetoothOff;
+  bool requestingBluetooth = false;
+
+  static Future<void> _enableSystemBluetooth() async {
+    if (!await UniversalBle.hasPermissions()) {
+      await UniversalBle.requestPermissions();
+      if (!await UniversalBle.hasPermissions()) throw StateError('Bluetooth permission denied');
+    }
+    await UniversalBle.enableBluetooth();
+  }
+
+  Future<void> _readBluetooth(Future<AvailabilityState> Function() read, bool Function() current) async {
+    try {
+      final state = await read();
+      if (current()) _updateBluetooth(state);
+    } catch (_) {
+      // Availability is unknown if the platform cannot be queried.
+    }
+  }
+
+  void _updateBluetooth(AvailabilityState state) {
+    if (_disposed || (state != AvailabilityState.poweredOff && state != AvailabilityState.poweredOn)) return;
+    final off = state == AvailabilityState.poweredOff;
+    if (_bluetoothOff == off) return;
+    _bluetoothOff = off;
+    _refresh();
+  }
+
+  Future<void> requestEnableBluetooth() async {
+    final request = _requestBluetooth;
+    if (request == null || requestingBluetooth || !_bluetoothOff || _disposed) return;
+    requestingBluetooth = true;
+    _notice(null);
+    try {
+      await request();
+    } catch (_) {
+      if (_bluetoothOff) _notice('bluetoothEnableFailed');
+    } finally {
+      requestingBluetooth = false;
+      _refresh();
+    }
   }
 
   final BleApi _ble;
@@ -174,7 +235,7 @@ class AppController extends ChangeNotifier {
   int get speed => _selection['speed'] as int;
   int get effect => _selection['fx'] == 'AUTO' ? wire.autoEffect : _selection['fx'] as int;
   int get sensitivity => _selection['micSens'] as int;
-  bool get ready => link.ready && !busy;
+  bool get ready => link.ready && !busy && !bluetoothOff;
   bool get canSend => ready && _foreground && !_disposed;
   bool get hasActiveEffect => link.ready && sentPower == true && _sentEffect != null;
   String? get lastSentLabel => switch (lastCommand) {
@@ -860,6 +921,7 @@ class AppController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     setForeground(false);
+    unawaited(_bluetoothChanges?.cancel());
     unawaited(link.dispose());
     super.dispose();
   }

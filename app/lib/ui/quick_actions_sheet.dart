@@ -53,22 +53,30 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
     final selected = _selected;
     final style = Theme.of(context).textTheme;
     final rgb = selected?['rgb'] as List<int>?;
+    final inset = MediaQuery.viewInsetsOf(context).bottom;
+    // Give the search/results the full viewport in short windows with the keyboard up.
+    final compactEffect = kind == QuickActionKind.effect && inset > 0 &&
+        MediaQuery.sizeOf(context).height - inset < 280;
+    final confirm = FilledButton(onPressed: selected == null ? null : () => Navigator.pop(context, selected),
+      child: Text(c.text(widget.replacing ? 'changeShortcut' : 'quickAdd')));
     return PopScope<Fields>(canPop: kind == null, onPopInvokedWithResult: (popped, _) {
       if (!popped && kind != null) _back();
-    }, child: Padding(padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+    }, child: Padding(padding: EdgeInsets.only(bottom: inset),
       child: SafeArea(top: false, child: Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Row(children: [
-            if (kind != null) IconButton(tooltip: c.text('quickBack'),
-              onPressed: _back, icon: const Icon(Icons.arrow_back)),
-            Expanded(child: Semantics(header: true, child: Text(c.text(kind?.label ??
-              (widget.replacing ? 'quickChangeTitle' : 'addShortcut')), style: style.titleLarge))),
-            IconButton(tooltip: c.text('close'), icon: const Icon(Icons.close),
-              onPressed: () => Navigator.pop(context)),
-          ]),
-          Text(c.text(kind == null ? 'quickStepType' : 'quickStepOption'), style: style.bodySmall),
-          const SizedBox(height: 8),
-          Flexible(child: SingleChildScrollView(key: ValueKey(kind), child: switch (kind) {
+          if (!compactEffect) ...[
+            Row(children: [
+              if (kind != null) IconButton(tooltip: c.text('quickBack'),
+                onPressed: _back, icon: const Icon(Icons.arrow_back)),
+              Expanded(child: Semantics(header: true, child: Text(c.text(kind?.label ??
+                (widget.replacing ? 'quickChangeTitle' : 'addShortcut')), style: style.titleLarge))),
+              IconButton(tooltip: c.text('close'), icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context)),
+            ]),
+            Text(c.text(kind == null ? 'quickStepType' : 'quickStepOption'), style: style.bodySmall),
+            const SizedBox(height: 8),
+          ],
+          Flexible(key: const ValueKey('quick-picker-body'), child: SingleChildScrollView(key: ValueKey(kind), child: switch (kind) {
             null => GlowGrid(columns: 2, children: [
               for (final type in QuickActionKind.values)
                 GlowTile(key: Key('quick-type-${type.name}'), minHeight: 104,
@@ -80,14 +88,17 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
                   ])),
             ]),
             QuickActionKind.color => _colors(rgb!),
-            QuickActionKind.effect => ListenableBuilder(listenable: c, builder: (context, _) =>
-              EffectList(favorites: c.effectFavorites, text: c.text, onFavorite: c.toggleEffectFavorite,
-                selected: selected?['effect'] as int?,
-                onSelected: (id) => _select({'kind': 'effect', 'effect': id}))),
+            QuickActionKind.effect => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              ListenableBuilder(listenable: c, builder: (context, _) =>
+                EffectList(favorites: c.effectFavorites, text: c.text, onFavorite: c.toggleEffectFavorite,
+                  selected: selected?['effect'] as int?,
+                  onSelected: (id) => _select({'kind': 'effect', 'effect': id}))),
+              if (compactEffect) confirm,
+            ]),
             QuickActionKind.scene => _scenes(),
             QuickActionKind.sequence => _scenes(own: true),
           })),
-          if (kind != null) ...[
+          if (kind != null && !compactEffect) ...[
             const SizedBox(height: 8),
             Row(spacing: 8, children: [
               if (rgb != null) SizedBox(width: 24, child: GlowStrip(colors: [rgb], dotted: false)),
@@ -95,8 +106,7 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
                 : c.text('quickPreview', {'name': c.shortcutLabel(selected)}), style: style.bodySmall)),
             ]),
             const SizedBox(height: 4),
-            FilledButton(onPressed: selected == null ? null : () => Navigator.pop(context, selected),
-              child: Text(c.text(widget.replacing ? 'changeShortcut' : 'quickAdd'))),
+            confirm,
           ],
         ]),
       )),
@@ -117,6 +127,8 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
         for (var i = 0; i < whites.length; i++)
           _chip(c.text(const ['whiteWarmTone', 'whiteNeutralTone', 'whiteCoolTone'][i]), whites[i], rgb),
       ]),
+      Align(alignment: AlignmentDirectional.centerStart, child: _chip(c.text('night'),
+        const {'kind': 'color', 'name': 'night', 'rgb': [32, 4, 0]}, rgb)),
       Text(c.text('quickColorFavorites'), style: style.titleMedium),
       if (favorites.isEmpty) Text(c.text('quickNoColors'), style: style.bodySmall),
       Wrap(spacing: 8, runSpacing: 4, children: [
@@ -132,7 +144,7 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
   Widget _chip(String label, Fields item, List<int> current) {
     final rgb = item['rgb'] as List<int>;
     return ChoiceChip(avatar: CircleAvatar(backgroundColor: _color(rgb)),
-      label: Text(label), selected: rgbHex(rgb) == rgbHex(current),
+      label: Text(label), selected: item['name'] == _selected?['name'] && rgbHex(rgb) == rgbHex(current),
       showCheckmark: false, visualDensity: VisualDensity.standard,
       materialTapTargetSize: MaterialTapTargetSize.padded, onSelected: (_) => _select(item));
   }
