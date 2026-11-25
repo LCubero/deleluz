@@ -9,6 +9,10 @@
     { "file": "04-efectos-favoritos-reproductor.html", "title": "Favoritos y minirreproductor", "tradeoff": "Prioriza los efectos habituales y deja el AUTO a mano, con menos espacio para el catálogo.", "width": 390, "height": 844 },
     { "file": "05-escena-pasos-efecto.html", "title": "Escena por pasos", "tradeoff": "Mantiene visibles el tipo y la duración de cada paso; elegir o editar un color o efecto requiere abrir un panel.", "width": 390, "height": 844 },
     { "file": "06-temporizador-anillo.html", "title": "Cuenta regresiva en anillo", "tradeoff": "Reserva el anillo y los atajos para la cuenta activa; ajustar minutos y segundos agrega espacio al panel.", "width": 390, "height": 844 },
-    { "file": "07-temporizador-rueda.html", "title": "Duración con rueda", "tradeoff": "Recupera la última duración y facilita ajustes precisos, pero no ofrece la rapidez de los botones predefinidos.", "width": 390, "height": 844 }
+    { "file": "07-temporizador-rueda.html", "title": "Duración con rueda", "tradeoff": "Recupera la última duración y facilita ajustes precisos, pero no ofrece la rapidez de los botones predefinidos.", "width": 390, "height": 844 },
+    { "file": "08-acciones-rapidas-pestanas.html", "title": "Acciones rápidas por pestañas", "tradeoff": "Permite cambiar de tipo sin retroceder, a cambio de una cabecera más densa.", "width": 390, "height": 844 },
+    { "file": "09-acciones-rapidas-pasos.html", "title": "Acciones rápidas en dos pasos", "tradeoff": "Da espacio para explicar cada tipo, pero exige un toque más para llegar al selector.", "width": 390, "height": 844 },
+    { "file": "10-bluetooth-tarjeta.html", "title": "Bluetooth apagado: aviso en Inicio", "tradeoff": "Mantiene Inicio reconocible, pero comparte espacio con controles que aún no se pueden usar.", "width": 390, "height": 844 },
+    { "file": "11-bluetooth-pantalla.html", "title": "Bluetooth apagado: pantalla de conexión", "tradeoff": "Concentra la atención en conectar, pero oculta temporalmente los controles de Inicio.", "width": 390, "height": 844 }
   ]
 }

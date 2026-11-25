@@ -12,17 +12,25 @@ Phase 1 of `docs/PLAN.md`: white tones and saturation, effect list with search a
 - S6 (design proposals first): "me gusta la fase 1, si pero tienes ideas de diseños o cosas que mostrarme propuestas en design o stitch ?"
 - S7 (quality bar): "no asumas, no creas, mejor comprueba ... sin sobreingenieria ... menos es más, pero bien hecho ... no usar rutas ni datos personales ... frontend debes revisar con tus herramientas, alineamientos, saltos raros en la pagina, orden, margenes, espacios, nada encima o pegado de otra cosa, simetrico y alineado, agradable a la vista, que se lea y se vea bien, contraste, letra, que funcione en cualquier pantalla"
 
+- S8 (quick actions): "En escenas rápidas mejor llamarlo acciones rápidas y poder elegir los efectos integrados tmb."
+- S9 (quick actions add menu): "Ver si se puede Mejorar el menú de acciones rápidas al agregar, que se vea mejor y más fácil los colores y selector, las escenas etc, y separar mis escenas de escenas"
+- S10 (home link): "Quitar el  link y texto "todas las escenas" de inicio."
+- S11 (Bluetooth off notice): "El mensaje de que encienda el bluetooth debería ser más vistoso y notarse más que hace falta encender el bluetooth"
+
 Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect is running; no per-effect duration command exists; app-driven AUTO works only while the app is open and connected; white is plain RGB.
 
 ## Tasks
 
 - T1 [S6, S1-S5, S7] Design proposals in `design/deleluz-phase1/`; owner picks the directions. Route: worker. Commit: b1e9cdb, d50a60e [x]
 - T2 [S1] Color: saturation and white tones (Android). Route: worker. Commit: ad070b5 [x]
-- T3 [S4] Effect list with search and favorites; effects as quick-scene targets (Android). Commit: -
+- T3 [S4] Effect list with search and favorites, favorites first (Android, Color → Efectos integrados). Commit: -
 - T4 [S2] Effect steps in "Mis escenas" (Android). Commit: -
 - T5 [S3] App-driven AUTO: current effect name, per-effect duration (Android). Commit: -
 - T6 [S5] Timer sheet redesign (Android). Commit: -
-- T7 [S1-S5] Port T2-T6 to `webapp/`. Commit: -
+- T8 [S9, S11] Design proposals: quick-actions add sheet (Colores / Efectos / Escenas / Mis escenas) and a prominent Bluetooth-off notice. Route: worker. Commit: -
+- T9 [S8, S9, S10] Quick actions (Android): rename to "Acciones rápidas", built-in effects as targets, new add sheet, remove "Todas las escenas" from Inicio. After T3 and T8. Commit: -
+- T10 [S11] Prominent Bluetooth-off notice (Android). After T8. Commit: -
+- T7 [S1-S11] Port the Android changes to `webapp/`. Commit: -
 
 ## Log
 
@@ -32,3 +40,4 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - L4 (2026-11-25, owner, verbatim): "color el 02 / efectos el 03 pero sin los favoritos en card, pára eso la estrella de la lista y que se pongan de primero los favoritos quizá. / escenas 05 me gusta, no veo como se escogen los colores o efectos pero va bien. / temprizador el 01 mientras se puedan poner segundos en personalizaod genial."
 - L5 (2026-11-25, decision): chosen artboards: Color 02-color-disco-blancos; Effects 03-efectos-lista-buscar without the Todos/Favoritos chips (favorites marked with the star and listed first); Scenes 05-escena-pasos-efecto, plus showing how a color or an effect is picked; Timer 06-temporizador-anillo ("el 01" read as the first timer option), with minutes and seconds in Personalizado. Others are alternatives.
 - L6 (2026-11-25): T2 done: color disc + Cálido/Neutro/Frío whites; flutter test 150/150, analyze clean; native assess not due. Slice boundary: branch passed ~400 authored lines at ad070b5.
+- L7 (2026-11-25, owner, verbatim): "- En escenas rápidas mejor llamarlo acciones rápidas y poder elegir los efectos integrados tmb. - Ver si se puede Mejorar el menú de acciones rápidas al agregar, que se vea mejor y más fácil los colores y selector, las escenas etc, y separar mis escenas de escenas - Quitar el  link y texto \"todas las escenas\" de inicio. - El mensaje de que encienda el bluetooth debería ser más vistoso y notarse más que hace falta encender el bluetooth"
