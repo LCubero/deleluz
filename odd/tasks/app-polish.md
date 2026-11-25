@@ -25,6 +25,10 @@ Phase 1 of `docs/PLAN.md`: white tones and saturation, effect list with search a
 - S17 (timer selected state): "el submenu o ventana del temporizador tmb deberia revisarse que se note que esta seleccionado."
 - S18 (design standard + rules skill): "recuerda accesibilidad, todo bien alineado, colores correctos, formas redondeados, efectos, sobras todo que se mantenga siempre el mismo estandar del app que llevamos. hay que hacer una skill con las reglas de diseño"
 
+- S19 (notices): "hay que revisar los tesxtos de aviso, que no estorben que no sean muy grandes o muy chicos, que tengan un icono o algo que indique que es información importante, revisarlos y hay cosas que ya se que fallan como en inicio el mensaje de ultimo comando enviado hace que se mueva el app es decir que cambie su altura y por ende pasa cambiando de posicion algunas cosas."
+- S20 (phone compatibility, last): "al final de todos los cambios cuando todo esté probado y revisado que funciona en mi celular, hay que revisar y asegurarse que funciona y se ve bien en cualquier dispositivo celular, es sdecir la mayoria de los celulares, tablets aun no"
+- S21 (cyan accent): "el color cyan ciento que se ve muy bien en algunas cosas en el app (no hay nada cyan ahorita mismo)"
+
 Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect is running; no per-effect duration command exists; app-driven AUTO works only while the app is open and connected; white is plain RGB.
 
 ## Tasks
@@ -42,6 +46,9 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - T12 [S12, S16, S18] Inicio: Velocidad always visible; discreet "v" scroll hint when content continues below; no swipe on the connection card (Android). Commit: -
 - T13 [S14, S15, S17, S18] Pickers and sheets polish (Android): clear selected state in quick-action Efecto / Escena / Mi escena pickers and the timer sheet; Mi escena picker as tappable cards with a clear empty state; timer ring progress visible; scene editor in Glow Glass style, total in seconds, updated hints, effect sheet spacing (L20 findings). Commit: -
 - T14 [S18] Design rules: `design/system.md` from the app's real tokens and a repo skill with the DeleLuz design rules. Commit: -
+- T15 [S19, S18] Notices (Android): one notice style (icon + text, sized between body and caption, token colors, not intrusive) for every info/warning/error text; "Último comando enviado" on Inicio reserves a fixed height so nothing shifts. Commit: -
+- T16 [S21, S18] Cyan accent: propose where cyan (#22d3ee, already a Glow Glass token) is used (e.g. selected/active states, progress, focus) in design/system.md and the rules skill; apply after the owner approves. Commit: -
+- T17 [S20] Final phone compatibility pass, only after the owner tests and approves on his phone: widget tests and screenshots across common phone sizes/densities, Android API levels, text scales and navigation modes; tablets out of scope. Commit: -
 - T7a [S1, S3, S4, S7] Webapp: color disc + whites, effect list with favorites, app-driven AUTO. Route: worker + parent visual check. Commit: 2fbcecb [x]
 - T7b [S2, S5, S7] Webapp: scene steps (stored-format change, backward compatible) and timer sheet. Commit: -
 - T7c [S8-S11] Webapp: quick actions and Bluetooth notice, after T9/T10. Commit: -
@@ -69,3 +76,4 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - L19 (2026-11-25, owner, verbatim): "ok pruebala tu mientras voy a comer"
 - L20 (2026-11-25): T9 review (risk, reliability) approved, lineage review-27c818ce12aa26fd; R3-001 (Noche preset) and R3-002 (keyboard inset) fixed in 2cf214f; flutter test 183/183. Agent phone test over adb (Samsung SM-N770F, strip connected): build 2005 (T2-T6) and 2006 (T2-T10) installed over v1.0.0 with data kept. Passed in the app UI: reconnect; disc center sends #FFFFFF and edge saturated; whites; star moves effect to Favoritos; AUTO 10 s advances names and stops; scene editor color+effect steps and preview; 10 s custom timer counts down, shows end time, turns the strip off and remembers 10 s; Acciones rápidas two-step add of an effect, tile sends effect 1, long-press remove; Bluetooth off shows the card, Activar Bluetooth opens the system prompt, Permitir + Reconectar restores. Not verifiable by the agent: what the strip physically showed; legacy scene migration (owner had no saved scenes). Test action removed afterwards; nothing saved. Found: timer ring progress barely visible; scene editor is a plain grey dialog (not Glow Glass as in 05) and shows total in ms; stale hints in the editor ("Mantén presionado un color", "Toda la tira muestra un color a la vez"); selected-effect label glued to the list in the editor's effect sheet; Velocidad is hidden on Inicio while Acciones rápidas is expanded (pre-existing `_quickOpen` rule, unverified whether intended).
 - L21 (2026-11-25, owner, verbatim): see S12-S18 (owner feedback after reviewing the interface on build 2006).
+- L22 (2026-11-25, owner, verbatim): see S19-S21.
