@@ -78,16 +78,18 @@ class _TimerSheetState extends State<TimerSheet> {
                 ]),
                 const SizedBox(height: 12),
                 if (remaining != null && end != null) ...[
-                  Center(child: SizedBox.square(dimension: 144, child: CustomPaint(
-                    painter: _CountdownRing(c.timerFraction),
-                    child: Padding(padding: const EdgeInsets.all(17), child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center, children: [
-                        FittedBox(fit: BoxFit.scaleDown,
-                          child: Text(formatCountdown(remaining), style: style.headlineSmall)),
-                        FittedBox(fit: BoxFit.scaleDown,
-                          child: Text(c.text('timerRemaining'), style: style.bodySmall)),
-                      ])),
-                  ))),
+                  LayoutBuilder(builder: (context, constraints) {
+                    final scale = MediaQuery.textScalerOf(context).scale(24) / 24;
+                    final diameter = (112 * scale + 32).clamp(144.0, math.max(144.0, constraints.maxWidth)).toDouble();
+                    return Center(child: SizedBox.square(dimension: diameter, child: CustomPaint(
+                      painter: _CountdownRing(c.timerFraction),
+                      child: Padding(padding: const EdgeInsets.all(20), child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Text(formatCountdown(remaining), style: style.headlineSmall, textAlign: TextAlign.center),
+                          Text(c.text('timerRemaining'), style: style.bodySmall, textAlign: TextAlign.center),
+                        ])),
+                    )));
+                  }),
                   const SizedBox(height: 8),
                   Text(c.text('timerEndsAt', {'time': _clockTime(end)}), textAlign: TextAlign.center),
                   const SizedBox(height: 8),
@@ -122,7 +124,7 @@ class _TimerSheetState extends State<TimerSheet> {
                       onChanged: (value) => setState(() => _fade = value))),
                   const SizedBox(height: 8),
                   if (!c.ready) Notice(c.text('connectFirst'), kind: NoticeKind.warning),
-                  FilledButton(onPressed: c.canSend ? _start : null, child: Text(c.text('startTimer'))),
+                  GlowPrimaryButton(onPressed: c.canSend ? _start : null, label: Text(c.text('startTimer'))),
                 ],
                 const SizedBox(height: 8),
                 Notice(c.text('timerNote')),
@@ -133,7 +135,7 @@ class _TimerSheetState extends State<TimerSheet> {
       );
     });
 
-  ChoiceChip _choice(int? duration, String label) => ChoiceChip(
+  GlowChoice _choice(int? duration, String label) => GlowChoice(choiceKey: Key('timer-$label'),
     label: Text(c.text(label)), selected: _preset == duration,
     onSelected: (_) => setState(() { _preset = duration; _invalid = false; }),
   );
@@ -155,14 +157,17 @@ class _CountdownRing extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
-    final radius = size.shortestSide / 2 - 4;
+    final radius = size.shortestSide / 2 - 6;
     final bounds = Rect.fromCircle(center: center, radius: radius);
     canvas.drawCircle(center, radius, Paint()..color = const Color(0xff1b1436));
-    final stroke = Paint()..style = PaintingStyle.stroke..strokeWidth = 7;
-    canvas.drawCircle(center, radius, stroke..color = glowLine);
-    stroke.shader = const SweepGradient(colors: [glowViolet, glowPink],
-      transform: GradientRotation(-math.pi / 2)).createShader(bounds);
-    canvas.drawArc(bounds, -math.pi / 2, 2 * math.pi * fraction.clamp(0, 1), false, stroke);
+    final stroke = Paint()..style = PaintingStyle.stroke..strokeWidth = 10;
+    canvas.drawCircle(center, radius, stroke..color = glowMuted.withValues(alpha: .35));
+    stroke.strokeCap = StrokeCap.round;
+    final sweep = 2 * math.pi * fraction.clamp(0, 1);
+    if (sweep <= 0) return;
+    stroke.shader = SweepGradient(colors: glowProgressGradient.colors, endAngle: sweep,
+      transform: const GradientRotation(-math.pi / 2)).createShader(bounds);
+    canvas.drawArc(bounds, -math.pi / 2, sweep, false, stroke);
   }
 
   @override

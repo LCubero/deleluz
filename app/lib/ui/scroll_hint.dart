@@ -4,9 +4,10 @@ import 'glow_glass.dart';
 
 /// Reserves a footer outside the viewport so the cue never obscures content.
 class ScrollHint extends StatefulWidget {
-  const ScrollHint({super.key, required this.child});
+  const ScrollHint({super.key, required this.child, this.shrinkWrap = false, this.showHint = true});
 
   final Widget child;
+  final bool shrinkWrap, showHint;
 
   @override
   State<ScrollHint> createState() => _ScrollHintState();
@@ -36,9 +37,9 @@ class _ScrollHintState extends State<ScrollHint> {
         _update(event.metrics, event.depth);
         return false;
       },
-      child: Column(children: [
-        Expanded(child: widget.child),
-        SizedBox(height: glassInset, child: _more ? const ExcludeSemantics(
+      child: Column(mainAxisSize: widget.shrinkWrap ? MainAxisSize.min : MainAxisSize.max, children: [
+        Flexible(fit: widget.shrinkWrap ? FlexFit.loose : FlexFit.tight, child: widget.child),
+        if (widget.showHint) SizedBox(height: glassInset, child: _more ? const ExcludeSemantics(
           child: Icon(Icons.keyboard_arrow_down, size: glassInset, color: glowMuted),
         ) : null),
       ]),

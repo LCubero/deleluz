@@ -7,6 +7,8 @@ import 'effect_list.dart';
 import 'glow_glass.dart';
 import 'notice.dart';
 import 'home_presets.dart';
+import 'scenes/scenes_screen.dart';
+import 'scroll_hint.dart';
 
 enum QuickActionKind {
   color('color', 'quickColorHint', Icons.palette_outlined),
@@ -58,8 +60,8 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
     // Give the search/results the full viewport in short windows with the keyboard up.
     final compactEffect = kind == QuickActionKind.effect && inset > 0 &&
         MediaQuery.sizeOf(context).height - inset < 280;
-    final confirm = FilledButton(onPressed: selected == null ? null : () => Navigator.pop(context, selected),
-      child: Text(c.text(widget.replacing ? 'changeShortcut' : 'quickAdd')));
+    final confirm = GlowPrimaryButton(onPressed: selected == null ? null : () => Navigator.pop(context, selected),
+      label: Text(c.text(widget.replacing ? 'changeShortcut' : 'quickAdd')));
     return PopScope<Fields>(canPop: kind == null, onPopInvokedWithResult: (popped, _) {
       if (!popped && kind != null) _back();
     }, child: Padding(padding: EdgeInsets.only(bottom: inset),
@@ -74,10 +76,12 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
               IconButton(tooltip: c.text('close'), icon: const Icon(Icons.close),
                 onPressed: () => Navigator.pop(context)),
             ]),
-            Text(c.text(kind == null ? 'quickStepType' : 'quickStepOption'), style: style.bodySmall),
+            if (kind != QuickActionKind.sequence)
+              Text(c.text(kind == null ? 'quickStepType' : 'quickStepOption'), style: style.bodySmall),
             const SizedBox(height: 8),
           ],
-          Flexible(key: const ValueKey('quick-picker-body'), child: SingleChildScrollView(key: ValueKey(kind), child: switch (kind) {
+          Flexible(key: const ValueKey('quick-picker-body'), child: ScrollHint(key: ValueKey(kind), shrinkWrap: true,
+            showHint: !compactEffect, child: SingleChildScrollView(child: switch (kind) {
             null => GlowGrid(columns: 2, children: [
               for (final type in QuickActionKind.values)
                 GlowTile(key: Key('quick-type-${type.name}'), minHeight: 104,
@@ -98,15 +102,18 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
             ]),
             QuickActionKind.scene => _scenes(),
             QuickActionKind.sequence => _scenes(own: true),
-          })),
-          if (kind != null && !compactEffect) ...[
+          }))),
+          if (kind != null && !compactEffect &&
+              (kind != QuickActionKind.sequence || c.models.loadSequences().isNotEmpty)) ...[
             const SizedBox(height: 8),
-            Row(spacing: 8, children: [
-              if (rgb != null) SizedBox(width: 24, child: GlowStrip(colors: [rgb], dotted: false)),
-              Expanded(child: Text(selected == null ? c.text('quickChooseOption')
-                : c.text('quickPreview', {'name': c.shortcutLabel(selected)}), style: style.bodySmall)),
-            ]),
-            const SizedBox(height: 4),
+            if (kind != QuickActionKind.sequence) ...[
+              Row(spacing: 8, children: [
+                if (rgb != null) SizedBox(width: 24, child: GlowStrip(colors: [rgb], dotted: false)),
+                Expanded(child: Text(selected == null ? c.text('quickChooseOption')
+                  : c.text('quickPreview', {'name': c.shortcutLabel(selected)}), style: style.bodySmall)),
+              ]),
+              const SizedBox(height: 4),
+            ],
             confirm,
           ],
         ]),
@@ -119,17 +126,44 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
 
   Widget _scenes({bool own = false}) {
     final scenes = own ? c.models.loadSequences() : const <Fields>[];
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text(c.text(own ? 'myScenes' : 'quickIncluded'), style: Theme.of(context).textTheme.titleMedium),
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
       if (own) ...[
-        if (scenes.isEmpty) Notice(c.text('quickNoSequences')),
-        for (final scene in scenes)
-          ListTile(title: Text(scene['name'] as String), selected: _selected?['id'] == scene['id'],
-            onTap: () => _select({'kind': 'sequence', 'id': scene['id']})),
+        if (scenes.isEmpty) ...[
+          Notice(c.text('quickNoSequences')),
+          GlowPrimaryButton(key: const Key('quick-new-scene'), icon: const Icon(Icons.add),
+            label: Text(c.text('newSequence')), onPressed: () async {
+              await SceneEditor.create(context, c);
+              if (mounted) setState(() {});
+            }),
+        ],
+        for (final scene in scenes) _sceneCard(scene),
       ] else
         for (final preset in homePresets.keys)
-          ListTile(title: Text(c.text(preset)), selected: _selected?['preset'] == preset,
-            onTap: () => _select({'kind': 'scene', 'preset': preset})),
+          GlowTile(key: Key('quick-scene-$preset'), minHeight: 48,
+            selected: _selected?['preset'] == preset,
+            onTap: () => _select({'kind': 'scene', 'preset': preset}),
+            child: Text(c.text(preset))),
     ]);
+  }
+
+  Widget _sceneCard(Fields scene) {
+    final steps = sceneSteps(scene);
+    final duration = glowSeconds(steps.fold(0, (total, step) => total + (step['durationMs'] as int)), c.language);
+    final style = Theme.of(context).textTheme;
+    return GlowTile(key: ValueKey('quick-sequence-${scene['id']}'), minHeight: 92, inset: glassInset,
+      selected: _selected?['id'] == scene['id'],
+      onTap: () => _select({'kind': 'sequence', 'id': scene['id']}),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
+        Text(scene['name'] as String, style: style.titleMedium),
+        ExcludeSemantics(child: Row(spacing: 4, children: [
+          for (final step in steps)
+            Expanded(child: switch (step['rgb']) {
+              final List<int> rgb => GlowStrip(colors: [rgb], dotted: false),
+              _ => const Icon(Icons.auto_awesome, color: glowLink, size: 16),
+            }),
+        ])),
+        Text(c.text(steps.length == 1 ? 'quickSceneOneStep' : 'quickSceneSteps',
+          {'count': steps.length, 'duration': duration}), style: style.bodySmall),
+      ]));
   }
 }

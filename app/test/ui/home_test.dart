@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:ui' show Tristate;
 
 import 'package:deleluz/app_controller.dart';
 import 'package:deleluz/link.dart';
@@ -637,6 +638,10 @@ void main() {
       await models.saveShortcuts([]);
       final c = await start(tester);
       c.toggleEffectFavorite(210);
+      void expectSelected(Finder target) {
+        expect(find.descendant(of: target, matching: find.byKey(GlowSelection.markerKey)), findsOneWidget);
+        expect(tester.getSemantics(target).getSemanticsData().flagsCollection.isSelected, Tristate.isTrue);
+      }
       Future<void> tap(Finder target) async {
         await tester.ensureVisible(target);
         await tester.pumpAndSettle();
@@ -672,16 +677,21 @@ void main() {
       await tester.enterText(find.byKey(const Key('effect-search')), '210');
       await tester.pumpAndSettle();
       await tap(find.byKey(const Key('effect-row-210')));
+      expectSelected(find.byKey(const Key('effect-row-210')));
       await tap(confirm);
       expect(c.shortcuts.last, {'kind': 'effect', 'effect': 210});
       await tap(add);
       await tap(find.byKey(const Key('quick-type-scene')));
       await tap(find.text(c.text('rasta')));
+      expectSelected(find.byKey(const Key('quick-scene-rasta')));
       await tap(confirm);
       expect(c.shortcuts.last, {'kind': 'scene', 'preset': 'rasta'});
       await tap(add);
       await tap(find.byKey(const Key('quick-type-sequence')));
       await tap(find.text(c.models.loadSequences().single['name'] as String));
+      final card = find.byKey(const Key('quick-sequence-1'));
+      expectSelected(card);
+      expect(find.descendant(of: card, matching: find.text('3 pasos · 1,5 s')), findsOneWidget);
       await tap(confirm);
       expect(c.shortcuts.last, {'kind': 'sequence', 'id': '1'});
 
@@ -1082,16 +1092,38 @@ void main() {
     expect(ble.writes, isEmpty);
   });
 
+  testWidgets('empty My scenes picker opens the editor and shows the saved card', (tester) async {
+    final c = await start(tester);
+    final title = find.text(c.text('quickActions'));
+    await tester.scrollUntilVisible(title, 100);
+    await timerTap(tester, title);
+    await timerTap(tester, find.byTooltip(c.text('addShortcut')));
+    await timerTap(tester, find.byKey(const Key('quick-type-sequence')));
+    expect(find.widgetWithText(Notice, c.text('quickNoSequences')), findsOneWidget);
+    await timerTap(tester, find.byKey(const Key('quick-new-scene')));
+    expect(find.text(c.text('sceneTotal', {'duration': '1,5 s'})), findsOneWidget);
+    expect(find.text('Mantén presionado un paso y arrástralo para cambiar su orden.'), findsOneWidget);
+    await timerTap(tester, find.byKey(const Key('scene-save')));
+    expect(find.text('3 pasos · 1,5 s'), findsOneWidget);
+    expect(find.byKey(const Key('quick-new-scene')), findsNothing);
+  });
+
   testWidgets('timer sheet validates custom seconds and remembers them on reload', (tester) async {
+    void expectSelected(String label) {
+      final chip = find.byKey(Key('timer-$label'));
+      expect(find.descendant(of: chip, matching: find.byKey(GlowSelection.markerKey)), findsOneWidget);
+      expect(tester.getSemantics(chip).getSemanticsData().flagsCollection.isSelected, Tristate.isTrue);
+    }
     final c = await start(tester);
     await timerTap(tester, find.byTooltip(c.text('offTimer')));
     expect(find.text(c.text('connectFirst')), findsOneWidget);
     expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, c.text('startTimer'))).onPressed, isNull);
-    expect(tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, c.text('minutes15'))).selected, isTrue);
+    expectSelected('minutes15');
     await timerTap(tester, find.byTooltip(c.text('close')));
     await connect(tester);
     await timerTap(tester, find.byTooltip(c.text('offTimer')));
     await timerTap(tester, find.text(c.text('custom')));
+    expectSelected('custom');
     final minutes = find.widgetWithText(TextField, c.text('minutes'));
     final seconds = find.widgetWithText(TextField, c.text('seconds'));
     await tester.enterText(minutes, '0');

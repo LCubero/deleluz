@@ -34,15 +34,20 @@ class AppAutoCard extends StatelessWidget {
         TweenAnimationBuilder<double>(key: ValueKey(c.appAutoStep),
           tween: Tween(begin: progress, end: 1.0),
           duration: Duration(milliseconds: ((1 - progress) * c.appAutoSeconds * 1000).round()),
-          builder: (context, value, _) => LinearProgressIndicator(value: value,
-            semanticsLabel: c.text('appAutoProgress'),
-            semanticsValue: c.text('percent', {'value': (value * 100).round()}))),
+          builder: (context, value, _) => DecoratedBox(
+            decoration: BoxDecoration(color: glowLine, borderRadius: BorderRadius.circular(99)),
+            child: ShaderMask(key: const Key('app-auto-gradient'), blendMode: BlendMode.srcIn,
+              shaderCallback: glowProgressGradient.createShader,
+              child: LinearProgressIndicator(value: value, backgroundColor: Colors.transparent,
+                color: Colors.white, stopIndicatorColor: Colors.transparent,
+                semanticsLabel: c.text('appAutoProgress'),
+                semanticsValue: c.text('percent', {'value': (value * 100).round()}))))),
       ],
       const SizedBox(height: 8),
       Text(c.text('appAutoDuration')),
       Wrap(spacing: 8, children: [
         for (final seconds in Models.appAutoDurations)
-          ChoiceChip(key: Key('app-auto-$seconds'),
+          GlowChoice(choiceKey: Key('app-auto-$seconds'),
             label: Text(seconds < 60
                 ? c.text('durationShortSeconds', {'value': seconds})
                 : c.text('durationShortMinutes', {'value': seconds ~/ 60})),
@@ -52,9 +57,9 @@ class AppAutoCard extends StatelessWidget {
       const SizedBox(height: 8),
       Text(c.text('appAutoList')),
       Wrap(spacing: 8, children: [
-        ChoiceChip(label: Text(c.text('appAutoAll')), selected: !c.appAutoFavorites,
+        GlowChoice(label: Text(c.text('appAutoAll')), selected: !c.appAutoFavorites,
           onSelected: playing ? null : (_) => c.setAppAutoOptions(favorites: false)),
-        ChoiceChip(key: const Key('app-auto-favorites'), label: Text(c.text('favorites')),
+        GlowChoice(choiceKey: const Key('app-auto-favorites'), label: Text(c.text('favorites')),
           selected: c.appAutoFavorites,
           onSelected: playing || !hasFavorites ? null : (_) => c.setAppAutoOptions(favorites: true)),
       ]),

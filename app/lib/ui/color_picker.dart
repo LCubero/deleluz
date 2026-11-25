@@ -40,14 +40,11 @@ class SharedColorPicker extends StatelessWidget {
     final style = Theme.of(context).textTheme;
     Widget chip((String, String, List<int>) preset) {
       final (label, name, tone) = preset;
-      return ChoiceChip(
+      return GlowChoice(
         avatar: CircleAvatar(backgroundColor: _color(tone)),
         label: Text(controller.text(label)),
         selected: current == rgbHex(tone).toLowerCase(),
         onSelected: (_) => onChanged(tone, name),
-        showCheckmark: false,
-        visualDensity: VisualDensity.standard,
-        materialTapTargetSize: MaterialTapTargetSize.padded,
       );
     }
 

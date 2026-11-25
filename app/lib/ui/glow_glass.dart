@@ -8,6 +8,46 @@ const glowInk = Color(0xfff5f3ff);
 const glowMuted = Color(0xffbdb6dc);
 const glowViolet = Color(0xffa855f7);
 const glowPink = Color(0xffec4899);
+const glowCyan = Color(0xff22d3ee);
+const glowProgressGradient = LinearGradient(colors: [glowViolet, glowPink]);
+
+/// Shared selection tokens and non-color cue for choices, rows and tabs.
+abstract final class GlowSelection {
+  static const tint = Color(0x1c22d3ee);
+  static const border = BorderSide(color: glowCyan);
+  static const markerKey = ValueKey('glow-selected');
+
+  static Widget check() => const ExcludeSemantics(key: markerKey,
+    child: Icon(Icons.check, color: glowCyan, size: 18));
+
+  static ShapeBorder shape(double radius, {required bool selected, bool focused = false}) =>
+    RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius),
+      side: focused ? const BorderSide(color: glowCyan, width: 2)
+        : selected ? border : const BorderSide(color: glowLine));
+}
+
+class GlowChoice extends StatelessWidget {
+  const GlowChoice({super.key, this.choiceKey, this.avatar, required this.label,
+    required this.selected, required this.onSelected});
+  final Key? choiceKey;
+  final Widget label;
+  final Widget? avatar;
+  final bool selected;
+  final ValueChanged<bool>? onSelected;
+
+  @override
+  Widget build(BuildContext context) => ChoiceChip(key: choiceKey,
+    selected: selected, onSelected: onSelected, showCheckmark: false,
+    avatar: selected ? GlowSelection.check() : avatar,
+    color: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected)
+      ? GlowSelection.tint : glowGlass),
+    side: WidgetStateBorderSide.resolveWith((states) => states.contains(WidgetState.focused)
+      ? const BorderSide(color: glowCyan, width: 2)
+      : selected ? GlowSelection.border : const BorderSide(color: glowLine)),
+    labelStyle: const TextStyle(color: glowInk),
+    materialTapTargetSize: MaterialTapTargetSize.padded,
+    label: label);
+}
 const glowLine = Color(0x24ffffff);
 const glowGlass = Color(0x11ffffff);
 const glowGlassSelected = Color(0x1cffffff);
@@ -15,6 +55,29 @@ const glowFaint = Color(0xff8f88b3);
 const glowLink = Color(0xfff0abfc);
 const glowStrongGradient = LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
   colors: [Color(0xff7e22ce), Color(0xffbe185d)]);
+String glowSeconds(int milliseconds, String language) {
+  final seconds = (milliseconds / 1000).toStringAsFixed(3).replaceFirst(RegExp(r'\.?0+$'), '');
+  return '${language == 'es' ? seconds.replaceFirst('.', ',') : seconds} s';
+}
+
+class GlowPrimaryButton extends StatelessWidget {
+  const GlowPrimaryButton({super.key, required this.onPressed, required this.label, this.icon});
+  final VoidCallback? onPressed;
+  final Widget label;
+  final Widget? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = FilledButton.styleFrom(backgroundColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)));
+    final button = icon == null
+      ? FilledButton(style: style, onPressed: onPressed, child: label)
+      : FilledButton.icon(style: style, onPressed: onPressed, icon: icon, label: label);
+    return onPressed == null ? button : Ink(decoration: BoxDecoration(
+      gradient: glowStrongGradient, borderRadius: BorderRadius.circular(14)), child: button);
+  }
+}
+
 const glassInset = 16.0;
 const glowScreenPadding = EdgeInsets.fromLTRB(18, 16, 18, 18);
 
@@ -24,6 +87,11 @@ ThemeData glowTheme() {
         .copyWith(primary: const Color(0xffe3c2ff), surface: const Color(0xff1b1636),
             onSurface: glowInk, onSurfaceVariant: glowMuted),
     scaffoldBackgroundColor: glowBackground,
+    focusColor: const Color(0x4022d3ee),
+    inputDecorationTheme: const InputDecorationTheme(
+      focusedBorder: OutlineInputBorder(borderSide: GlowSelection.border),
+      focusedErrorBorder: OutlineInputBorder(borderSide: GlowSelection.border)),
+
     sliderTheme: const SliderThemeData(trackHeight: 10, trackShape: _FlushSliderTrack(),
       thumbShape: _GlowThumb(), overlayShape: RoundSliderOverlayShape(overlayRadius: 22)),
     filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(
@@ -173,20 +241,75 @@ class GlowGrid extends StatelessWidget {
 
 class GlowTile extends StatelessWidget {
   const GlowTile({super.key, required this.child, required this.onTap,
-    this.onLongPress, this.minHeight = 64, this.inset = 10});
+    this.onLongPress, this.minHeight = 64, this.inset = 10, this.selected});
+  final bool? selected;
   final Widget child;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
   final double minHeight, inset;
 
   @override
-  Widget build(BuildContext context) => Material(color: glowGlass,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16),
-      side: const BorderSide(color: glowLine)),
-    child: InkWell(onTap: onTap, onLongPress: onLongPress, borderRadius: BorderRadius.circular(16),
-      child: Container(constraints: BoxConstraints(minHeight: minHeight),
-        padding: EdgeInsets.all(inset), child: child)),
+  Widget build(BuildContext context) => GlowSelectionTarget(
+    selected: selected, radius: 16, onTap: onTap, onLongPress: onLongPress,
+    child: Container(constraints: BoxConstraints(minHeight: minHeight),
+      padding: EdgeInsets.all(inset), child: selected == null ? child : Row(spacing: 8, children: [
+        Expanded(child: child),
+        if (selected!) GlowSelection.check() else const SizedBox(width: 18),
+      ])),
   );
+}
+
+class GlowSelectionTarget extends StatefulWidget {
+  const GlowSelectionTarget({super.key, this.selected, this.onTap, this.onLongPress,
+    this.radius = 16, this.clear = false, required this.child});
+  final bool? selected;
+  final VoidCallback? onTap, onLongPress;
+  final double radius;
+  final bool clear;
+  final Widget child;
+
+  @override
+  State<GlowSelectionTarget> createState() => _GlowSelectionTargetState();
+}
+
+class _GlowSelectionTargetState extends State<GlowSelectionTarget> {
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) => Semantics(selected: widget.selected,
+    button: widget.onTap == null ? null : true,
+    child: Material(
+      color: widget.selected == true ? GlowSelection.tint : widget.clear ? Colors.transparent : glowGlass,
+      shape: widget.clear && !(_focused || widget.selected == true)
+        ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(widget.radius))
+        : GlowSelection.shape(widget.radius, selected: widget.selected == true, focused: _focused),
+      child: InkWell(borderRadius: BorderRadius.circular(widget.radius),
+        onFocusChange: (focused) => setState(() => _focused = focused),
+        onTap: widget.onTap, onLongPress: widget.onLongPress, child: widget.child),
+    ));
+}
+
+/// Keeps a separate action (such as a favorite star) independently tappable.
+class GlowSelectionRow extends StatefulWidget {
+  const GlowSelectionRow({super.key, required this.selected, required this.child});
+  final bool selected;
+  final Widget child;
+
+  @override
+  State<GlowSelectionRow> createState() => _GlowSelectionRowState();
+}
+
+class _GlowSelectionRowState extends State<GlowSelectionRow> {
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) => Focus(canRequestFocus: false,
+    onFocusChange: (focused) => setState(() => _focused = focused),
+    child: Material(
+      color: widget.selected ? GlowSelection.tint : Colors.transparent,
+      shape: _focused || widget.selected
+        ? GlowSelection.shape(16, selected: widget.selected, focused: _focused) : null,
+      child: widget.child));
 }
 
 Future<T?> showGlowConfirmation<T>({required BuildContext context, required String title,
@@ -367,21 +490,18 @@ class GlowSegments<T> extends StatelessWidget {
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14),
       side: const BorderSide(color: glowLine)),
     child: Padding(padding: const EdgeInsets.all(4), child: Row(children: [
-      for (final segment in segments) Expanded(child: Semantics(button: true,
-        selected: segment.value == selected, child: Material(
-          color: segment.value == selected ? glowGlassSelected : Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10),
-            side: segment.value == selected ? const BorderSide(color: Color(0x2effffff)) : BorderSide.none),
-          child: InkWell(borderRadius: BorderRadius.circular(10),
-            onTap: segment.enabled ? () => onSelected(segment.value) : null,
-            child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 44),
-              child: Center(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-                child: DefaultTextStyle.merge(textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: segments.length == 3 ? 14 : 15, fontWeight: FontWeight.w600,
-                    color: segment.value == selected ? glowInk : glowMuted),
-                  child: segment.label ?? const SizedBox.shrink())))),
-          ),
-        ),
+      for (final segment in segments) Expanded(child: GlowSelectionTarget(
+        radius: 10, clear: true, selected: segment.value == selected,
+        onTap: segment.enabled ? () => onSelected(segment.value) : null,
+        child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48),
+          child: Center(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              if (segment.value == selected) GlowSelection.check() else const SizedBox(height: 18),
+              DefaultTextStyle.merge(textAlign: TextAlign.center,
+                style: TextStyle(fontSize: segments.length == 3 ? 14 : 15, fontWeight: FontWeight.w600,
+                  color: segment.value == selected ? glowInk : glowMuted),
+                child: segment.label ?? const SizedBox.shrink()),
+            ])))),
       )),
     ])));
 }

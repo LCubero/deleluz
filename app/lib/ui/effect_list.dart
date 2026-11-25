@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../model/effects.dart';
 import 'notice.dart';
+import 'glow_glass.dart';
 
 /// Shared catalog; the caller decides what selecting an effect does.
 class EffectList extends StatefulWidget {
@@ -77,9 +78,14 @@ class _EffectListState extends State<EffectList> {
               final id = entry as int;
               final name = effectNames[id - 1];
               final favorite = widget.favorites.contains(id);
-              return ListTile(key: Key('effect-row-$id'), contentPadding: EdgeInsets.zero,
-                selected: widget.selected == id,
-                title: Text('${_number(id)} · $name'),
+              final selected = widget.selected == id;
+              return GlowSelectionRow(selected: selected, child: ListTile(
+                key: Key('effect-row-$id'), contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                minTileHeight: 48, selected: selected, selectedColor: glowInk,
+                title: Row(spacing: 8, children: [
+                  Expanded(child: Text('${_number(id)} · $name')),
+                  if (selected) GlowSelection.check() else const SizedBox(width: 18),
+                ]),
                 onTap: widget.onSelected == null ? null : () {
                   FocusScope.of(context).unfocus();
                   widget.onSelected!(id);
@@ -90,7 +96,7 @@ class _EffectListState extends State<EffectList> {
                     icon: Icon(favorite ? Icons.star : Icons.star_border),
                     onPressed: () => widget.onFavorite(id)),
                 )),
-              );
+              ));
             }),
         )),
     ]);

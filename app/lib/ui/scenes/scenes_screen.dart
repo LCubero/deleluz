@@ -13,6 +13,7 @@ import '../glow_icon.dart';
 import '../home_presets.dart';
 import '../color_picker.dart';
 import '../effect_list.dart';
+import '../scroll_hint.dart';
 import 'scene_transport.dart';
 
 part 'scene_editor.dart';
@@ -147,7 +148,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
 
   Future<void> _edit(Fields? item) async {
     final transport = _transport;
-    await showDialog<void>(context: context, builder: (_) => _SceneEditor(transport: transport, item: item));
+    await showDialog<void>(context: context, builder: (_) => SceneEditor._(transport: transport, item: item));
     if (!mounted || transport != _transport) return;
     transport.stopPreview();
     setState(() {});

@@ -173,6 +173,9 @@ void main() {
       await flush(tester);
       expect(tester.widget<Text>(keyed('app-auto-current')).data, '01 · ${effectNames.first}');
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      final mask = tester.widget<ShaderMask>(keyed('app-auto-gradient'));
+      expect(mask.shaderCallback, glowProgressGradient.createShader);
+      expect(glowProgressGradient.colors, [glowViolet, glowPink]);
       await tap(tester, 'app-auto-toggle');
       expect(find.byType(LinearProgressIndicator), findsNothing);
       final count = ble.writes.length;
@@ -200,7 +203,7 @@ void main() {
     await tap(tester, 'effect-auto');
     await flush(tester);
     expect(ble.writes.last, wire.effect(wire.autoEffect));
-    expect(tester.widget<FilterChip>(keyed('effect-auto')).selected, isTrue);
+    expect(tester.widget<ChoiceChip>(keyed('effect-auto')).selected, isTrue);
     expect(tester.testTextInput.isVisible, isFalse);
     expect(keyed('strip-cycle-all'), findsOneWidget);
     expect(find.textContaining(controller.text('lastSent', {'command': ''})), findsNothing);
@@ -290,9 +293,11 @@ void main() {
       controller.setLanguage('en');
       await tester.pump();
       await tap(tester, 'color-effects');
+      final segment = find.ancestor(of: keyed('color-effects'), matching: find.byType(GlowSelectionTarget));
+      expect(find.descendant(of: segment, matching: find.byKey(GlowSelection.markerKey)), findsOneWidget);
       await tap(tester, 'effect-auto');
       await flush(tester);
-      expect(tester.widget<FilterChip>(keyed('effect-auto')).selected, isTrue);
+      expect(tester.widget<ChoiceChip>(keyed('effect-auto')).selected, isTrue);
       await tester.enterText(keyed('effect-search'), 'backward dreaming');
       await tester.pumpAndSettle();
       await tester.ensureVisible(keyed('effect-star-2'));

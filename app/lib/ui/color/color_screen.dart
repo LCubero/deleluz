@@ -73,7 +73,7 @@ class _ColorScreenState extends State<ColorScreen> {
         Text(c.text('allEffects'), key: const Key('strip-cycle-all'), textAlign: TextAlign.center),
         Semantics(liveRegion: true, child: Text(c.text('autoCycleAll'), textAlign: TextAlign.center)),
       ],
-      Center(child: FilterChip(key: const Key('effect-auto'),
+      Center(child: GlowChoice(choiceKey: const Key('effect-auto'),
         label: Text(c.text('stripCycle')), selected: _auto,
         onSelected: c.canSend ? (_) => _playEffect(wire.autoEffect) : null)),
       const SizedBox(height: 12),

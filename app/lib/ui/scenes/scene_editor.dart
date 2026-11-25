@@ -1,15 +1,25 @@
 part of 'scenes_screen.dart';
 
-class _SceneEditor extends StatefulWidget {
-  const _SceneEditor({required this.transport, this.item});
+class SceneEditor extends StatefulWidget {
+  const SceneEditor._({required this.transport, this.item});
+
+  static Future<void> create(BuildContext context, AppController controller) async {
+    final transport = SceneTransport(controller);
+    try {
+      await showDialog<void>(context: context, builder: (_) => SceneEditor._(transport: transport));
+    } finally {
+      transport.stopPreview();
+      transport.dispose();
+    }
+  }
   final SceneTransport transport;
   final Fields? item;
 
   @override
-  State<_SceneEditor> createState() => _SceneEditorState();
+  State<SceneEditor> createState() => _SceneEditorState();
 }
 
-class _SceneEditorState extends State<_SceneEditor> {
+class _SceneEditorState extends State<SceneEditor> {
   AppController get c => widget.transport.controller;
   late final String? _id = widget.item?['id'] as String?;
   late final Fields _initial = widget.item ?? createSequence(c.models.loadSequences(),
@@ -82,7 +92,7 @@ class _SceneEditorState extends State<_SceneEditor> {
     }
   }
 
-  String _duration(int ms) => ms % 1000 == 0 ? '${ms ~/ 1000} s' : '$ms ms';
+  String _duration(int ms) => glowSeconds(ms, c.language);
 
   Future<void> _pick({required bool effect, int? index}) async {
     final step = await showModalBottomSheet<Fields>(context: context,
@@ -131,9 +141,15 @@ class _SceneEditorState extends State<_SceneEditor> {
   @override
   Widget build(BuildContext context) => ListenableBuilder(listenable: widget.transport,
     builder: (context, _) => Dialog(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24),
+        side: const BorderSide(color: glowLine)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      child: SizedBox(width: 410, child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Flexible(child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+      child: GlowBackdrop(child: SizedBox(width: 410, child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Flexible(child: ScrollHint(shrinkWrap: true,
+          child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Text(_renaming ? c.text('sequenceNameLabel') : _name.text,
           style: Theme.of(context).textTheme.titleLarge),
@@ -182,7 +198,7 @@ class _SceneEditorState extends State<_SceneEditor> {
             style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error,
               side: BorderSide(color: Theme.of(context).colorScheme.error.withValues(alpha: .45))),
             icon: const Icon(Icons.delete_outline), label: Text(c.text('deleteSequence')))),
-      ]))),
+      ])))),
       Padding(padding: const EdgeInsets.fromLTRB(12, 2, 12, 10), child: Wrap(
         alignment: WrapAlignment.center, spacing: 4, runSpacing: 4, children: [
         TextButton(key: const Key('scene-close'), onPressed: _busy ? null : () => Navigator.pop(context),
@@ -195,7 +211,7 @@ class _SceneEditorState extends State<_SceneEditor> {
         FilledButton(key: const Key('scene-save'), onPressed: _busy ? null : _save,
           child: Text(c.text('saveSequence'))),
       ])),
-      ])),
+      ]))),
     ));
 }
 
@@ -239,7 +255,8 @@ class _StepPickerState extends State<_StepPicker> {
             ListenableBuilder(listenable: c, builder: (context, _) => EffectList(
               favorites: c.effectFavorites, text: c.text, onFavorite: c.toggleEffectFavorite,
               selected: _effect, onSelected: (id) => setState(() => _effect = id))),
-            if (_effect != null) Text(effectName(_effect!)!),
+            if (_effect != null) Padding(padding: const EdgeInsets.only(top: 8),
+              child: Text(c.text('quickPreview', {'name': effectName(_effect!)!}))),
           ] else
             SharedColorPicker(controller: c, rgb: _color,
               onChanged: (rgb, _) => setState(() => _color = rgb)),

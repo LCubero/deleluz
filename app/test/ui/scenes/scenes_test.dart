@@ -155,6 +155,8 @@ void main() {
       await tester.enterText(key('effect-search'), '210');
       await tester.pumpAndSettle();
       await tap(tester, 'effect-row-210');
+      expect(find.descendant(of: key('effect-row-210'),
+        matching: find.byKey(const ValueKey('glow-selected'))), findsOneWidget);
       await tester.ensureVisible(key('scene-step-duration'));
       await tester.enterText(key('scene-step-duration'), '601');
       await tester.pumpAndSettle();
