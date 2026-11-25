@@ -153,12 +153,13 @@ class _StripSelectorState extends State<StripSelector> {
     final primary = !connected && failure == null;
     final pill = FilledButton(
       style: FilledButton.styleFrom(
-        minimumSize: const Size(0, 28), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+        minimumSize: const Size(0, 34),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: const StadiumBorder(),
         backgroundColor: primary ? Colors.transparent : glowGlassSelected,
         foregroundColor: failure == null ? glowInk : error,
         side: primary ? null : BorderSide(color: failure == null ? glowLine : error),
-        textStyle: const TextStyle(fontSize: 13, height: 1.2, fontWeight: FontWeight.w700),
+        textStyle: const TextStyle(fontSize: 15, height: 1.2, fontWeight: FontWeight.w700),
       ),
       onPressed: c.busy ? null : () => _toggle(strip),
       child: Text(c.text(failure == null ? _action(strip) : 'retryStrip'), textAlign: TextAlign.center),
@@ -202,7 +203,7 @@ class _StripSelectorState extends State<StripSelector> {
   }
 
   Widget _rowIcon(String label, IconData icon, VoidCallback action) => SizedBox.square(dimension: 48,
-    child: IconButton(tooltip: c.text(label), icon: Icon(icon, size: 16),
+    child: IconButton(tooltip: c.text(label), icon: Icon(icon, size: 22), padding: EdgeInsets.zero,
       color: glowMuted, onPressed: c.busy ? null : action));
 
   Future<void> _menu(RememberedStrip strip) async {
