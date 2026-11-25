@@ -26,4 +26,4 @@ See the [roadmap](roadmap.md). Firmware readback and a strip-side timer remain u
 
 <!-- doc-role:next-step -->
 
-Pending: install `DeleLuz-1.0.0-arm64-v8a.apk` (built and verified in commit `468da68`, kept in git-ignored `app/build/release-assets/`) on the user's phone, then add the three per-ABI APKs to release v1.0.0, mention them in the release notes and README as an advanced option, and push the four local commits on `main`. After that, choose the next improvement from the roadmap follow-ups when the user asks. Keep the release keystore backup; raise the build number above 2004 for the next APK. An iOS build needs macOS.
+The arm64 APK was installed over v1.0.0 on the user's phone on 2026-11-25 and opens with saved strips intact. Next: owner decides on phase 1 of [the plan](../PLAN.md) (roadmap RH-W-0001). Still pending approval: add the three per-ABI APKs to release v1.0.0, mention them in the release notes and README as an advanced option, and push the five local commits on `main`. Keep the release keystore backup; raise the build number above 2004 for the next APK. An iOS build needs macOS.

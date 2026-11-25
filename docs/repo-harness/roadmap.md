@@ -17,6 +17,12 @@ This roadmap is the canonical lifecycle owner. Track only non-trivial work with 
 ## Active Records
 <!-- doc-role:active-records -->
 
+- RH-W-0001 App polish (P1, proposed): saturation/white tones, effect list with search and favorites, effect steps in scenes, app-driven AUTO with name and per-effect duration, timer sheet redesign. Origin: owner requests 2026-11-25 ([plan](../PLAN.md)). Next: owner approves phase 1, then an ODD task document.
+- RH-W-0002 Two-strip spike, then groups (P2, proposed; after RH-W-0001): Android holds one link today (`app/lib/link.dart`). Next: two-strip fan-out test with skew log.
+- RH-W-0003 Webapp parity and responsive layouts (P2, proposed; after RH-W-0001): tablet, desktop, home dashboard. Next: port phase 1 features.
+- RH-W-0004 Hub spike on Raspberry Pi 3B+, then ESP32-S3 (P3, proposed): local BLE bridge with a LAN-only API. Next: owner has the Pi ready; bleak replay of one command.
+- RH-W-0005 Integrations (P3, deferred until RH-W-0004 works): Home Assistant, Matter bridge for Alexa/Google, AI tool API, CasaOS.
+
 - Per-pixel / sector control: not found (APK notes, wall-led and LED_UNION READMEs show whole-strip frames only; `odd/tasks/led-lab.md` L28). The 50 green / 50 yellow / 50 red test stays preview-only. Optional: capture the vendor DIY/graffiti screen if available.
 - Firmware: the unpopulated header hole B is the Bluetrum one-wire download port; the ROM bootloader answers with chip ID `BLUEMATE` (L44-L46). Flash read is blocked: the public bluetrum-tools blob does not run on MATE (L45). ROM `MEM_READ` works (L49-L51): the 3 KB plaintext boot code was read and CRC-verified. Open (L51): a full flash read needs a custom RAM blob and code analysis with no guarantee; continue or pause is the user's choice. Use the gold or blue adapter; red is dead (L50). Every risky step needs user approval (`odd/tasks/led-lab.md` S4); never run write/erase.
 - Windows BLE: UB500 Plus test done (lab L48); Windows cannot discover the controller's characteristics through its Bluetooth stack. Open option (untested, needs user decision): bypass the Windows stack with a dedicated USB dongle (for example Bumble over WinUSB).

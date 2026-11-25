@@ -1,0 +1,14 @@
+{
+  "title": "DeleLuz fase 1",
+  "brief": "Propuestas Glow Glass para elegir cómo ajustar el color y los blancos, explorar efectos, armar escenas y programar el apagado de la tira Sala en Android.",
+  "feature": "odd/tasks/app-polish.md",
+  "artboards": [
+    { "file": "01-color-anillo-saturacion.html", "title": "Anillo y saturación", "tradeoff": "Separa los ajustes para mayor precisión, a cambio de un control más.", "width": 390, "height": 844 },
+    { "file": "02-color-disco-blancos.html", "title": "Disco y blancos", "tradeoff": "Combina tono y saturación en un gesto, pero dificulta ajustar uno sin mover el otro.", "width": 390, "height": 844 },
+    { "file": "03-efectos-lista-buscar.html", "title": "Lista y búsqueda", "tradeoff": "Facilita buscar por nombre o número, pero el reproductor desplaza parte del catálogo.", "width": 390, "height": 844 },
+    { "file": "04-efectos-favoritos-reproductor.html", "title": "Favoritos y minirreproductor", "tradeoff": "Prioriza los efectos habituales y deja el AUTO a mano, con menos espacio para el catálogo.", "width": 390, "height": 844 },
+    { "file": "05-escena-pasos-efecto.html", "title": "Escena por pasos", "tradeoff": "Hace explícitos el tipo y la duración de cada paso, con más desplazamiento que una cuadrícula de colores.", "width": 390, "height": 844 },
+    { "file": "06-temporizador-anillo.html", "title": "Cuenta regresiva en anillo", "tradeoff": "Muestra cuánto falta y permite sumar tiempo rápido, pero requiere más altura.", "width": 390, "height": 844 },
+    { "file": "07-temporizador-rueda.html", "title": "Duración con rueda", "tradeoff": "Recupera la última duración y facilita ajustes precisos, pero no ofrece la rapidez de los botones predefinidos.", "width": 390, "height": 844 }
+  ]
+}
