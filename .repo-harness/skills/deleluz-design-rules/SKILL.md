@@ -16,7 +16,7 @@ Read `design/system.md` before changing DeleLuz UI. Skip for non-UI work.
 
 - Use only `design/system.md` tokens. Keep rounded corners, effects, glows and shadows consistent. Align edges and use symmetric spacing; nothing touches or overlaps unintentionally.
 - Reuse one shared component per job: one color picker across Color, quick actions and scene steps; one effect list across entry points.
-- Show selection with a filled or tinted surface plus a check or distinct border. Never rely on color alone. Expose selection, roles and labels to assistive technology.
+- Show selection with a cyan-tinted surface, a cyan (`#22d3ee`) border and a check. Never rely on color alone. Focus outlines are cyan. Progress bars and rings keep the violet→magenta gradient; primary buttons keep the gradient fill. Expose selection, roles and labels to assistive technology.
 - Give every interactive target at least 48 × 48 dp (48 × 48 CSS px on web). Meet WCAG AA contrast on actual composited surfaces; preserve visible focus.
 - Localize every user-facing string in Spanish and English, including tooltips and semantic labels. Wrap text; do not clip, ellipsize or shrink it to fit. Show a discreet, non-overlapping scroll hint when more content is below.
 - Use one notice style for info, warnings and errors: icon plus text, token colors, never larger than body text. Reserve space for status text that changes, so the layout never shifts.
