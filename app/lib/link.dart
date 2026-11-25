@@ -39,7 +39,9 @@ class Link {
   Link(this._ble, {this.retryDelay = const Duration(milliseconds: 300), this.onRemember, this.onChange}) {
     _sub = _ble.connectionChanges.listen((change) {
       final (id, up) = change;
-      if (!up && id == strip?.id && status == LinkStatus.connected) _set(LinkStatus.lost);
+      if (up || id != strip?.id) return;
+      if (status == LinkStatus.connected) _set(LinkStatus.lost);
+      if (status == LinkStatus.connecting) _droppedWhileOpening = true;
     });
   }
 
@@ -50,6 +52,11 @@ class Link {
   late final StreamSubscription<(String, bool)> _sub;
 
   static const maxTries = 4;
+
+  // Bumped by every connect/forget; a pending open that finds it changed is stale and
+  // releases whatever it opened, so only one strip is ever held.
+  int _generation = 0;
+  bool _droppedWhileOpening = false;
 
   LinkStatus status = LinkStatus.idle;
   Strip? strip;
@@ -67,39 +74,59 @@ class Link {
   Future<void> connect(Strip target) async {
     if (status == LinkStatus.connecting) return;
     final previous = strip;
-    if (previous != null && previous.id != target.id && status == LinkStatus.connected) {
+    final wasConnected = status == LinkStatus.connected;
+    final generation = ++_generation;
+    strip = target;
+    _set(LinkStatus.connecting);
+    if (previous != null && previous.id != target.id && wasConnected) {
       await _ble.disconnect(previous.id);
     }
-    strip = target;
-    await _open();
+    await _open(generation, LinkStatus.idle);
   }
 
   Future<void> reconnect() async {
     if (strip == null || status == LinkStatus.connecting || status == LinkStatus.connected) return;
-    await _open();
+    final fallback = status;
+    final generation = ++_generation;
+    _set(LinkStatus.connecting);
+    await _open(generation, fallback);
   }
 
-  Future<void> _open() async {
+  /// [fallback] is the status after a failed open: a failed recovery stays `lost`.
+  Future<void> _open(int generation, LinkStatus fallback) async {
     final id = strip!.id;
-    _set(LinkStatus.connecting);
+    _droppedWhileOpening = false;
+    var opened = false;
     try {
       for (var attempt = 1;; attempt++) {
         try {
           await _ble.connect(id);
+          opened = true;
           break;
         } catch (_) {
           if (attempt >= maxTries) rethrow;
           await Future<void>.delayed(retryDelay);
         }
       }
-      if (!await _ble.hasWriteWithoutResponse(id)) {
+      if (generation != _generation) {
         await _ble.disconnect(id);
-        throw UnsupportedController();
+        return;
       }
+      if (!await _ble.hasWriteWithoutResponse(id)) throw UnsupportedController();
+      if (generation != _generation) {
+        await _ble.disconnect(id);
+        return;
+      }
+      if (_droppedWhileOpening) throw StateError('Link dropped while opening');
       _set(LinkStatus.connected);
       onRemember?.call(id);
     } catch (_) {
-      _set(LinkStatus.idle);
+      if (opened) {
+        try {
+          await _ble.disconnect(id);
+        } catch (_) {/* Preserve the original error. */}
+      }
+      if (generation == _generation) _set(fallback);
       rethrow;
     }
   }
@@ -117,8 +144,11 @@ class Link {
   }
 
   Future<void> forget() async {
-    await disconnect();
+    _generation++; // Invalidates a pending open; it releases the strip itself.
+    final id = strip?.id;
+    final held = status == LinkStatus.connected;
     strip = null;
+    if (held && id != null) await _ble.disconnect(id);
     _set(LinkStatus.idle);
     onRemember?.call(null);
   }

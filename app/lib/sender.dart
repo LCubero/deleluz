@@ -64,8 +64,10 @@ class Sender {
     _running = true;
     try {
       while (_pending.isNotEmpty) {
-        final wait = _nextAt - _now();
-        if (wait > 0) await _sleep(wait);
+        // Timers may wake early; recheck the deadline before writing.
+        for (var wait = _nextAt - _now(); wait > 0; wait = _nextAt - _now()) {
+          await _sleep(wait);
+        }
         if (_pending.isEmpty) break;
         final item = _pending.removeAt(0);
         _nextAt = _now() + interval;
