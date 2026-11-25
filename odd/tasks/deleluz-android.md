@@ -27,7 +27,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - T6 — S1, S3 — Escenas: included scenes, Mis escenas editor/player, Música — workers — done 991db58 (87 tests total)
 - T7 — S1, S3, S4 — Ajustes: strip settings, language, help, privacy — workers — done 991db58 (87 tests total)
 - T8 — S6 — Visual review at small to large phone widths; real-strip session with the user; debug APK build — inline + user — pending
-- T10 — S10, S11 — Home speed enabled only for effects; generic multicolor strip preview when connected and nothing sent — worker — pending
+- T10 — S10, S11 — Home speed enabled only for effects; generic multicolor strip preview when connected and nothing sent — worker — done 2e9540c (92 tests, analyze clean)
 - T9 — S7 — Docs: `app/README.md`, CHANGELOG, current state, roadmap — inline — pending
 
 ## Log
