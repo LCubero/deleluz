@@ -24,6 +24,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - S17 — Per-device setup and labels (L39): "centra el eliminar escena en settings cambia el nombre de tiras por dispositivos y el de tira por Config. Dispositivo. o lo que mejor vaya. y al guardar dispositivos guardamos esa configuracion ? xq eso deberia ser, xqw hay tiras de 5 y 10 metros entre otras" — centered «Eliminar escena»; Ajustes «Dispositivos» / «Configuración del dispositivo»; color order and LED count saved per remembered device.
 - S18 — First release (L41): "bien, no le veo nada malo ya ni algo proximo a cambiar, ya cumple y luego la podemos mejorar. quiero que revises, no sé si juicio al app completa y que tomes scrennshots que igual van a servir pára hacer un showreel con las screenshots que tomes para que se vea fluido y bien, y unas imagenes para el readme tmb o gif no sé. y preparemos el primer release y me lo das pruebo y te doy el si para publicarlo y todo"
 - S19 — Cancel connect and swipe between saved strips (L47): "funciona todo muy bien, lo unico que falta es poder cancelar el conectar o reconectar si se queda ahi sin conectar, sin tener que esperar el tiempo de espera, quiza le di y yua sabia que estaba apagado y quiero cancelarlo. y la posibilidad de hacer slide en inicio ahi mismo en el de conectar donde sale el nombre del dispositivo y cambie entre los que tengo guardados. en circulo obvio es decir poder en el ´primero  a la izq al ultimo y ultimo a la derecha al primero"
+- S20 — About (L49-L50): "y deberiamos poner el about o acerda de o info o algo, y poner version, autor, el repo quiza no sé" — Ajustes «Acerca de»: DeleLuz + version, author "LCubero", MIT license, repository github.com/LCubero/deleluz (copy, no new dependency), privacy line.
 
 ## Tasks
 
@@ -43,6 +44,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - T15 — S18 — Full-app review against S1-S17 — done (L43); fixes in T18
 - T18 — S5, S8, S18 — Fix review findings B1, F1-F3 and minor strings — worker + parent — done 3985282 (132 tests)
 - T19 — S19 — Cancel a pending connect/reconnect; circular swipe between saved strips on the Inicio device card — worker — pending
+- T20 — S20 — Acerca de in Ajustes — after T19 — pending
 - T16 — S18, S6 — Screenshots for a showreel and README images — pending
 - T17 — S18 — Release build (version, signing, notes) for the user to test; publish only after the user's yes — pending
 - T9 — S7 — Docs: `app/README.md`, CHANGELOG, current state, roadmap — inline — pending
@@ -98,3 +100,4 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - L47 — 2026-11-25, user after testing 1.0.0 on both phones: "funciona todo muy bien, lo unico que falta es poder cancelar el conectar o reconectar si se queda ahi sin conectar, sin tener que esperar el tiempo de espera, quiza le di y yua sabia que estaba apagado y quiero cancelarlo. y la posibilidad de hacer slide en inicio ahi mismo en el de conectar donde sale el nombre del dispositivo y cambie entre los que tengo guardados. en circulo obvio es decir poder en el ´primero  a la izq al ultimo y ultimo a la derecha al primero"
 - L48 — 2026-11-25, user choice for the card swipe: "Solo la muestra" — the card shows the other saved strip without connecting; the user taps Conectar to switch. User question: "y cuando hay versiones nuevas se mantienen los datos, se puede actualizar ?"
 - L49 — 2026-11-25, user: "y deberiamos poner el about o acerda de o info o algo, y poner version, autor, el repo quiza no sé"
+- L50 — 2026-11-25, user choice for the About author: "LCubero (Recomendado)".
