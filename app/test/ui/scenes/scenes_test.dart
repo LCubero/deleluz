@@ -13,8 +13,10 @@ void main() {
   late double now;
   late Store store;
 
+  const legacyScene = '[{"id":"1","name":"Secuencia 1","colors":[[0,255,0],[255,200,0],[255,0,0]],"interval":500,"bri":80}]';
+
   Future<void> start(WidgetTester tester, {bool connected = false,
-      Size size = const Size(412, 915), double scale = 1}) async {
+      Size size = const Size(412, 915), double scale = 1, String? savedScenes}) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = size;
     addTearDown(tester.view.resetPhysicalSize);
@@ -22,6 +24,7 @@ void main() {
     ble = FakeBle();
     now = 0;
     store = Store();
+    if (savedScenes != null) store.values[Models.sequencesKey] = savedScenes;
     c = AppController(ble, store, checkAccess: (_) async => null, now: () => now);
     addTearDown(c.dispose);
     if (connected) await c.connect(FakeBle.strip);
@@ -51,7 +54,7 @@ void main() {
       await start(tester, connected: true);
       store.values[Models.sequencesKey] = mixed
           ? '[{"id":"1","name":"Mixed","bri":80,"steps":[{"rgb":[0,255,0],"durationMs":150},{"effect":210,"durationMs":1000},{"rgb":[255,0,0],"durationMs":450}]}]'
-          : '[{"id":"1","name":"Secuencia 1","colors":[[0,255,0],[255,200,0],[255,0,0]],"interval":500,"bri":80}]';
+          : legacyScene;
       c.applyShortcut({'kind': 'sequence', 'id': '1'});
       await tick(tester);
       await tick(tester);
@@ -78,6 +81,64 @@ void main() {
       expect(frames(), [green, second, red, green]);
     });
   }
+
+  testWidgets('legacy scene duration edited in the picker survives save and playback', (tester) async {
+    await start(tester, connected: true, savedScenes: legacyScene);
+    await tap(tester, 'scenes-mine');
+    await tap(tester, 'scene-edit-1');
+    await tap(tester, 'scene-frame-0');
+    await tester.ensureVisible(key('scene-step-duration'));
+    expect(find.text('500'), findsOneWidget);
+    await tester.enterText(key('scene-step-duration'), '2000');
+    await tap(tester, 'scene-apply-step');
+    await tap(tester, 'scene-save');
+    expect(sceneSteps(c.models.loadSequences().single).map((step) => step['durationMs']),
+      [2000, 500, 500]);
+
+    c.applyShortcut({'kind': 'sequence', 'id': '1'});
+    await tick(tester);
+    await tick(tester);
+    List<List<int>> frames() => ble.writes.where((w) => w[2] == 7).toList();
+    const green = [123, 255, 7, 0, 255, 0, 0, 255, 191];
+    const yellow = [123, 255, 7, 255, 200, 0, 0, 255, 191];
+    expect(frames(), [green]);
+    await tick(tester, 1999);
+    expect(frames(), [green]);
+    await tick(tester, 1);
+    expect(frames(), [green, yellow]);
+    c.setForeground(false);
+  });
+
+  testWidgets('unsaved mixed editor draft sends the exact effect on time and stops', (tester) async {
+    await start(tester, connected: true);
+    c.toggleEffectFavorite(210);
+    await tap(tester, 'scene-new');
+    await tap(tester, 'scene-remove-step-2');
+    await tap(tester, 'scene-remove-step-1');
+    await tap(tester, 'scene-add-effect');
+    await tap(tester, 'effect-row-210');
+    await tester.ensureVisible(key('scene-step-duration'));
+    await tester.enterText(key('scene-step-duration'), '1');
+    await tap(tester, 'scene-apply-step');
+
+    expect(c.models.loadSequences(), isEmpty);
+    await tap(tester, 'scene-start');
+    await tick(tester);
+    await tick(tester);
+    List<List<int>> frames() => ble.writes.where((w) => w[2] == 7 || w[2] == 3).toList();
+    const green = [123, 255, 7, 0, 255, 0, 0, 255, 191];
+    const effect = [123, 255, 3, 210, 255, 255, 255, 255, 191];
+    expect(frames(), [green]);
+    await tick(tester, 499);
+    expect(frames(), [green]);
+    await tick(tester, 1);
+    expect(frames(), [green, effect]);
+
+    await tap(tester, 'scene-stop');
+    await tick(tester, 2000);
+    expect(frames(), [green, effect]);
+    expect(c.models.loadSequences(), isEmpty);
+  });
 
   for (final width in [320.0, 412.0]) {
     testWidgets('color and effect sheets fit and save at $width dp with large text', (tester) async {
