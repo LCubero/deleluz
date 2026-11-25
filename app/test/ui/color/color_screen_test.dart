@@ -16,12 +16,12 @@ void main() {
   late double now;
 
   Future<void> start(WidgetTester tester, {bool connected = false,
-      Size size = const Size(412, 915), double scale = 1}) async {
+      Size size = const Size(412, 915), double scale = 1, LocalStore? store}) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     ble = FakeBle();
     now = 0;
-    controller = AppController(ble, Store(), checkAccess: (_) async => null,
+    controller = AppController(ble, store ?? Store(), checkAccess: (_) async => null,
         now: () => now);
     addTearDown(ble.changes.close);
     addTearDown(controller.dispose);
@@ -157,39 +157,68 @@ void main() {
     expect(controller.models.loadPalette(), isNot(contains(full.last)));
   });
 
-  testWidgets('effect arrows wrap, entry clamps and Auto sends its frame', (tester) async {
+  testWidgets('effect search filters by name and ID; row and Auto send their frames', (tester) async {
     await start(tester, connected: true);
     await tap(tester, 'color-effects');
-    expect(find.text(effectNames.first), findsOneWidget);
-    await tap(tester, 'effect-previous');
-    await flush(tester);
-    expect(ble.writes.last, wire.effect(210));
-    expect(find.text(effectNames.last), findsOneWidget);
-    await tap(tester, 'effect-next');
-    await flush(tester);
-    expect(ble.writes.last, wire.effect(1));
-    for (final (input, expected) in [('999', 210), ('0', 1)]) {
-      await tester.enterText(keyed('effect-number'), input);
-      await tester.testTextInput.receiveAction(TextInputAction.done);
-      await flush(tester);
-      expect(ble.writes.last, wire.effect(expected));
-    }
-    await tester.tap(keyed('effect-number'));
-    await tester.pump();
-    final number = tester.widget<TextField>(keyed('effect-number'));
-    expect(number.focusNode!.hasFocus, isTrue);
+    final search = keyed('effect-search');
+    await tester.enterText(search, 'FÓRWARD DREAMING');
+    await tester.pumpAndSettle();
+    expect(find.text('01 · ${effectNames.first}'), findsOneWidget);
+    expect(find.text('02 · ${effectNames[1]}'), findsNothing);
+    await tester.enterText(search, '210');
+    await tester.pumpAndSettle();
+    expect(find.text('210 · ${effectNames.last}'), findsOneWidget);
+    expect(find.text('01 · ${effectNames.first}'), findsNothing);
+    expect(ble.writes, isEmpty);
     await tap(tester, 'effect-auto');
     await flush(tester);
     expect(ble.writes.last, wire.effect(wire.autoEffect));
-    expect(tester.widget<TextField>(keyed('effect-number')).decoration?.hintText, 'AUTO');
-    expect(number.focusNode!.hasFocus, isFalse);
+    expect(tester.widget<FilterChip>(keyed('effect-auto')).selected, isTrue);
+    expect(tester.testTextInput.isVisible, isFalse);
     expect(find.text(controller.text('allEffects')), findsOneWidget);
     expect(find.textContaining(controller.text('lastSent', {'command': ''})), findsNothing);
-    await tester.enterText(keyed('effect-number'), '42');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tap(tester, 'effect-row-210');
     await flush(tester);
-    expect(ble.writes.last, wire.effect(42));
+    expect(ble.writes.last, [0x7b, 0xff, 3, 210, 255, 255, 255, 255, 0xbf]);
+    expect(tester.widget<ListTile>(keyed('effect-row-210')).selected, isTrue);
     expect(find.text(controller.text('allEffects')), findsNothing);
+  });
+
+  testWidgets('effect favorites move, reload, and unstar without sending', (tester) async {
+    final store = Store();
+    await start(tester, store: store);
+    await tap(tester, 'color-effects');
+    final star = find.byTooltip('Favorito: ${effectNames[1]}');
+    expect(tester.getSize(star), const Size(48, 48));
+    await tester.tap(star);
+    await tester.pumpAndSettle();
+    expect(controller.effectFavorites, {2});
+    final favorites = find.text('Favoritos');
+    final all = find.text('Todos los efectos');
+    expect(tester.getTopLeft(favorites).dy, lessThan(tester.getTopLeft(star).dy));
+    expect(tester.getTopLeft(star).dy, lessThan(tester.getTopLeft(all).dy));
+    expect(ble.writes, isEmpty);
+    await tester.pumpWidget(const SizedBox());
+    await start(tester, store: store);
+    await tap(tester, 'color-effects');
+    expect(tester.getTopLeft(star).dy, lessThan(tester.getTopLeft(all).dy));
+    await tester.tap(star);
+    await tester.pumpAndSettle();
+    expect(controller.effectFavorites, isEmpty);
+    expect(favorites, findsNothing);
+    expect(tester.getTopLeft(star).dy, greaterThan(tester.getTopLeft(all).dy));
+  });
+
+  testWidgets('invalid stored effect favorites are ignored', (tester) async {
+    final store = Store();
+    store.values['deleluz.app.effectFavorites'] = '[0,2,2,211,255,1.5,"3",null]';
+    await start(tester, store: store);
+    await tap(tester, 'color-effects');
+    expect(find.text('Favoritos'), findsOneWidget);
+    final all = find.text('Todos los efectos');
+    expect(tester.getTopLeft(keyed('effect-row-2')).dy, lessThan(tester.getTopLeft(all).dy));
+    expect(tester.getTopLeft(keyed('effect-row-1')).dy, greaterThan(tester.getTopLeft(all).dy));
+    expect(tester.getTopLeft(keyed('effect-row-3')).dy, greaterThan(tester.getTopLeft(all).dy));
   });
 
   testWidgets('brightness, speed and color keep only the latest queued value per key', (tester) async {
@@ -232,7 +261,12 @@ void main() {
       await tap(tester, 'color-effects');
       await tap(tester, 'effect-auto');
       await flush(tester);
-      expect(find.descendant(of: keyed('effect-number'), matching: find.text('AUTO')), findsOneWidget);
+      expect(tester.widget<FilterChip>(keyed('effect-auto')).selected, isTrue);
+      await tester.enterText(keyed('effect-search'), 'backward dreaming');
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(keyed('effect-star-2'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
       await tester.ensureVisible(keyed('color-speed'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);

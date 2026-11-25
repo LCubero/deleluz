@@ -122,6 +122,7 @@ class Models {
   static const stateKey = 'deleluz.app.state';
   static const shortcutsKey = 'deleluz.app.shortcuts';
   static const sequencesKey = 'deleluz.app.sequences';
+  static const effectFavoritesKey = 'deleluz.app.effectFavorites';
   static const paletteKey = 'deleluz.app.palette';
   static const legacyPaletteKey = 'deleluz.app.customColors';
   static const stripSettingsKey = 'deleluz.app.stripSettings';
@@ -252,6 +253,17 @@ class Models {
     return accepted.length == items.length &&
         await _write(shortcutsKey, jsonEncode(accepted));
   }
+
+  Set<int> loadEffectFavorites() {
+    final saved = _readJson(effectFavoritesKey);
+    return saved is List
+        ? {for (final id in saved.whereType<int>()) if (id >= 1 && id <= 210) id}
+        : {};
+  }
+
+  Future<bool> saveEffectFavorites(Set<int> ids) async =>
+      ids.every((id) => id >= 1 && id <= 210) &&
+      await _write(effectFavoritesKey, jsonEncode(ids.toList()));
 
   List<String> loadPalette() {
     try {

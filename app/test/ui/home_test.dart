@@ -847,7 +847,7 @@ void main() {
         matching: find.byWidgetPredicate((widget) => widget is GlowSegments));
       expect(tester.widget<GlowSegments>(segments).selected, selection);
       await tapKey(tester, panel);
-      if (tab == 'Color') await tester.enterText(find.byKey(const Key('effect-number')), '42');
+      if (tab == 'Color') await tester.enterText(find.byKey(const Key('effect-search')), '42');
       await tapTab(tester, tab == 'Color' ? 'Inicio' : 'Ajustes');
       final header = tester.getRect(find.byType(GlowHeader));
       final dx = tab == 'Color' ? -180.0 : 180.0;

@@ -61,6 +61,7 @@ class AppController extends ChangeNotifier {
     _selection = models.loadState();
     language = models.loadLanguage();
     shortcuts = models.loadShortcuts();
+    _effectFavorites = models.loadEffectFavorites();
     _rememberedStrips = models.loadRememberedStrips();
     stripsExpanded = models.loadStripsExpanded();
     link = Link(_ble, onChange: _linkChanged, onRemember: _remember);
@@ -78,6 +79,16 @@ class AppController extends ChangeNotifier {
   late Fields _selection;
   late String language;
   late List<Fields> shortcuts;
+  late final Set<int> _effectFavorites;
+  Set<int> get effectFavorites => Set.unmodifiable(_effectFavorites);
+
+  void toggleEffectFavorite(int id) {
+    if (id < 1 || id > 210) return;
+    if (!_effectFavorites.remove(id)) _effectFavorites.add(id);
+    unawaited(_save(models.saveEffectFavorites(_effectFavorites)));
+    notifyListeners();
+  }
+
   late List<RememberedStrip> _rememberedStrips;
   List<RememberedStrip> get rememberedStrips => List.unmodifiable(_rememberedStrips);
   RememberedStrip? get remembered => _rememberedStrips.firstOrNull;
