@@ -78,7 +78,7 @@ void main() {
         case 'speed': expect(saved['speed'], 75);
         case 'musicMode': expect(saved['mode'], {'voice': 3});
         case 'micSensitivity': expect(saved['micSens'], 88);
-        case 'chipConfig': expect(c.models.loadStripSettings().pixels, 200);
+        case 'chipConfig': expect(c.models.loadStripSettings(deviceId: FakeBle.strip.id).pixels, 200);
       }
       c.setForeground(false);
       await drain(tester);

@@ -66,6 +66,7 @@ class AppController extends ChangeNotifier {
     link = Link(_ble, onChange: _linkChanged, onRemember: _remember);
     _sender = Sender(write: link.write, now: _now);
     final saved = remembered;
+    _setupMigration = _save(models.migrateStripSettings(saved?.id));
     if (saved != null) link.restore(saved);
   }
 
@@ -80,6 +81,13 @@ class AppController extends ChangeNotifier {
   late List<RememberedStrip> _rememberedStrips;
   List<RememberedStrip> get rememberedStrips => List.unmodifiable(_rememberedStrips);
   RememberedStrip? get remembered => _rememberedStrips.firstOrNull;
+  late final Future<void> _setupMigration;
+  RememberedStrip? get setupDevice {
+    final connected = link.ready ? link.strip : null;
+    if (connected == null) return remembered;
+    return _rememberedStrips.where((strip) => strip.id == connected.id).firstOrNull ??
+        RememberedStrip(connected.id, connected.name);
+  }
   late bool stripsExpanded;
   bool scanCompleted = false;
   int _scanGeneration = 0;
@@ -299,6 +307,8 @@ class AppController extends ChangeNotifier {
       _sentDeviceId = null;
     }
     _setRemembered(_rememberedStrips.where((strip) => strip.id != id).toList());
+    await _setupMigration;
+    await _save(models.removeDeviceSetup(id));
     final next = remembered;
     if (link.strip == null && next != null) link.restore(next);
   }, 'disconnectFailed');
@@ -474,12 +484,13 @@ class AppController extends ChangeNotifier {
   }
 
   Future<bool> setChipConfig(String order, int pixels, {num? density, num? meters}) async {
-    if (!canSend || !wire.chipOrders.contains(order) || validPixels(pixels) == null) return false;
+    final id = link.strip?.id;
+    if (!canSend || id == null || !wire.chipOrders.contains(order) || validPixels(pixels) == null) return false;
     _beginPlayback();
     final sent = await _send(wire.chipConfig(order, pixels), 'chipConfig',
         values: {'order': order, 'pixels': pixels});
     if (sent) {
-      await _save(models.saveStripSettings(order: order, pixels: pixels,
+      await _save(models.saveStripSettings(deviceId: id, order: order, pixels: pixels,
           density: density, meters: meters));
     }
     return sent;

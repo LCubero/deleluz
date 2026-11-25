@@ -208,7 +208,7 @@ class _SceneEditorState extends State<_SceneEditor> {
         _LastSent(transport: widget.transport),
         if (widget.transport.failed) Text(c.text('commandFailed')),
         const SizedBox(height: 18),
-        Align(alignment: AlignmentDirectional.centerStart,
+        Center(
           child: OutlinedButton.icon(key: const Key('scene-delete'), onPressed: _busy ? null : _delete,
             style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error,
               side: BorderSide(color: Theme.of(context).colorScheme.error.withValues(alpha: .45))),

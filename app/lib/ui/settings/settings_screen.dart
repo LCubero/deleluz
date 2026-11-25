@@ -18,6 +18,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   AppController get c => widget.controller;
+  String? _deviceId;
   late String _order;
   late bool _perMeter;
   final _total = TextEditingController();
@@ -37,19 +38,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _load();
+    c.addListener(_deviceChanged);
   }
 
   @override
   void didUpdateWidget(SettingsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != c) {
+      oldWidget.controller.removeListener(_deviceChanged);
       _sending = false;
       _load();
+      c.addListener(_deviceChanged);
     }
   }
 
+  void _deviceChanged() {
+    if (_deviceId != c.setupDevice?.id) _load();
+  }
+
   void _load() {
-    final saved = c.models.loadStripSettings();
+    _deviceId = c.setupDevice?.id;
+    final saved = c.models.loadStripSettings(deviceId: _deviceId);
     _order = saved.order;
     _perMeter = saved.density != null;
     _total.text = '${saved.pixels}';
@@ -60,6 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
+    c.removeListener(_deviceChanged);
     _total.dispose();
     _density.dispose();
     _meters.dispose();
@@ -77,8 +87,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _save(int pixels) async {
     final controller = c;
+    final id = _deviceId;
+    if (id == null) return;
     final saved = await controller.models.saveStripSettings(
-      order: _order, pixels: pixels,
+      deviceId: id, order: _order, pixels: pixels,
       density: _perMeter ? _number(_density) : null,
       meters: _perMeter ? _number(_meters) : null,
     );
@@ -94,6 +106,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final id = controller.link.strip?.id;
     final pixels = _pixels;
     final order = _order;
+    final density = _perMeter ? _number(_density) : null;
+    final meters = _perMeter ? _number(_meters) : null;
     if (!controller.ready || id == null || pixels == null || _sending) return;
     FocusScope.of(context).unfocus();
     setState(() => _sending = true);
@@ -117,12 +131,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ));
       if (confirmed != true || !mounted || c != controller) return;
       if (!sameConnection || !controller.ready) {
-        _notice('connectFirst');
+        _notice('deviceSetupConnect');
         return;
       }
       final sent = await controller.setChipConfig(order, pixels,
-        density: _perMeter ? _number(_density) : null,
-        meters: _perMeter ? _number(_meters) : null);
+        density: density, meters: meters);
       if (!sent && mounted && c == controller && c.message == 'commandFailed') {
         _notice('commandFailed');
       }
@@ -147,7 +160,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 12, children: [
           GlowHeader(title: _text('settings'), controller: c),
           _stripsRow(),
-          _section('stripSettings', [
+          _section('stripSettings', _deviceId == null ? [
+            Text(_text('deviceSetupEmpty'), style: theme.bodySmall),
+          ] : [
             Text(_text('stripOrder')),
             DropdownButton<String>(
               key: const Key('stripOrder'), isExpanded: true, value: _order,
@@ -172,10 +187,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             FilledButton(key: const Key('stripSend'),
               onPressed: _pixels != null && c.ready && !_sending ? _confirm : null,
               child: Text(_text('stripSend'), textAlign: TextAlign.center)),
-            if (!c.ready) Text(_text('connectFirst'), style: theme.bodySmall),
+            if (!c.ready) Text(_text('deviceSetupConnect'), style: theme.bodySmall),
             Semantics(liveRegion: true, child: Text(lastLabel, style: theme.bodyMedium)),
             Text(_text('stripFactory'), style: theme.bodySmall),
-          ]),
+          ], subtitle: c.setupDevice?.label),
           _section('settingsLanguage', [
             _segments('settingsLanguage', ['spanish', 'english'], c.language == 'en' ? 1 : 0,
               (choice) => c.setLanguage(choice == 1 ? 'en' : 'es')),
@@ -212,8 +227,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     child: child,
   );
 
-  Widget _section(String key, List<Widget> children) => _row(
+  Widget _section(String key, List<Widget> children, {String? subtitle}) => _row(
     GlowDisclosure(titleKey: ValueKey('settings-$key'), title: _text(key), smallChevron: true,
+      subtitle: subtitle == null ? null : Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
       padding: const EdgeInsets.symmetric(horizontal: glassInset + 1),
       children: [Padding(padding: const EdgeInsets.fromLTRB(glassInset + 1, 0, glassInset + 1, 14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 12, children: children))],

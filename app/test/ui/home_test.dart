@@ -604,22 +604,25 @@ void main() {
     expect(label.hitTestable(), findsOneWidget);
   });
 
-  testWidgets('Settings Strips shows the alias and opens the shared selector', (tester) async {
+  testWidgets('Settings Devices shows the alias and opens the shared selector', (tester) async {
     await Models(store, presetIds: {}).saveRememberedStrips([
       const RememberedStrip('fake', 'LEDDMX Test', alias: 'Rincón'),
     ]);
     final c = await start(tester);
     await tapTab(tester, 'Ajustes');
-    expect(find.text('Rincón').hitTestable(), findsOneWidget);
-    await tester.tap(find.text('Tiras'));
+    expect(find.descendant(
+      of: find.ancestor(of: find.text('Dispositivos'), matching: find.byType(ListTile)),
+      matching: find.text('Rincón'),
+    ).hitTestable(), findsOneWidget);
+    await tester.tap(find.text('Dispositivos'));
     await tester.pumpAndSettle();
     expect(find.text('Elegir tira'), findsOneWidget);
     await tester.tap(find.byTooltip('Volver a Ajustes'));
     await tester.pumpAndSettle();
-    expect(find.text('Tiras').hitTestable(), findsOneWidget);
+    expect(find.text('Dispositivos').hitTestable(), findsOneWidget);
     c.setLanguage('en');
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Strips'));
+    await tester.tap(find.text('Devices'));
     await tester.pumpAndSettle();
     expect(find.text('Choose a strip'), findsOneWidget);
   });

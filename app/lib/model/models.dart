@@ -125,6 +125,8 @@ class Models {
   static const paletteKey = 'deleluz.app.palette';
   static const legacyPaletteKey = 'deleluz.app.customColors';
   static const stripSettingsKey = 'deleluz.app.stripSettings';
+  static const _stripSettingsMigratedKey = 'deleluz.app.stripSettingsMigrated';
+  static String deviceSetupKey(String id) => 'deleluz.app.deviceSetup.$id';
   static const languageKey = 'deleluz.app.language';
   static const rememberedKey = 'deleluz.app.rememberedStrip';
   static const rememberedStripsKey = 'deleluz.app.rememberedStrips';
@@ -274,25 +276,44 @@ class Models {
     return accepted != null && await _write(paletteKey, jsonEncode(accepted));
   }
 
-  StripSettings loadStripSettings() {
-    final saved = _readJson(stripSettingsKey);
-    if (saved is! Fields || !chipOrders.contains(saved['order'])) return defaultStripSettings;
+  StripSettings loadStripSettings({String? deviceId}) =>
+      (deviceId == null ? null : _decodeStripSettings(_readJson(deviceSetupKey(deviceId)))) ??
+      _decodeStripSettings(_readJson(stripSettingsKey)) ?? defaultStripSettings;
+
+  /// Keep the legacy key as a fallback, but only snapshot it once.
+  Future<bool> migrateStripSettings(String? deviceId) async {
+    if (_readJson(_stripSettingsMigratedKey) == true) return true;
+    final legacy = _readJson(stripSettingsKey);
+    if (_decodeStripSettings(legacy) == null) return true;
+    if (deviceId != null && _readJson(deviceSetupKey(deviceId)) == null &&
+        !await _write(deviceSetupKey(deviceId), jsonEncode(legacy))) {
+      return false;
+    }
+    return _write(_stripSettingsMigratedKey, 'true');
+  }
+
+  Future<bool> removeDeviceSetup(String id) => _write(deviceSetupKey(id), null);
+
+  StripSettings? _decodeStripSettings(Object? saved) {
+    if (saved is! Fields || !chipOrders.contains(saved['order'])) return null;
     final density = saved['density'];
     final meters = saved['meters'];
     final computed = stripPixels(density, meters);
     final pixels = validPixels(saved['pixels'] ?? computed);
-    if (pixels == null) return defaultStripSettings;
-    final meter = saved['mode'] == 'meter' && computed != null;
+    final meter = saved['mode'] == 'meter';
+    if (pixels == null || (meter && computed != pixels)) return null;
+    if (saved['mode'] != null && saved['mode'] != 'total' && !meter) return null;
     return (order: saved['order'] as String, pixels: pixels,
       density: meter ? density as num : null, meters: meter ? meters as num : null);
   }
 
-  Future<bool> saveStripSettings({required String order, Object? pixels, num? density, num? meters}) async {
+  Future<bool> saveStripSettings({String? deviceId, required String order,
+    Object? pixels, num? density, num? meters}) async {
     if (!chipOrders.contains(order)) return false;
     final meter = density != null || meters != null;
     final count = meter ? stripPixels(density, meters) : validPixels(pixels);
     if (count == null || (meter && pixels != null && validPixels(pixels) != count)) return false;
-    return _write(stripSettingsKey, jsonEncode({
+    return _write(deviceId == null ? stripSettingsKey : deviceSetupKey(deviceId), jsonEncode({
       'order': order, 'mode': meter ? 'meter' : 'total', 'pixels': count,
       if (meter) ...{'density': density, 'meters': meters},
     }));

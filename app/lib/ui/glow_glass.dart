@@ -279,11 +279,12 @@ class GlowValueLabel extends StatelessWidget {
 
 class GlowDisclosure extends StatelessWidget {
   const GlowDisclosure({super.key, required this.title, required this.children,
-    this.titleKey, this.initiallyExpanded = false, this.onExpansionChanged,
+    this.titleKey, this.subtitle, this.initiallyExpanded = false, this.onExpansionChanged,
     this.padding = EdgeInsets.zero, this.minHeight = 56,
     this.inlineChevron = false, this.smallChevron = false});
   final String title;
   final Key? titleKey;
+  final Widget? subtitle;
   final List<Widget> children;
   final bool initiallyExpanded;
   final ValueChanged<bool>? onExpansionChanged;
@@ -305,6 +306,7 @@ class GlowDisclosure extends StatelessWidget {
       showTrailingIcon: !inlineChevron,
       trailing: smallChevron ? _chevron : null,
       title: inlineChevron ? Row(children: [Flexible(child: label), _chevron]) : label,
+      subtitle: subtitle,
       initiallyExpanded: initiallyExpanded,
       onExpansionChanged: onExpansionChanged,
       children: children,

@@ -106,6 +106,8 @@ void main() {
     await tap(tester, 'scene-new');
     final action = key('scene-delete');
     expect(action, findsOneWidget);
+    expect(tester.getCenter(action).dx,
+      closeTo(tester.getCenter(find.byType(Dialog)).dx, .01));
     final button = tester.widget<OutlinedButton>(action);
     final context = tester.element(action);
     expect(button.style!.foregroundColor!.resolve({}), Theme.of(context).colorScheme.error);

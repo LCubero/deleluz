@@ -270,6 +270,30 @@ void main() {
     expect(models.loadStripSettings().pixels, 150);
   });
 
+  test('bad device setup falls back without affecting other devices', () async {
+    await models.saveStripSettings(order: 'RGB', pixels: 220);
+    await models.saveStripSettings(deviceId: 'good', order: 'GBR', pixels: 300);
+    for (final invalid in ['{', '{"order":"GRB","mode":"meter","pixels":150,"density":30,"meters":10}']) {
+      storage.values[Models.deviceSetupKey('bad')] = invalid;
+      expect(models.loadStripSettings(deviceId: 'bad').pixels, 220);
+      expect(models.loadStripSettings(deviceId: 'good').pixels, 300);
+    }
+    storage.values[Models.stripSettingsKey] = '{';
+    expect(models.loadStripSettings(deviceId: 'bad'), defaultStripSettings);
+  });
+
+  test('forgetting the migrated device does not repeat migration on restart', () async {
+    await models.saveStripSettings(order: 'RGB', pixels: 220);
+    expect(await models.migrateStripSettings('first'), isTrue);
+    expect(storage.read(Models.deviceSetupKey('first')), isNotNull);
+    expect(await models.removeDeviceSetup('first'), isTrue);
+    final reopened = Models(storage, presetIds: {});
+    expect(await reopened.migrateStripSettings('second'), isTrue);
+    expect(storage.read(Models.deviceSetupKey('first')), isNull);
+    expect(storage.read(Models.deviceSetupKey('second')), isNull);
+    expect(reopened.loadStripSettings(deviceId: 'second').pixels, 220);
+  });
+
   test('language defaults to Spanish, persists English and rejects other codes', () async {
     expect(models.loadLanguage(), 'es');
     expect(await models.saveLanguage('en'), isTrue);
