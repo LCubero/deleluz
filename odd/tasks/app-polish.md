@@ -17,6 +17,14 @@ Phase 1 of `docs/PLAN.md`: white tones and saturation, effect list with search a
 - S10 (home link): "Quitar el  link y texto "todas las escenas" de inicio."
 - S11 (Bluetooth off notice): "El mensaje de que encienda el bluetooth debería ser más vistoso y notarse más que hace falta encender el bluetooth"
 
+- S12 (speed always + scroll hint): "si la verdad si prefiero eso, pero hay que asegurarse que se muestre algo que indique que hay cosas abajo, como en el webapp teniamos como una v abierta abajo, discreta."
+- S13 (one color picker everywhere): "en acceso rapido, en el menu de agregar color salen favoritos que no se pueden cambiar ni nada, y deberia ser como en la pestaña o seccion color, todos los lugares de seleccionar como van igual que como se selecciona el color -> color. es decir colo color, acceso rapid -> agregar color y en escenas nuevas escenas o al editar los colores (pasos)"
+- S14 (Mi escena picker): "en acceso rapid, en agregar mi escena, siento que confunde un poco tanto texto o los espacios, quiza un poco mas alto y que sea mejor no sé hay que verlo. cuando no existen mis escenas y cuando existe 1 o más mis escenas, no se sabe que tocar xq mis esceneas son texto nada más, no sé eso hay que mejorarlo revisar."
+- S15 (selected state in pickers): "revisar sub menus o sub ventanas de accsiones rapidas, agrgar efectp,  el que seleciono no se nota mucho. agregar mescena ko mismo."
+- S16 (no swipe on the connection card): "en inicio en la zona de conectar no debe poderse hacer slide."
+- S17 (timer selected state): "el submenu o ventana del temporizador tmb deberia revisarse que se note que esta seleccionado."
+- S18 (design standard + rules skill): "recuerda accesibilidad, todo bien alineado, colores correctos, formas redondeados, efectos, sobras todo que se mantenga siempre el mismo estandar del app que llevamos. hay que hacer una skill con las reglas de diseño"
+
 Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect is running; no per-effect duration command exists; app-driven AUTO works only while the app is open and connected; white is plain RGB.
 
 ## Tasks
@@ -30,6 +38,10 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - T8 [S9, S11] Design proposals: quick-actions add sheet (Colores / Efectos / Escenas / Mis escenas) and a prominent Bluetooth-off notice. Route: worker. Commit: 9fb0105 [x]
 - T9 [S8, S9, S10] Quick actions (Android): rename to "Acciones rápidas", built-in effects as targets, new add sheet, remove "Todas las escenas" from Inicio. Route: worker. Risk: item 1 (stored shortcuts). Commit: 2819bf7, 2cf214f [x]
 - T10 [S11] Prominent Bluetooth-off notice (Android). Route: worker. Commit: 2cf214f [x]
+- T11 [S13, S18] One shared color picker (disc + Blancos + Noche + editable favorites, same as Color → Color fijo) used in Color, quick actions "Color" and scene color steps (Android). Commit: -
+- T12 [S12, S16, S18] Inicio: Velocidad always visible; discreet "v" scroll hint when content continues below; no swipe on the connection card (Android). Commit: -
+- T13 [S14, S15, S17, S18] Pickers and sheets polish (Android): clear selected state in quick-action Efecto / Escena / Mi escena pickers and the timer sheet; Mi escena picker as tappable cards with a clear empty state; timer ring progress visible; scene editor in Glow Glass style, total in seconds, updated hints, effect sheet spacing (L20 findings). Commit: -
+- T14 [S18] Design rules: `design/system.md` from the app's real tokens and a repo skill with the DeleLuz design rules. Commit: -
 - T7a [S1, S3, S4, S7] Webapp: color disc + whites, effect list with favorites, app-driven AUTO. Route: worker + parent visual check. Commit: 2fbcecb [x]
 - T7b [S2, S5, S7] Webapp: scene steps (stored-format change, backward compatible) and timer sheet. Commit: -
 - T7c [S8-S11] Webapp: quick actions and Bluetooth notice, after T9/T10. Commit: -
@@ -56,3 +68,4 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - L18 (2026-11-25, decision): quick actions use 09-acciones-rapidas-pasos (type tiles, then picker); Bluetooth-off uses 10-bluetooth-tarjeta (warning card on Inicio). 08 and 11 are alternatives.
 - L19 (2026-11-25, owner, verbatim): "ok pruebala tu mientras voy a comer"
 - L20 (2026-11-25): T9 review (risk, reliability) approved, lineage review-27c818ce12aa26fd; R3-001 (Noche preset) and R3-002 (keyboard inset) fixed in 2cf214f; flutter test 183/183. Agent phone test over adb (Samsung SM-N770F, strip connected): build 2005 (T2-T6) and 2006 (T2-T10) installed over v1.0.0 with data kept. Passed in the app UI: reconnect; disc center sends #FFFFFF and edge saturated; whites; star moves effect to Favoritos; AUTO 10 s advances names and stops; scene editor color+effect steps and preview; 10 s custom timer counts down, shows end time, turns the strip off and remembers 10 s; Acciones rápidas two-step add of an effect, tile sends effect 1, long-press remove; Bluetooth off shows the card, Activar Bluetooth opens the system prompt, Permitir + Reconectar restores. Not verifiable by the agent: what the strip physically showed; legacy scene migration (owner had no saved scenes). Test action removed afterwards; nothing saved. Found: timer ring progress barely visible; scene editor is a plain grey dialog (not Glow Glass as in 05) and shows total in ms; stale hints in the editor ("Mantén presionado un color", "Toda la tira muestra un color a la vez"); selected-effect label glued to the list in the editor's effect sheet; Velocidad is hidden on Inicio while Acciones rápidas is expanded (pre-existing `_quickOpen` rule, unverified whether intended).
+- L21 (2026-11-25, owner, verbatim): see S12-S18 (owner feedback after reviewing the interface on build 2006).
