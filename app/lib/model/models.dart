@@ -261,6 +261,21 @@ class Models {
         await _write(shortcutsKey, jsonEncode(accepted));
   }
 
+  static const appAutoDurations = [10, 30, 60, 300];
+  static const _appAutoKey = 'deleluz.app.auto';
+
+  ({int seconds, bool favorites}) loadAppAuto() {
+    final saved = _readJson(_appAutoKey);
+    return switch (saved) {
+      {'seconds': final int seconds, 'favorites': final bool favorites}
+          when appAutoDurations.contains(seconds) => (seconds: seconds, favorites: favorites),
+      _ => (seconds: 30, favorites: false),
+    };
+  }
+
+  Future<bool> saveAppAuto(int seconds, bool favorites) =>
+      _write(_appAutoKey, jsonEncode({'seconds': seconds, 'favorites': favorites}));
+
   Set<int> loadEffectFavorites() {
     final saved = _readJson(effectFavoritesKey);
     return saved is List

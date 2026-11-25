@@ -8,6 +8,7 @@ import '../../protocol.dart' as wire;
 import '../glow_glass.dart';
 import '../color_disc.dart';
 import '../effect_list.dart';
+import 'app_auto_card.dart';
 import 'favorites.dart';
 
 class ColorScreen extends StatefulWidget {
@@ -70,15 +71,15 @@ class _ColorScreenState extends State<ColorScreen> {
   Widget _effectCard() {
     return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (_auto) ...[
-        Text(c.text('allEffects'), textAlign: TextAlign.center),
+        Text(c.text('allEffects'), key: const Key('strip-cycle-all'), textAlign: TextAlign.center),
         Semantics(liveRegion: true, child: Text(c.text('autoCycleAll'), textAlign: TextAlign.center)),
       ],
       Center(child: FilterChip(key: const Key('effect-auto'),
-        label: Text(c.text('autoCycle')), selected: _auto,
+        label: Text(c.text('stripCycle')), selected: _auto,
         onSelected: c.canSend ? (_) => _playEffect(wire.autoEffect) : null)),
       const SizedBox(height: 12),
       EffectList(favorites: c.effectFavorites, text: c.text,
-        selected: _auto ? null : _effect, onFavorite: c.toggleEffectFavorite,
+        selected: _auto || c.appAutoPlaying ? null : _effect, onFavorite: c.toggleEffectFavorite,
         onSelected: c.canSend ? _playEffect : null),
       const SizedBox(height: 12),
       Text(c.text('effectsNote'), style: Theme.of(context).textTheme.bodySmall),
@@ -145,7 +146,12 @@ class _ColorScreenState extends State<ColorScreen> {
                 key: const Key('color-effects'), textAlign: TextAlign.center)),
             ]),
           const SizedBox(height: 16),
-          if (_effects) _effectCard() else ...[
+          if (_effects) ...[
+            AppAutoCard(key: const Key('app-auto'), controller: c,
+              onStart: () => setState(() => _auto = false)),
+            const SizedBox(height: 12),
+            _effectCard(),
+          ] else ...[
             ColorDisc(color: color, label: c.text('colorDiscLabel'),
               onChanged: (hsv) {
                 final selected = hsv.toColor().toARGB32();

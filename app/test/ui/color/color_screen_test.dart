@@ -3,6 +3,7 @@ import 'package:deleluz/model/effects.dart';
 import 'package:deleluz/model/models.dart';
 import 'package:deleluz/protocol.dart' as wire;
 import 'package:deleluz/ui/color/color_screen.dart';
+import 'package:deleluz/ui/effect_list.dart';
 import 'package:deleluz/ui/glow_glass.dart';
 import 'package:deleluz/ui/color_disc.dart';
 import 'package:material_ui/material_ui.dart';
@@ -157,10 +158,36 @@ void main() {
     expect(controller.models.loadPalette(), isNot(contains(full.last)));
   });
 
+  for (final width in [320.0, 412.0]) {
+    testWidgets('app AUTO fits at $width dp with enlarged text', (tester) async {
+      await start(tester, connected: true, size: Size(width, 760), scale: 1.5);
+      await tap(tester, 'color-effects');
+      expect(find.text('AUTO de la app'), findsOneWidget);
+      expect(find.text('Solo funciona con la app abierta y la tira conectada.'), findsOneWidget);
+      expect(tester.widget<ChoiceChip>(keyed('app-auto-favorites')).onSelected, isNull);
+      expect(find.text('Marca efectos con la estrella para usar Favoritos.'), findsOneWidget);
+      expect(tester.getRect(keyed('app-auto')).bottom,
+          lessThan(tester.getRect(keyed('effect-search')).top));
+      await tester.ensureVisible(keyed('app-auto-toggle'));
+      await tester.tap(keyed('app-auto-toggle'));
+      await flush(tester);
+      expect(tester.widget<Text>(keyed('app-auto-current')).data, '01 · ${effectNames.first}');
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      await tap(tester, 'app-auto-toggle');
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+      final count = ble.writes.length;
+      now += 30000;
+      await tester.pump(const Duration(seconds: 30));
+      expect(ble.writes, hasLength(count));
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('effect search filters by name and ID; row and Auto send their frames', (tester) async {
     await start(tester, connected: true);
     await tap(tester, 'color-effects');
     final search = keyed('effect-search');
+    await tester.ensureVisible(search);
     await tester.enterText(search, 'FÓRWARD DREAMING');
     await tester.pumpAndSettle();
     expect(find.text('01 · ${effectNames.first}'), findsOneWidget);
@@ -175,13 +202,13 @@ void main() {
     expect(ble.writes.last, wire.effect(wire.autoEffect));
     expect(tester.widget<FilterChip>(keyed('effect-auto')).selected, isTrue);
     expect(tester.testTextInput.isVisible, isFalse);
-    expect(find.text(controller.text('allEffects')), findsOneWidget);
+    expect(keyed('strip-cycle-all'), findsOneWidget);
     expect(find.textContaining(controller.text('lastSent', {'command': ''})), findsNothing);
     await tap(tester, 'effect-row-210');
     await flush(tester);
     expect(ble.writes.last, [0x7b, 0xff, 3, 210, 255, 255, 255, 255, 0xbf]);
     expect(tester.widget<ListTile>(keyed('effect-row-210')).selected, isTrue);
-    expect(find.text(controller.text('allEffects')), findsNothing);
+    expect(keyed('strip-cycle-all'), findsNothing);
   });
 
   testWidgets('effect favorites move, reload, and unstar without sending', (tester) async {
@@ -189,11 +216,13 @@ void main() {
     await start(tester, store: store);
     await tap(tester, 'color-effects');
     final star = find.byTooltip('Favorito: ${effectNames[1]}');
+    await tester.ensureVisible(keyed('effect-search'));
+    await tester.pumpAndSettle();
     expect(tester.getSize(star), const Size(48, 48));
     await tester.tap(star);
     await tester.pumpAndSettle();
     expect(controller.effectFavorites, {2});
-    final favorites = find.text('Favoritos');
+    final favorites = find.descendant(of: find.byType(EffectList), matching: find.text('Favoritos'));
     final all = find.text('Todos los efectos');
     expect(tester.getTopLeft(favorites).dy, lessThan(tester.getTopLeft(star).dy));
     expect(tester.getTopLeft(star).dy, lessThan(tester.getTopLeft(all).dy));
@@ -202,10 +231,12 @@ void main() {
     await start(tester, store: store);
     await tap(tester, 'color-effects');
     expect(tester.getTopLeft(star).dy, lessThan(tester.getTopLeft(all).dy));
+    await tester.ensureVisible(keyed('effect-search'));
+    await tester.pumpAndSettle();
     await tester.tap(star);
     await tester.pumpAndSettle();
     expect(controller.effectFavorites, isEmpty);
-    expect(favorites, findsNothing);
+    expect(find.text('Favoritos'), findsOneWidget);
     expect(tester.getTopLeft(star).dy, greaterThan(tester.getTopLeft(all).dy));
   });
 
@@ -214,7 +245,7 @@ void main() {
     store.values['deleluz.app.effectFavorites'] = '[0,2,2,211,255,1.5,"3",null]';
     await start(tester, store: store);
     await tap(tester, 'color-effects');
-    expect(find.text('Favoritos'), findsOneWidget);
+    expect(find.text('Favoritos'), findsNWidgets(2));
     final all = find.text('Todos los efectos');
     expect(tester.getTopLeft(keyed('effect-row-2')).dy, lessThan(tester.getTopLeft(all).dy));
     expect(tester.getTopLeft(keyed('effect-row-1')).dy, greaterThan(tester.getTopLeft(all).dy));

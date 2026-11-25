@@ -27,6 +27,118 @@ void main() {
     }
   }
 
+  List<int> effectFrame(int id) => [0x7b, 0xff, 3, id, 255, 255, 255, 255, 0xbf];
+
+  Future<void> advance(WidgetTester tester, int ms) async {
+    now += ms;
+    await tester.pump(Duration(milliseconds: ms));
+  }
+
+  Future<void> startAuto(WidgetTester tester) async {
+    final start = c.startAppAuto();
+    await drain(tester);
+    await start;
+  }
+
+  for (final seconds in [10, 30, 60, 300]) {
+    testWidgets('app AUTO loops sorted favorites every $seconds seconds', (tester) async {
+      expect(c.appAutoSeconds, 30);
+      c.toggleEffectFavorite(210);
+      c.toggleEffectFavorite(2);
+      c.setAppAutoOptions(seconds: seconds, favorites: true);
+      await c.connect(FakeBle.strip);
+      final preload = c.setEffect(1);
+      await drain(tester);
+      await preload;
+      await c.startAppAuto();
+      final frames = [effectFrame(2)];
+      final first = ble.writes.indexOf(ble.writes.last);
+      expect(ble.writes.last, frames.last);
+      expect(c.appAutoEffect, 2);
+      await advance(tester, seconds * 500);
+      expect(c.appAutoProgress, closeTo(0.5, 0.01));
+      await advance(tester, seconds * 500 - 1);
+      expect(ble.writes.skip(first), frames);
+      await advance(tester, 1);
+      frames.add(effectFrame(210));
+      expect(ble.writes.skip(first), frames);
+      await advance(tester, seconds * 1000 - 1);
+      expect(ble.writes.skip(first), frames);
+      await advance(tester, 1);
+      frames.add(effectFrame(2));
+      expect(ble.writes.skip(first), frames);
+      c.stopAppAuto();
+    });
+  }
+
+  testWidgets('app AUTO plays the full catalog in order and wraps', (tester) async {
+    await c.connect(FakeBle.strip);
+    await startAuto(tester);
+    expect(ble.writes.last, effectFrame(1));
+    ble.writes.clear();
+    for (var id = 2; id <= 211; id++) {
+      await advance(tester, 30000);
+      expect(ble.writes.last, effectFrame(id == 211 ? 1 : id));
+    }
+    expect(ble.writes, hasLength(210));
+    c.stopAppAuto();
+  });
+
+  for (final exit in ['stop', 'background', 'link drop']) {
+    testWidgets('app AUTO stops on $exit without more writes', (tester) async {
+      await c.connect(FakeBle.strip);
+      await startAuto(tester);
+      final count = ble.writes.length;
+      switch (exit) {
+        case 'stop': c.stopAppAuto();
+        case 'background': c.setForeground(false);
+        case 'link drop': ble.changes.add((FakeBle.strip.id, false));
+      }
+      await tester.pump();
+      expect(c.appAutoPlaying, isFalse);
+      expect(c.appAutoEffect, isNull);
+      if (exit == 'background') c.setForeground(true);
+      await advance(tester, 60000);
+      expect(ble.writes, hasLength(count));
+    });
+  }
+
+  testWidgets('app AUTO supersedes scene playback and vice versa; speed is independent', (tester) async {
+    await c.connect(FakeBle.strip);
+    unawaited(c.playDraft(colors, 500, c.brightness, preview: false));
+    await drain(tester);
+    expect(ble.writes.last, wire.color(255, 0, 0));
+    await startAuto(tester);
+    expect(ble.writes.last, effectFrame(1));
+    await advance(tester, 1000);
+    expect(ble.writes.last, effectFrame(1));
+    c.setSpeed(73);
+    await drain(tester);
+    expect(c.appAutoPlaying, isTrue);
+    expect(ble.writes.last, wire.speed(73));
+    unawaited(c.playDraft(colors, 500, c.brightness, preview: false));
+    await drain(tester);
+    expect(c.appAutoPlaying, isFalse);
+    expect(ble.writes.last, wire.color(255, 0, 0));
+    await advance(tester, 31000);
+    expect(ble.writes.where((bytes) => bytes[2] == 3), [effectFrame(1)]);
+    c.stopPlayback();
+    await drain(tester);
+  });
+
+  test('app AUTO reloads duration and list without resuming', () {
+    final store = Store();
+    final initial = AppController(ble, store, checkAccess: (_) async => null);
+    initial.toggleEffectFavorite(4);
+    initial.setAppAutoOptions(seconds: 300, favorites: true);
+    final reloaded = AppController(ble, store, checkAccess: (_) async => null);
+    expect(reloaded.appAutoSeconds, 300);
+    expect(reloaded.appAutoFavorites, isTrue);
+    expect(reloaded.appAutoPlaying, isFalse);
+    initial.dispose();
+    reloaded.dispose();
+  });
+
   test('offline sliders persist selection without sending', () {
     c.setBrightness(32);
     c.setSpeed(75);

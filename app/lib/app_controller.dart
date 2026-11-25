@@ -62,6 +62,7 @@ class AppController extends ChangeNotifier {
     language = models.loadLanguage();
     shortcuts = models.loadShortcuts();
     _effectFavorites = models.loadEffectFavorites();
+    _appAuto = models.loadAppAuto();
     _rememberedStrips = models.loadRememberedStrips();
     stripsExpanded = models.loadStripsExpanded();
     link = Link(_ble, onChange: _linkChanged, onRemember: _remember);
@@ -86,6 +87,7 @@ class AppController extends ChangeNotifier {
     if (id < 1 || id > 210) return;
     if (!_effectFavorites.remove(id)) _effectFavorites.add(id);
     unawaited(_save(models.saveEffectFavorites(_effectFavorites)));
+    if (_appAuto.favorites && _effectFavorites.isEmpty && appAutoPlaying) _stopPlayback();
     notifyListeners();
   }
 
@@ -133,6 +135,19 @@ class AppController extends ChangeNotifier {
   int _playback = 0;
   bool _playing = false;
   String? _playingSequence;
+  late ({int seconds, bool favorites}) _appAuto;
+  int get appAutoSeconds => _appAuto.seconds;
+  bool get appAutoFavorites => _appAuto.favorites;
+  bool _appAutoPlaying = false;
+  bool get appAutoPlaying => _appAutoPlaying;
+  int? _appAutoEffect;
+  int? get appAutoEffect => _appAutoEffect;
+  int _appAutoStep = 0;
+  int get appAutoStep => _appAutoStep;
+  double _appAutoStartedAt = 0;
+  double get appAutoProgress => _appAutoEffect == null ? 0 :
+      ((_now() - _appAutoStartedAt) / (appAutoSeconds * 1000)).clamp(0.0, 1.0);
+
   bool previewing = false;
   bool _powerBeforePreview = false;
 
@@ -482,7 +497,7 @@ class AppController extends ChangeNotifier {
       _select({'speed': value});
       return;
     }
-    stopPlayback();
+    if (!appAutoPlaying) stopPlayback();
     _select({'speed': value}, save: false);
     unawaited(_send(wire.speed(value), 'speed',
         key: 'speed', values: {'value': value}));
@@ -493,6 +508,48 @@ class AppController extends ChangeNotifier {
     if (run != _playback) return false;
     if (sentBrightness != intensity && !await _sendBrightness(intensity)) return false;
     return run == _playback && canSend;
+  }
+
+  void setAppAutoOptions({int? seconds, bool? favorites}) {
+    if (appAutoPlaying || (seconds != null && !Models.appAutoDurations.contains(seconds)) ||
+        (favorites == true && _effectFavorites.isEmpty)) {
+      return;
+    }
+    final options = (seconds: seconds ?? appAutoSeconds, favorites: favorites ?? appAutoFavorites);
+    if (options == _appAuto) return;
+    _appAuto = options;
+    unawaited(_save(models.saveAppAuto(options.seconds, options.favorites)));
+    _refresh();
+  }
+
+  Future<void> startAppAuto() async {
+    if (!canSend || appAutoPlaying) return;
+    final ids = appAutoFavorites ? (_effectFavorites.toList()..sort()) :
+        List.generate(effectNames.length, (index) => index + 1);
+    if (ids.isEmpty) return;
+    _beginPlayback(playing: true);
+    final run = _playback;
+    _appAutoPlaying = true;
+    _refresh();
+    if (!await _prepare(run, brightness)) return _stopCurrentPlayback(run);
+    final duration = Duration(seconds: appAutoSeconds);
+    var index = 0;
+    Future<void> next() async {
+      if (run != _playback || !canSend) return _stopCurrentPlayback(run);
+      final id = ids[index];
+      if (!await _sendEffect(id, 'effectNamed') || run != _playback) return _stopCurrentPlayback(run);
+      _appAutoEffect = id;
+      _appAutoStartedAt = _now();
+      _appAutoStep++;
+      index = (index + 1) % ids.length;
+      _player = Timer(duration, () => unawaited(next()));
+      _refresh();
+    }
+    await next();
+  }
+
+  void stopAppAuto() {
+    if (appAutoPlaying) stopPlayback();
   }
 
   Future<void> setEffect(int id, {bool preview = false}) async {
@@ -686,11 +743,12 @@ class AppController extends ChangeNotifier {
 
   void _beginPlayback({bool preview = false, bool playing = false, String? sequence}) {
     if (preview && !previewing) _powerBeforePreview = sentPower == true;
+    final wasAppAuto = appAutoPlaying;
     _stopPlayback();
     previewing = preview;
     _playing = playing;
     _playingSequence = sequence;
-    if (preview) _refresh();
+    if (preview || wasAppAuto) _refresh();
   }
 
   void _stopPlayback() {
@@ -698,6 +756,8 @@ class AppController extends ChangeNotifier {
     if (_playing || previewing) _sender.cancel();
     _playing = false;
     _playingSequence = null;
+    _appAutoPlaying = false;
+    _appAutoEffect = null;
     previewing = false;
     _player?.cancel();
     _player = null;
