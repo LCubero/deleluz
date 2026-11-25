@@ -21,6 +21,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - S14 — Selector access and slider zones (L35): "genial me gusta mucho mejor. - me gustaría acceso a esa pagina en ajustes. - y donde hay selectores de velocidad, brillo, no deberia funcionar el slide entre pestañas, es decir la zona de ellos, como en inicio para velocidad, deberia ser siempre no solo si está desactivada, siempre para todos esos controles deslizables, para que no moleste"
 - S15 — Default sub-tab (L36): "y cuando entras a la pestaña color aparezca en color no en el ultimo usado, en escenas que entre en mis escenas." — entering Color opens «Color fijo»; entering Escenas opens «Mis escenas».
 - S16 — Editor details and color zones (L37): "el color de eliminar escena en secucia nueva o mis escenas deberia ser rojo o rojiso y con un poco mas de margen top. en donde se seleciona color tmb desactivar el slide, en todo lugar que hay selecotr de color esa zona sin slide. falta control de brillo en mis escenas en la ventana de la secuencia."
+- S17 — Per-device setup and labels (L39): "centra el eliminar escena en settings cambia el nombre de tiras por dispositivos y el de tira por Config. Dispositivo. o lo que mejor vaya. y al guardar dispositivos guardamos esa configuracion ? xq eso deberia ser, xqw hay tiras de 5 y 10 metros entre otras" — centered «Eliminar escena»; Ajustes «Dispositivos» / «Configuración del dispositivo»; color order and LED count saved per remembered device.
 
 ## Tasks
 
@@ -36,6 +37,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - T11 — S2, S12 — Several remembered strips with per-phone aliases and the «Elegir tira» selector; Inicio card with alias + Cambiar — worker — done b5f9bd8 (96 tests; card shows the name once without alias, chip right-aligned)
 - T12 — S12, S13 — Selector: errors on the strip row, compact rows with icons above the button, Glow Glass detail, search — worker — done cde2b77 (100 tests)
 - T13 — S14, S15, S16 — Ajustes entry to «Elegir tira»; every slider card blocks the tab swipe — worker — S14, S15 done 7272a8f (113 tests); S16 done 865d438 (117 tests)
+- T14 — S17 — Per-device strip setup, Ajustes labels, centered delete — worker — pending
 - T9 — S7 — Docs: `app/README.md`, CHANGELOG, current state, roadmap — inline — pending
 
 ## Log
@@ -78,3 +80,4 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - L36 — 2026-11-25, user: "y cuando entras a la pestaña color aparezca en color no en el ultimo usado, en escenas que entre en mis escenas."
 - L37 — 2026-11-25, user: "el color de eliminar escena en secucia nueva o mis escenas deberia ser rojo o rojiso y con un poco mas de margen top. en donde se seleciona color tmb desactivar el slide, en todo lugar que hay selecotr de color esa zona sin slide. falta control de brillo en mis escenas en la ventana de la secuencia."
 - L38 — 2026-11-25, S16 in 865d438: Intensidad was already the scene brightness (playback sends it), relabelled Brillo with the sun icon and live keyed preview; red outlined delete with larger top gap; color zones reuse SliderZone. Parent verified 117 tests, analyze clean.
+- L39 — 2026-11-25, user: "centra el eliminar escena en settings cambia el nombre de tiras por dispositivos y el de tira por Config. Dispositivo. o lo que mejor vaya. y al guardar dispositivos guardamos esa configuracion ? xq eso deberia ser, xqw hay tiras de 5 y 10 metros entre otras" Checked: strip setup (color order, LED count) is stored once for the whole app (`deleluz.app.stripSettings` in app/lib/model/models.dart), not per device.
