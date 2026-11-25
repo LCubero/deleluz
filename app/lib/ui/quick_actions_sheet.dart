@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../app_controller.dart';
 import '../model/models.dart';
-import 'color_disc.dart';
+import 'color_picker.dart';
 import 'effect_list.dart';
 import 'glow_glass.dart';
 import 'home_presets.dart';
@@ -34,7 +34,7 @@ class QuickActionsSheet extends StatefulWidget {
 }
 
 class _QuickActionsSheetState extends State<QuickActionsSheet> {
-  static const Fields _neutral = {'kind': 'color', 'rgb': [255, 228, 196], 'name': 'whiteNeutralTone'};
+  static const Fields _neutral = {'kind': 'color', 'rgb': SharedColorPicker.neutral, 'name': 'whiteNeutralTone'};
   final _choices = <QuickActionKind, Fields>{QuickActionKind.color: _neutral};
   QuickActionKind? _kind;
 
@@ -113,41 +113,8 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
     ));
   }
 
-  Widget _colors(List<int> rgb) {
-    final whites = [defaultShortcuts[0], _neutral, defaultShortcuts[1]];
-    final favorites = c.models.loadPalette();
-    final style = Theme.of(context).textTheme;
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 6, children: [
-      ColorDisc(color: _color(rgb), label: c.text('colorDiscLabel'), onChanged: (hsv) {
-        final value = hsv.toColor().toARGB32();
-        _select({'kind': 'color', 'rgb': [(value >> 16) & 255, (value >> 8) & 255, value & 255]});
-      }),
-      Text(c.text('whiteTones'), style: style.titleMedium),
-      Wrap(spacing: 8, runSpacing: 4, children: [
-        for (var i = 0; i < whites.length; i++)
-          _chip(c.text(const ['whiteWarmTone', 'whiteNeutralTone', 'whiteCoolTone'][i]), whites[i], rgb),
-      ]),
-      Align(alignment: AlignmentDirectional.centerStart, child: _chip(c.text('night'),
-        const {'kind': 'color', 'name': 'night', 'rgb': [32, 4, 0]}, rgb)),
-      Text(c.text('quickColorFavorites'), style: style.titleMedium),
-      if (favorites.isEmpty) Text(c.text('quickNoColors'), style: style.bodySmall),
-      Wrap(spacing: 8, runSpacing: 4, children: [
-        for (final hex in favorites) _chip(hex, {'kind': 'color', 'rgb': [
-          for (final offset in [1, 3, 5]) int.parse(hex.substring(offset, offset + 2), radix: 16),
-        ]}, rgb),
-      ]),
-    ]);
-  }
-
-  static Color _color(List<int> rgb) => Color.fromARGB(255, rgb[0], rgb[1], rgb[2]);
-
-  Widget _chip(String label, Fields item, List<int> current) {
-    final rgb = item['rgb'] as List<int>;
-    return ChoiceChip(avatar: CircleAvatar(backgroundColor: _color(rgb)),
-      label: Text(label), selected: item['name'] == _selected?['name'] && rgbHex(rgb) == rgbHex(current),
-      showCheckmark: false, visualDensity: VisualDensity.standard,
-      materialTapTargetSize: MaterialTapTargetSize.padded, onSelected: (_) => _select(item));
-  }
+  Widget _colors(List<int> rgb) => SharedColorPicker(controller: c, rgb: rgb,
+    onChanged: (rgb, name) => _select({'kind': 'color', 'rgb': rgb, 'name': ?name}));
 
   Widget _scenes({bool own = false}) {
     final scenes = own ? c.models.loadSequences() : const <Fields>[];

@@ -482,6 +482,80 @@ void main() {
   });
 
   for (final width in [320.0, 412.0]) {
+    testWidgets('shared color picker and palette at $width dp', (tester) async {
+      await tester.binding.setSurfaceSize(Size(width, width == 320 ? 640 : 915));
+      tester.platformDispatcher.textScaleFactorTestValue = 1.4;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await Models(store, presetIds: {}).saveShortcuts([]);
+      final c = await start(tester);
+      await c.connect(FakeBle.strip);
+      await tester.pumpAndSettle();
+      final before = ble.writes.length;
+      final shared = find.byKey(const Key('shared-color-picker'));
+      Finder inside(String key) => find.descendant(of: shared, matching: find.byKey(Key(key)));
+      Finder tone(String name) => find.descendant(of: shared, matching: find.widgetWithText(ChoiceChip, name));
+      Future<void> tap(Finder target) async {
+        await tester.ensureVisible(target);
+        await tester.pumpAndSettle();
+        expect(target.hitTestable(), findsOneWidget);
+        await tester.tap(target);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+      final title = find.text('Acciones rápidas');
+      await tester.scrollUntilVisible(title, 100);
+      await tap(title);
+      final add = find.byTooltip('Agregar acción rápida');
+      final confirm = find.widgetWithText(FilledButton, 'Agregar');
+      await tap(add);
+      await tap(find.byKey(const Key('quick-type-color')));
+      expect(shared, findsOneWidget);
+      await tap(tone('Noche'));
+      await tap(inside('color-favorites'));
+      await tap(inside('favorite-plus'));
+      await tap(inside('favorite-#200400'));
+      expect(ble.writes, hasLength(before));
+      await tap(confirm);
+      expect(c.models.loadShortcuts().single, {'kind': 'color', 'rgb': [32, 4, 0], 'name': 'night'});
+      await tap(add);
+      await tap(find.byKey(const Key('quick-type-color')));
+      await tap(tone('Neutro'));
+      await tap(confirm);
+      expect(c.models.loadShortcuts().last, {'kind': 'color', 'rgb': [255, 228, 196], 'name': 'whiteNeutralTone'});
+      expect(ble.writes, hasLength(before));
+
+      await tap(find.text('Escenas').last);
+      await tap(find.byKey(const Key('scene-new')));
+      await tap(find.byKey(const Key('scene-add-color')));
+      expect(shared, findsOneWidget);
+      await tap(inside('favorite-#200400'));
+      expect(ble.writes, hasLength(before));
+      await tap(find.byKey(const Key('scene-apply-step')));
+      final frame = find.widgetWithText(ListTile, '#200400');
+      await tap(frame);
+      expect(shared, findsOneWidget);
+      final disc = find.descendant(of: shared, matching: find.byType(ColorDisc));
+      expect(tester.widget<ColorDisc>(disc).color, const Color(0xff200400));
+      await tap(tone('Frío'));
+      await tap(find.byKey(const Key('scene-apply-step')));
+      expect(find.widgetWithText(ListTile, '#FFFFFF'), findsOneWidget);
+      expect(ble.writes, hasLength(before));
+      await tap(find.byKey(const Key('scene-close')));
+
+      await tap(find.text('Color').last);
+      expect(shared, findsOneWidget);
+      if (inside('favorite-#200400').evaluate().isEmpty) await tap(inside('color-favorites'));
+      await tap(inside('favorite-#200400'));
+      for (var i = 0; i < 3; i++) {
+        now += 50;
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      expect(ble.writes.last, wire.color(32, 4, 0));
+    });
+  }
+
+  for (final width in [320.0, 412.0]) {
     testWidgets('quick actions two-step pickers and editing at $width dp', (tester) async {
       await tester.binding.setSurfaceSize(Size(width, width == 320 ? 640 : 915));
       tester.platformDispatcher.textScaleFactorTestValue = 1.4;

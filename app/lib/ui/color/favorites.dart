@@ -9,11 +9,12 @@ import '../glow_glass.dart';
 /// Uses the same persisted palette as the scene editor and shortcut picker.
 class ColorFavorites extends StatefulWidget {
   const ColorFavorites({super.key, required this.controller, required this.current,
-    required this.onColor});
+    required this.nameFor, required this.onColor});
 
   final AppController controller;
   final String current;
-  final ValueChanged<List<int>> onColor;
+  final String? Function(String hex) nameFor;
+  final void Function(List<int> rgb, String? name) onColor;
 
   @override
   State<ColorFavorites> createState() => _ColorFavoritesState();
@@ -84,8 +85,8 @@ class _ColorFavoritesState extends State<ColorFavorites> {
 
   Widget _swatch(String hex) {
     final rgb = [for (final i in [1, 3, 5]) int.parse(hex.substring(i, i + 2), radix: 16)];
-    final name = colorName(hex);
-    final label = name == 'solid' ? c.text('paletteColorHex', {'hex': hex.toUpperCase()}) : c.text(name);
+    final name = widget.nameFor(hex);
+    final label = name == null ? c.text('paletteColorHex', {'hex': hex.toUpperCase()}) : c.text(name);
     final color = Color.fromARGB(255, rgb[0], rgb[1], rgb[2]);
     final selected = widget.current == hex;
     Widget circle(bool highlighted) => SizedBox.square(dimension: 34, child: DecoratedBox(
@@ -112,7 +113,7 @@ class _ColorFavoritesState extends State<ColorFavorites> {
             ),
             onPressed: _saving ? null : () {
               setState(() { _slot = hex; _message = null; });
-              widget.onColor(rgb);
+              widget.onColor(rgb, name);
             }, icon: circle(incoming.isNotEmpty)),
         )),
       ),

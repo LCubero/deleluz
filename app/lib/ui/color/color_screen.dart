@@ -3,13 +3,11 @@ import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app_controller.dart';
-import '../../model/models.dart';
 import '../../protocol.dart' as wire;
-import '../glow_glass.dart';
-import '../color_disc.dart';
+import '../color_picker.dart';
 import '../effect_list.dart';
+import '../glow_glass.dart';
 import 'app_auto_card.dart';
-import 'favorites.dart';
 
 class ColorScreen extends StatefulWidget {
   const ColorScreen({super.key, required this.controller, this.active = true});
@@ -86,31 +84,6 @@ class _ColorScreenState extends State<ColorScreen> {
     ]));
   }
 
-  Widget _whites() {
-    final presets = [
-      ('whiteWarmTone', defaultShortcuts[0]['rgb'] as List<int>),
-      // #FFE4C4 rounds each channel at the midpoint of the two quick-scene whites.
-      ('whiteNeutralTone', const [255, 228, 196]),
-      ('whiteCoolTone', defaultShortcuts[1]['rgb'] as List<int>),
-    ];
-    return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text(c.text('whiteTones'), style: Theme.of(context).textTheme.titleMedium),
-      const SizedBox(height: 6),
-      Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 4, children: [
-        for (final (label, rgb) in presets)
-          ChoiceChip(
-            avatar: CircleAvatar(backgroundColor: Color.fromARGB(255, rgb[0], rgb[1], rgb[2])),
-            label: Text(c.text(label)),
-            selected: rgbHex(_rgb) == rgbHex(rgb),
-            onSelected: (_) => _choose(rgb),
-            showCheckmark: false,
-            visualDensity: VisualDensity.standard,
-            materialTapTargetSize: MaterialTapTargetSize.padded,
-          ),
-      ]),
-    ]));
-  }
-
   Widget _slider(String key, int value, ValueChanged<int> change) {
     final shown = value.clamp(1, 100);
     return SliderZone(child: GlassCard(
@@ -128,7 +101,6 @@ class _ColorScreenState extends State<ColorScreen> {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(listenable: c, builder: (context, _) {
-    final color = Color.fromARGB(255, _rgb[0], _rgb[1], _rgb[2]);
     final style = Theme.of(context).textTheme;
     return SafeArea(child: Align(alignment: Alignment.topCenter, child: ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 480),
@@ -152,17 +124,7 @@ class _ColorScreenState extends State<ColorScreen> {
             const SizedBox(height: 12),
             _effectCard(),
           ] else ...[
-            ColorDisc(color: color, label: c.text('colorDiscLabel'),
-              onChanged: (hsv) {
-                final selected = hsv.toColor().toARGB32();
-                _choose([(selected >> 16) & 255, (selected >> 8) & 255, selected & 255]);
-              }),
-            Text(c.text('colorDiscHint'), textAlign: TextAlign.center, style: style.bodySmall),
-            const SizedBox(height: 12),
-            _whites(),
-            const SizedBox(height: 12),
-            ColorFavorites(controller: c, current: rgbHex(_rgb).toLowerCase(),
-              onColor: _choose),
+            SharedColorPicker(controller: c, rgb: _rgb, onChanged: (rgb, _) => _choose(rgb)),
           ],
           const SizedBox(height: 16),
           _slider('brightness', c.brightness, c.setBrightness),

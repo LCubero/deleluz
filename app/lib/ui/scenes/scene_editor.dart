@@ -230,11 +230,6 @@ class _StepPickerState extends State<_StepPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = [
-      ('whiteWarmTone', defaultShortcuts[0]['rgb'] as List<int>),
-      ('whiteNeutralTone', const [255, 228, 196]),
-      ('whiteCoolTone', defaultShortcuts[1]['rgb'] as List<int>),
-    ];
     final enabled = _duration != null && (!widget.effect || _effect != null);
     return Padding(padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: SafeArea(top: false, child: SingleChildScrollView(
@@ -245,29 +240,9 @@ class _StepPickerState extends State<_StepPicker> {
               favorites: c.effectFavorites, text: c.text, onFavorite: c.toggleEffectFavorite,
               selected: _effect, onSelected: (id) => setState(() => _effect = id))),
             if (_effect != null) Text(effectName(_effect!)!),
-          ] else ...[
-            ColorDisc(color: _rgb(_color), label: c.text('colorDiscLabel'), onChanged: (hsv) {
-              final argb = hsv.toColor().toARGB32();
-              setState(() => _color = [(argb >> 16) & 255, (argb >> 8) & 255, argb & 255]);
-            }),
-            Text(c.text('colorDiscHint'), textAlign: TextAlign.center),
-            Text(c.text('whiteTones')),
-            Wrap(spacing: 8, runSpacing: 4, children: [
-              for (final (label, rgb) in colors) ChoiceChip(
-                avatar: CircleAvatar(backgroundColor: _rgb(rgb)), label: Text(c.text(label)),
-                selected: rgbHex(_color) == rgbHex(rgb),
-                onSelected: (_) => setState(() => _color = rgb),
-              ),
-            ]),
-            Wrap(spacing: 4, children: [
-              for (final hex in c.models.loadPalette()) IconButton.outlined(
-                tooltip: c.text('paletteColorHex', {'hex': hex.toUpperCase()}),
-                icon: Icon(Icons.circle, color: Color(0xff000000 | int.parse(hex.substring(1), radix: 16))),
-                onPressed: () => setState(() => _color = [
-                  for (var i = 1; i < 7; i += 2) int.parse(hex.substring(i, i + 2), radix: 16),
-                ])),
-            ]),
-          ],
+          ] else
+            SharedColorPicker(controller: c, rgb: _color,
+              onChanged: (rgb, _) => setState(() => _color = rgb)),
           TextFormField(key: const Key('scene-step-duration'), initialValue: _initialDuration,
             keyboardType: TextInputType.numberWithOptions(decimal: widget.effect),
             decoration: InputDecoration(
