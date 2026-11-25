@@ -89,10 +89,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                   onTap: () => _show(index), child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 3),
                     child: Column(mainAxisSize: MainAxisSize.min, spacing: 4, children: [
-                      Row(mainAxisAlignment: MainAxisAlignment.center, spacing: 4, children: [
-                        GlowIcon(icons[index], color: index == _tab ? glowCyan : glowFaint),
-                        if (index == _tab) GlowSelection.check(),
-                      ]),
+                      GlowIcon(icons[index], color: index == _tab ? glowCyan : glowFaint),
                       Text(controller.text(tabs[index]), textAlign: TextAlign.center,
                         style: TextStyle(color: index == _tab ? glowInk : glowFaint,
                           fontWeight: FontWeight.w600, fontSize: 12)),

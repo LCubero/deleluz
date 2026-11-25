@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import '../app_controller.dart';
 import '../model/timer.dart';
 import 'glow_glass.dart';
+import 'glow_sheet.dart';
 import 'notice.dart';
 
 class TimerSheet extends StatefulWidget {
@@ -12,8 +13,7 @@ class TimerSheet extends StatefulWidget {
   final AppController controller;
 
   static Future<void> open(BuildContext context, AppController controller) =>
-      showModalBottomSheet<void>(context: context, isScrollControlled: true,
-        useSafeArea: true, showDragHandle: true, clipBehavior: Clip.antiAlias,
+      GlowSheet.open<void>(context, showDragHandle: true,
         builder: (_) => TimerSheet(controller: controller));
 
   @override
@@ -62,11 +62,7 @@ class _TimerSheetState extends State<TimerSheet> {
       final style = Theme.of(context).textTheme;
       final remaining = c.remaining;
       final end = c.timerEndTime;
-      return Ink(
-        decoration: const BoxDecoration(gradient: LinearGradient(
-          begin: Alignment.topCenter, end: Alignment.bottomCenter,
-          colors: [Color(0xff201840), Color(0xff120e26)])),
-        child: Padding(padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      return Padding(padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
           child: SafeArea(top: false, child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -131,7 +127,6 @@ class _TimerSheetState extends State<TimerSheet> {
               ],
             ),
           )),
-        ),
       );
     });
 

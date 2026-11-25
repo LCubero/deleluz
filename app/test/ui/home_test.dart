@@ -100,6 +100,60 @@ void main() {
     return controller;
   }
 
+  void expectBrightnessInViewport(WidgetTester tester, String key) {
+    final slider = find.byKey(Key(key));
+    final card = find.ancestor(of: slider, matching: find.byType(GlassCard));
+    final viewport = find.ancestor(of: slider, matching: find.byType(SingleChildScrollView));
+    expect(tester.getTopLeft(card).dy, greaterThanOrEqualTo(tester.getTopLeft(viewport).dy));
+    expect(tester.getBottomLeft(card).dy, lessThanOrEqualTo(tester.getBottomLeft(viewport).dy));
+  }
+
+  testWidgets('Inicio fits the whole brightness card on the owner phone', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(411, 842));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final c = await start(tester);
+    expect(c.shortcuts, hasLength(2));
+    expect(find.byTooltip(c.text('addShortcut')), findsNothing);
+    expectBrightnessInViewport(tester, 'brightness');
+    expect(find.byKey(const Key('speed')), findsNothing);
+  });
+
+  testWidgets('Color fijo fits the whole brightness card on the owner phone', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(411, 842));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await start(tester);
+    await tester.tap(find.text('Color').last);
+    await tester.pumpAndSettle();
+    expectBrightnessInViewport(tester, 'color-brightness');
+    await tester.tap(find.byKey(const Key('color-effects')));
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(find.byKey(const Key('color-speed'))).dy,
+      greaterThan(tester.getBottomLeft(find.byKey(const Key('color-brightness'))).dy));
+  });
+
+  testWidgets('segmented check precedes the label on the same row', (tester) async {
+    await start(tester);
+    await tester.tap(find.text('Color').last);
+    await tester.pumpAndSettle();
+    final selected = find.byKey(const Key('color-solid'));
+    final other = find.byKey(const Key('color-effects'));
+    final check = find.descendant(of: find.byType(GlowSegments<bool>), matching: find.byIcon(Icons.check));
+    expect(tester.getCenter(check).dx, lessThan(tester.getTopLeft(selected).dx));
+    final labelTop = tester.getTopLeft(selected).dy;
+    expect(tester.getTopLeft(check).dy, lessThan(tester.getBottomLeft(selected).dy));
+    expect(tester.getBottomLeft(check).dy, greaterThan(labelTop));
+    // Both labels use the same text metrics, so their first line tops align with their baselines.
+    expect(labelTop, closeTo(tester.getTopLeft(other).dy, 1));
+  });
+
+  testWidgets('navigation shows a highlight without a check', (tester) async {
+    await start(tester);
+    final nav = tester.widget<Scaffold>(find.byType(Scaffold).first).bottomNavigationBar!;
+    expect(find.descendant(of: find.byWidget(nav), matching: find.byIcon(Icons.check)), findsNothing);
+    expect(find.ancestor(of: find.text('Inicio'), matching: find.byWidgetPredicate(
+      (w) => w is Semantics && w.properties.selected == true)), findsOneWidget);
+  });
+
   for (final size in [const Size(320, 640), const Size(412, 915)]) {
     testWidgets('Home Bluetooth warning and enable request at $size', (tester) async {
       await tester.binding.setSurfaceSize(size);
@@ -384,15 +438,12 @@ void main() {
     expect(hint, findsNothing);
   });
 
-  testWidgets('expanded quick actions keep the disabled speed control', (tester) async {
+  testWidgets('expanded quick actions do not bring back speed or its hint', (tester) async {
     final c = await start(tester);
     await tester.tap(find.text('Acciones rápidas'));
     await tester.pumpAndSettle();
-    final speed = find.byKey(const Key('speed'));
-    await tester.scrollUntilVisible(speed, 100);
-    expect(tester.widget<Slider>(speed).onChanged, isNull);
-    final hint = find.ancestor(of: find.text(c.text('speedEffectsHint')), matching: find.byType(Notice));
-    expect(tester.widget<Notice>(hint).kind, NoticeKind.info);
+    expect(find.byKey(const Key('speed')), findsNothing);
+    expect(find.text(c.text('speedEffectsHint')), findsNothing);
   });
 
   Future<void> connect(WidgetTester tester) async {
@@ -416,39 +467,31 @@ void main() {
     await done;
   }
 
-  testWidgets('Home speed follows the last sent mode, not the last command', (tester) async {
+  testWidgets('active effect follows the last sent mode, not the last command', (tester) async {
     await tester.binding.setSurfaceSize(const Size(412, 915));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final c = await start(tester);
     await connect(tester);
-    Slider speed() => tester.widget<Slider>(find.byKey(const Key('speed')));
-    expect(speed().onChanged, isNull);
-    expect(find.text('La velocidad aplica a efectos'), findsOneWidget);
-
+    expect(c.hasActiveEffect, isFalse);
     await send(tester, () => c.setEffect(210));
-    expect(speed().onChanged, isNotNull);
-    expect(find.text('La velocidad aplica a efectos'), findsNothing);
-    speed().onChanged!(70);
+    expect(c.hasActiveEffect, isTrue);
+    c.setSpeed(70);
     await tester.pump();
     expect(ble.writes.last, orderedEquals(wire.speed(70)));
-    expect(speed().onChanged, isNotNull);
+    expect(c.hasActiveEffect, isTrue);
 
     await send(tester, () => c.applyShortcut({'kind': 'color', 'rgb': [1, 2, 3]}));
-    expect(speed().onChanged, isNull);
+    expect(c.hasActiveEffect, isFalse);
     await send(tester, () => c.setEffect(wire.autoEffect));
-    expect(speed().onChanged, isNotNull);
+    expect(c.hasActiveEffect, isTrue);
     await send(tester, () => c.setVoiceMode(2));
-    expect(speed().onChanged, isNull);
-
-    c.setLanguage('en');
-    await tester.pump();
-    expect(find.text('Speed applies to effects'), findsOneWidget);
+    expect(c.hasActiveEffect, isFalse);
     await send(tester, () => c.setEffect(1));
     await send(tester, () => c.playDraft([[10, 20, 30], [40, 50, 60]], 650, 50, preview: false));
-    expect(speed().onChanged, isNull);
+    expect(c.hasActiveEffect, isFalse);
     await send(tester, () => c.setEffect(2));
     await send(tester, () async => c.setPower(false));
-    expect(speed().onChanged, isNull);
+    expect(c.hasActiveEffect, isFalse);
   });
 
   testWidgets('Home strip preview distinguishes unknown, sent and disconnected', (tester) async {
@@ -488,7 +531,7 @@ void main() {
     await c.reconnect();
     await tester.pumpAndSettle();
     expect(paint().gradient, unknown);
-    expect(tester.widget<Slider>(find.byKey(const Key('speed'))).onChanged, isNull);
+    expect(c.hasActiveEffect, isFalse);
   });
 
   testWidgets('each tab renders the shared header', (tester) async {
@@ -510,7 +553,7 @@ void main() {
       expect(chip, findsOneWidget);
       final status = find.descendant(of: chip, matching: find.text('Sin conexión'));
       expect(tester.widget<Text>(status).maxLines, 1);
-      expect(find.text(controller.text('noCommand')).hitTestable(),
+      expect(find.text(controller.text('noCommand')),
         tab == 'Inicio' ? findsOneWidget : findsNothing);
       expect(find.descendant(of: header, matching: find.byType(ConnectionChip)).hitTestable(),
         tab == 'Inicio' ? findsNothing : findsOneWidget);
@@ -518,7 +561,7 @@ void main() {
     }
   });
 
-  testWidgets('Home shows an inactive strip preview and web slider order', (tester) async {
+  testWidgets('Home shows an inactive strip preview and brightness', (tester) async {
     await tester.binding.setSurfaceSize(const Size(412, 915));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await start(tester);
@@ -533,8 +576,7 @@ void main() {
     expect(find.byWidgetPredicate((w) => w is Semantics && w.properties.label == 'Vista previa de la tira'),
       findsOneWidget);
     expect(find.text('Todas las escenas'), findsNothing);
-    expect(tester.getTopLeft(find.byKey(const Key('speed'))).dy,
-      lessThan(tester.getTopLeft(find.byKey(const Key('brightness'))).dy));
+    expect(find.byKey(const Key('brightness')).hitTestable(), findsOneWidget);
   });
 
   testWidgets('Home connection card stays compact and Cambiar opens the selector', (tester) async {
@@ -580,6 +622,7 @@ void main() {
       final confirm = find.widgetWithText(FilledButton, 'Agregar');
       await tap(add);
       await tap(find.byKey(const Key('quick-type-color')));
+      expect(find.byKey(const Key('glow-sheet')), findsOneWidget);
       expect(shared, findsOneWidget);
       await tap(tone('Noche'));
       await tap(inside('color-favorites'));
@@ -598,6 +641,7 @@ void main() {
       await tap(find.text('Escenas').last);
       await tap(find.byKey(const Key('scene-new')));
       await tap(find.byKey(const Key('scene-add-color')));
+      expect(find.byKey(const Key('glow-sheet')), findsOneWidget);
       expect(shared, findsOneWidget);
       await tap(inside('favorite-#200400'));
       expect(ble.writes, hasLength(before));
@@ -672,6 +716,7 @@ void main() {
       expect(c.shortcuts.single, defaultShortcuts.first);
       await tap(add);
       await tap(find.byKey(const Key('quick-type-effect')));
+      expect(find.byKey(const Key('glow-sheet')), findsOneWidget);
       expect(find.text(c.text('favorites')), findsOneWidget);
       expect(find.byKey(const Key('effect-row-210')), findsOneWidget);
       await tester.enterText(find.byKey(const Key('effect-search')), '210');
@@ -682,12 +727,14 @@ void main() {
       expect(c.shortcuts.last, {'kind': 'effect', 'effect': 210});
       await tap(add);
       await tap(find.byKey(const Key('quick-type-scene')));
+      expect(find.byKey(const Key('glow-sheet')), findsOneWidget);
       await tap(find.text(c.text('rasta')));
       expectSelected(find.byKey(const Key('quick-scene-rasta')));
       await tap(confirm);
       expect(c.shortcuts.last, {'kind': 'scene', 'preset': 'rasta'});
       await tap(add);
       await tap(find.byKey(const Key('quick-type-sequence')));
+      expect(find.byKey(const Key('glow-sheet')), findsOneWidget);
       await tap(find.text(c.models.loadSequences().single['name'] as String));
       final card = find.byKey(const Key('quick-sequence-1'));
       expectSelected(card);
@@ -1018,9 +1065,9 @@ void main() {
     expect(slider, findsOneWidget);
   });
 
-  testWidgets('a drag on the disabled speed slider does not change tab', (tester) async {
-    await start(tester);
-    final slider = find.byKey(const Key('speed'));
+  testWidgets('a drag on the disabled brightness slider does not change tab', (tester) async {
+    await start(tester, readBluetooth: () async => AvailabilityState.poweredOff);
+    final slider = find.byKey(const Key('brightness'));
     await tester.scrollUntilVisible(slider, 120);
     await tester.pumpAndSettle();
     expect(tester.widget<Slider>(slider).onChanged, isNull);
@@ -1192,6 +1239,7 @@ void main() {
         expect(tester.takeException(), isNull);
       }
       await timerTap(tester, find.byTooltip(c.text('offTimer')));
+      expect(find.byKey(const Key('glow-sheet')), findsOneWidget);
       checkTitle();
       await timerTap(tester, find.text(c.text('custom')));
       expect(find.widgetWithText(TextField, c.text('seconds')), findsOneWidget);
@@ -1218,8 +1266,6 @@ void main() {
     (widget) => widget is GlowValueLabel && widget.label == c.text(key));
 
   for (final (tab, panel, label, enabled) in [
-    ('Inicio', null, 'speed', false),
-    ('Inicio', null, 'speed', true),
     ('Inicio', null, 'brightness', true),
     ('Color', null, 'brightness', true),
     ('Color', 'color-effects', 'speed', true),
@@ -1230,10 +1276,6 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(412, 915));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final c = await start(tester);
-      if (tab == 'Inicio' && label == 'speed' && enabled) {
-        await connect(tester);
-        await send(tester, () => c.setEffect(1));
-      }
       if (tab != 'Inicio') await tapTab(tester, tab);
       if (panel != null) await tapKey(tester, panel);
       if (panel == 'scenes-mine') await tapKey(tester, 'scene-new');
@@ -1276,10 +1318,14 @@ void main() {
     final track = find.byKey(const Key('brightness'));
     final label = sliderLabel(c, 'brightness');
     final scroll = tester.state<ScrollableState>(find.byType(Scrollable).hitTestable());
-    final beforeScroll = scroll.position.pixels;
-    await tester.dragFrom(tester.getCenter(sliderLabel(c, 'speed').hitTestable()), const Offset(0, -200));
+    await tester.tap(find.text('Acciones rápidas'));
     await tester.pumpAndSettle();
-    expect(scroll.position.pixels, greaterThan(beforeScroll));
+    await tester.ensureVisible(label);
+    await tester.pumpAndSettle();
+    final beforeScroll = scroll.position.pixels;
+    await tester.dragFrom(tester.getCenter(label.hitTestable()), const Offset(0, 200));
+    await tester.pumpAndSettle();
+    expect(scroll.position.pixels, lessThan(beforeScroll));
     await tester.ensureVisible(track);
     await tester.pumpAndSettle();
     final beforeValue = c.brightness;
@@ -1358,11 +1404,12 @@ void main() {
     final disc = find.byKey(const Key('color-disc'));
     final picker = find.byType(ColorDisc);
     HSVColor selection() => HSVColor.fromColor(tester.widget<ColorDisc>(picker).color);
-    await tester.tapAt(tester.getCenter(disc) + const Offset(80, 0));
+    final offset = tester.getSize(disc).width / 3;
+    await tester.tapAt(tester.getCenter(disc) + Offset(offset, 0));
     await tester.pumpAndSettle();
     final tappedHue = selection().hue;
     expect(tappedHue, closeTo(90, 1));
-    await tester.dragFrom(tester.getCenter(disc) + const Offset(0, -70), const Offset(-170, 0));
+    await tester.dragFrom(tester.getCenter(disc) + Offset(0, -offset), const Offset(-170, 0));
     await tester.pumpAndSettle();
     expect(disc.hitTestable(), findsOneWidget);
     expect(selection().hue, isNot(closeTo(tappedHue, 1)));
@@ -1485,12 +1532,6 @@ void main() {
       expect(tester.takeException(), isNull);
       await tester.tap(find.byTooltip('Volver a Inicio'));
       await tester.pumpAndSettle();
-      final hint = find.text('La velocidad aplica a efectos');
-      await tester.scrollUntilVisible(hint, 100);
-      await tester.ensureVisible(hint);
-      await tester.pumpAndSettle();
-      expect(hint.hitTestable(), findsOneWidget);
-      expect(tester.takeException(), isNull);
       final quick = find.text('Acciones rápidas');
       await tester.scrollUntilVisible(quick, 100);
       await tester.ensureVisible(quick);
@@ -1498,9 +1539,10 @@ void main() {
       await tester.tap(quick.hitTestable());
       await tester.pumpAndSettle();
       expect(find.text('Blanco cálido'), findsOneWidget);
-      final speed = find.byKey(const Key('speed'));
-      await tester.scrollUntilVisible(speed, 100);
-      expect(tester.widget<Slider>(speed).onChanged, isNull);
+      final brightness = find.byKey(const Key('brightness'));
+      await tester.ensureVisible(brightness);
+      await tester.pumpAndSettle();
+      expect(brightness.hitTestable(), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }

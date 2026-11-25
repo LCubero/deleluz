@@ -5,11 +5,12 @@ import 'package:material_ui/material_ui.dart';
 /// Full-value HSV picker: red at the top, hue clockwise, white at the center.
 class ColorDisc extends StatelessWidget {
   const ColorDisc({super.key, required this.color, required this.label,
-    required this.onChanged});
+    required this.onChanged, this.maxDiameter = 216});
 
   final Color color;
   final String label;
   final ValueChanged<HSVColor> onChanged;
+  final double maxDiameter;
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +20,7 @@ class ColorDisc extends StatelessWidget {
     return Center(child: Padding(
       padding: const EdgeInsets.all(12),
       child: SizedBox.square(
-        dimension: math.min(216, MediaQuery.sizeOf(context).width * .55),
+        dimension: math.min(maxDiameter, MediaQuery.sizeOf(context).width * .55),
         child: LayoutBuilder(builder: (context, constraints) {
           final radius = constraints.maxWidth / 2;
           final center = Offset(radius, radius);

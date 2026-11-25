@@ -489,18 +489,20 @@ class GlowSegments<T> extends StatelessWidget {
   Widget build(BuildContext context) => Material(color: glowGlass,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14),
       side: const BorderSide(color: glowLine)),
-    child: Padding(padding: const EdgeInsets.all(4), child: Row(children: [
+    child: Padding(padding: const EdgeInsets.all(4), child: Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
       for (final segment in segments) Expanded(child: GlowSelectionTarget(
         radius: 10, clear: true, selected: segment.value == selected,
         onTap: segment.enabled ? () => onSelected(segment.value) : null,
         child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48),
           child: Center(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              if (segment.value == selected) GlowSelection.check() else const SizedBox(height: 18),
-              DefaultTextStyle.merge(textAlign: TextAlign.center,
+            child: Row(mainAxisSize: MainAxisSize.min, spacing: 4,
+              crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+              if (segment.value == selected) GlowSelection.check(),
+              Flexible(child: DefaultTextStyle.merge(textAlign: TextAlign.center,
                 style: TextStyle(fontSize: segments.length == 3 ? 14 : 15, fontWeight: FontWeight.w600,
                   color: segment.value == selected ? glowInk : glowMuted),
-                child: segment.label ?? const SizedBox.shrink()),
+                child: segment.label ?? const SizedBox.shrink())),
             ])))),
       )),
     ])));

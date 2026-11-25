@@ -8,6 +8,7 @@ import '../../model/effects.dart';
 import '../../model/models.dart';
 import '../../protocol.dart' as wire;
 import '../glow_glass.dart';
+import '../glow_sheet.dart';
 import '../notice.dart';
 import '../glow_icon.dart';
 import '../home_presets.dart';

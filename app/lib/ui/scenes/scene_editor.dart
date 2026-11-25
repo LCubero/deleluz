@@ -95,8 +95,7 @@ class _SceneEditorState extends State<SceneEditor> {
   String _duration(int ms) => glowSeconds(ms, c.language);
 
   Future<void> _pick({required bool effect, int? index}) async {
-    final step = await showModalBottomSheet<Fields>(context: context,
-      isScrollControlled: true, useSafeArea: true,
+    final step = await GlowSheet.open<Fields>(context,
       builder: (context) => _StepPicker(controller: c, effect: effect,
         initial: index == null ? null : _steps[index]));
     if (step == null || !mounted) return;

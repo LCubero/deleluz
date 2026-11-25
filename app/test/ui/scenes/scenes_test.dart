@@ -151,6 +151,7 @@ void main() {
       expect(find.text(c.text('whiteTones')), findsOneWidget);
       await tap(tester, 'scene-apply-step');
       await tap(tester, 'scene-add-effect');
+      expect(key('glow-sheet'), findsOneWidget);
       expect(key('effect-row-210'), findsOneWidget);
       await tester.enterText(key('effect-search'), '210');
       await tester.pumpAndSettle();

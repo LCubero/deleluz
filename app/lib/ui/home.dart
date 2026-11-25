@@ -76,18 +76,15 @@ class _HomeScreenState extends State<HomeScreen> {
         textAlign: TextAlign.center,
         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       const SizedBox(height: 6),
-      SizedBox(height: 2 * MediaQuery.textScalerOf(context).scale(13) * 1.4,
-        child: Text(last == null ? c.text('noCommand') : c.text('lastSent', {'command': last}),
-          textAlign: TextAlign.center, style: style.bodySmall, maxLines: 2,
-          overflow: TextOverflow.clip,
+      ConstrainedBox(constraints: BoxConstraints(
+        minHeight: 2 * MediaQuery.textScalerOf(context).scale(13) * 1.4),
+        child: Text(last == null ? c.text('noCommand') : c.text('lastSentShort', {'command': last}),
+          textAlign: TextAlign.center, style: style.bodySmall,
           strutStyle: const StrutStyle(fontSize: 13, height: 1.4, forceStrutHeight: true))),
-      const SizedBox(height: 12),
+      const SizedBox(height: 8),
       dim(ExcludeFocus(excluding: off, child: AbsorbPointer(absorbing: off, child: _quick(context)))),
-      const SizedBox(height: 12),
-      _slider('speed', c.speed, !off && c.hasActiveEffect ? c.setSpeed : null,
-        hint: c.hasActiveEffect ? null : c.text('speedEffectsHint')),
-      const SizedBox(height: 12),
-      dim(_slider('brightness', c.brightness, off ? null : c.setBrightness)),
+      const SizedBox(height: 8),
+      dim(_brightness()),
     ]));
   }
 
@@ -96,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(children: [
       Semantics(button: true, expanded: _quickOpen, child: InkWell(
         onTap: () => setState(() => _quickOpen = !_quickOpen),
-        child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 44), child: Row(spacing: 8, children: [
+        child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48), child: Row(spacing: 8, children: [
           Expanded(child: Text(c.text('quickActions'), style: const TextStyle(
             color: glowMuted, fontSize: 16, fontWeight: FontWeight.w600))),
           RotatedBox(quarterTurns: _quickOpen ? 1 : 0,
@@ -140,16 +137,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return item['kind'] == 'color' ? SliderZone(child: tile) : tile;
   }
 
-  Widget _slider(String label, int value, ValueChanged<int>? change, {String? hint}) =>
+  Widget _brightness() =>
     SliderZone(child: GlassCard(verticalInset: 14,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        GlowValueLabel(label: c.text(label), value: c.text('percent', {'value': value}),
-          icon: label == 'brightness' ? const GlowIcon(GlowGlyph.sun, size: 20) : null),
+        GlowValueLabel(label: c.text('brightness'), value: c.text('percent', {'value': c.brightness}),
+          icon: const GlowIcon(GlowGlyph.sun, size: 20)),
         const SizedBox(height: 10),
-        Semantics(label: c.text(label), child: Slider(key: Key(label), value: value.toDouble(), max: 100,
-          onChanged: change == null ? null : (value) => change(value.round()),
-          onChangeEnd: change == null ? null : (_) => c.saveSelection())),
-        if (hint != null) Notice(hint),
+        Semantics(label: c.text('brightness'), child: Slider(key: const Key('brightness'),
+          value: c.brightness.toDouble(), max: 100,
+          onChanged: c.bluetoothOff ? null : (value) => c.setBrightness(value.round()),
+          onChangeEnd: c.bluetoothOff ? null : (_) => c.saveSelection())),
       ]),
     ));
 

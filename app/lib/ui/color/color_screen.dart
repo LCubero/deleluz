@@ -95,7 +95,7 @@ class _ColorScreenState extends State<ColorScreen> {
           semanticFormatterCallback: (value) => c.text('percent', {'value': value.round()}),
           onChanged: (value) => change(value.round()),
           onChangeEnd: (_) => c.saveSelection())),
-        if (key == 'brightness') Notice(c.text('dragNote')),
+        if (key == 'brightness') Notice(c.text('dragNote'), compact: true),
       ]),
     ));
   }
@@ -104,7 +104,8 @@ class _ColorScreenState extends State<ColorScreen> {
   Widget build(BuildContext context) => ListenableBuilder(listenable: c, builder: (context, _) {
     return SafeArea(child: Align(alignment: Alignment.topCenter, child: ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 480),
-      child: SingleChildScrollView(padding: glowScreenPadding, child: Column(
+      child: LayoutBuilder(builder: (context, viewport) => SingleChildScrollView(
+        padding: glowScreenPadding, child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           GlowHeader(title: c.text('color'), controller: c),
           if (c.message == 'commandFailed')
@@ -117,23 +118,25 @@ class _ColorScreenState extends State<ColorScreen> {
               ButtonSegment(value: true, label: Text(c.text('builtIn'),
                 key: const Key('color-effects'), textAlign: TextAlign.center)),
             ]),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           if (_effects) ...[
             AppAutoCard(key: const Key('app-auto'), controller: c,
               onStart: () => setState(() => _auto = false)),
             const SizedBox(height: 12),
             _effectCard(),
           ] else ...[
-            SharedColorPicker(controller: c, rgb: _rgb, onChanged: (rgb, _) => _choose(rgb)),
+            SharedColorPicker(controller: c, rgb: _rgb,
+              discMaxDiameter: (viewport.maxHeight * .15).clamp(96.0, 216.0),
+              onChanged: (rgb, _) => _choose(rgb)),
           ],
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           _slider('brightness', c.brightness, c.setBrightness),
           if (_effects) ...[
             const SizedBox(height: 12),
             _slider('speed', c.speed, c.setSpeed),
           ],
         ],
-      )),
+      ))),
     )));
   });
 }

@@ -5,6 +5,7 @@ import '../model/models.dart';
 import 'color_picker.dart';
 import 'effect_list.dart';
 import 'glow_glass.dart';
+import 'glow_sheet.dart';
 import 'notice.dart';
 import 'home_presets.dart';
 import 'scenes/scenes_screen.dart';
@@ -28,8 +29,7 @@ class QuickActionsSheet extends StatefulWidget {
   final bool replacing;
 
   static Future<Fields?> open(BuildContext context, AppController controller, {required bool replacing}) =>
-      showModalBottomSheet<Fields>(context: context, isScrollControlled: true,
-        useSafeArea: true, enableDrag: false, constraints: const BoxConstraints(maxWidth: 480),
+      GlowSheet.open<Fields>(context, enableDrag: false, constraints: const BoxConstraints(maxWidth: 480),
         builder: (context) => QuickActionsSheet._(controller, replacing));
 
   @override
