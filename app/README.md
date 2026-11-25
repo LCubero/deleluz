@@ -2,11 +2,11 @@
 
 Native Android app (Flutter) for the LEDDMX-03 LED strip controller, with the Glow Glass design of the phone webapp ([`../webapp/README.md`](../webapp/README.md)). It is shared as an APK, not through an app store. iPhone builds need macOS and are not covered here.
 
-<p align="center"><img src="../docs/app-screens/showreel.webp" width="300" alt="Published DeleLuz Android app tour"></p>
+<p align="center"><img src="../docs/app-screens/showreel.webp" width="300" alt="DeleLuz 1.0.0 Android app tour"></p>
 
 ## Install
 
-1. Download `DeleLuz-1.0.0.apk` from the [Releases](https://github.com/LCubero/deleluz/releases/latest) page. It is one file for every Android phone with Android 7.0 or newer.
+1. Download `DeleLuz-1.1.0.apk` from the [Releases](https://github.com/LCubero/deleluz/releases/latest) page. It is one file for every Android phone with Android 7.0 or newer.
 2. Open it on the phone and allow installing apps from that source. Google Play Protect may warn because the app is not from the store.
 3. Updates install over the previous version and keep your data.
 
@@ -14,9 +14,9 @@ If you installed a test build from before 1.0.0, uninstall it once first: it was
 
 ## What it does
 
-The features below describe unreleased phase 1 on `feat/app-polish`, not the APK above. One phone has been tested; the wider compatibility pass is in progress ([T17](../odd/tasks/app-polish.md#tasks)).
+An [automated compatibility matrix](test/ui/compat_test.dart) covers 16 phone sizes.
 
-- **Inicio**: connect, reconnect, disconnect, or cancel a pending connection. **Cambiar** opens the strip selector. The connection card does not swipe. **Acciones rápidas** replaces **Escenas rápidas**: pick a type (color, effect, included scene, or saved scene), then an item. The off-timer sheet shows a countdown ring and shutoff time, offers +5 and +15 min, and accepts custom minutes and seconds up to 12 hours.
+- **Inicio**: connect, reconnect, disconnect, or cancel a pending connection. Tap the connection card to open the strip selector, or swipe it horizontally to preview another saved strip without switching tabs. **Acciones rápidas** replaces **Escenas rápidas**: pick a type (color, effect, included scene, or saved scene), then an item. The off-timer sheet shows a countdown ring and shutoff time, offers +5 and +15 min, and accepts custom minutes and seconds up to 12 hours.
 - **Color**: the color disc adjusts saturation and offers Cálido, Neutro, and Frío white presets. Color, quick actions, and scene color steps use the same picker, including editable color favorites. Search the 210 built-in effects and star favorites to list them first. **AUTO de la app** shows the current effect name and advances every 10 s, 30 s, 1 min, or 5 min through Todos or Favoritos. It only runs in the foreground while connected. **Ciclo de la tira** is the separate firmware cycle.
 - **Escenas**: **Mis escenas** supports up to eight color or built-in effect steps, each with its own duration. Older scenes still load and play. Included scenes and Música (four strip-microphone modes and sensitivity) are also available.
 - **Elegir tira** (from Cambiar or Ajustes → Dispositivos): your saved strips and new nearby strips. Each row has rename (pencil), forget (trash) and one Conectar/Desconectar button; long-press for the same menu. Errors show on the row with Reintentar. Search appears with four or more strips.
@@ -57,7 +57,7 @@ keyAlias=deleluz
 storeFile=../release/deleluz-release.jks
 ```
 
-Raise the build number in `pubspec.yaml` (`version: 1.0.0+N`) for every APK you share; Android only installs an update over a lower number. It starts at 2004 because earlier test builds were split per ABI and used codes up to 2003. Keep `lib/version.dart` in sync with the version name (a test checks it).
+Raise the build number in `pubspec.yaml` (`version: 1.1.0+N`) for every APK you share; Android only installs an update over a lower number. It starts at 2004 because earlier test builds were split per ABI and used codes up to 2003. Keep `lib/version.dart` in sync with the version name (a test checks it).
 
 On Windows the release build sometimes fails with `stableIds.txt ... The device does not recognize the command`; delete `build/app/intermediates/stable_resource_ids_file` and build again.
 

@@ -17,9 +17,10 @@ This roadmap is the canonical lifecycle owner. Track only non-trivial work with 
 ## Active Records
 <!-- doc-role:active-records -->
 
-- RH-W-0001 App polish (P1, active; near completion): Android implementation delivered on `feat/app-polish`, unreleased. Origin: owner requests 2026-11-25 ([plan](../PLAN.md)). Evidence: core features `ad070b5`, `22a0c70`, `64b5b8b`, `4546165`, `0257279`; owner approved build 2010 on one phone (`b9914fb`; [phase 1 log](../../odd/tasks/app-polish.md#log), L40–L42). Remaining: finish and record T17 multi-phone compatibility; tablets and the webapp port are outside phase 1.
-- RH-W-0002 Two-strip spike, then groups (P2, proposed; after RH-W-0001): Android holds one link today (`app/lib/link.dart`). Next: two-strip fan-out test with skew log.
-- RH-W-0003 Webapp parity and responsive layouts (P2, deferred; after RH-W-0001): tablet, desktop, home dashboard. Start the port only after the owner considers the Android app complete and tested ([phase 1 log](../../odd/tasks/app-polish.md#log), L15–L16).
+The owner chooses the next phase from [the plan](../PLAN.md): the webapp port (RH-W-0003) or the two-strip spike (RH-W-0002).
+
+- RH-W-0002 Two-strip spike, then groups (P2, proposed): Android holds one link today (`app/lib/link.dart`). If chosen, start with a two-strip fan-out test with skew log.
+- RH-W-0003 Webapp parity and responsive layouts (P2, deferred): tablet, desktop, home dashboard. Start when the owner chooses the port as the next phase.
 - RH-W-0004 Hub spike on Raspberry Pi 3B+, then ESP32-S3 (P3, proposed): local BLE bridge with a LAN-only API. Next: owner has the Pi ready; bleak replay of one command.
 - RH-W-0005 Integrations (P3, deferred until RH-W-0004 works): Home Assistant, Matter bridge for Alexa/Google, AI tool API, CasaOS.
 
@@ -32,11 +33,13 @@ This roadmap is the canonical lifecycle owner. Track only non-trivial work with 
 - Scene sequence editor: the step editor was rejected (L33); replaced by simple color-square sequences "Mis escenas" (L37-L62).
 - Webapp strip test session: quick scenes, Mis escenas, favorites, Música, effects + AUTO with speed 10 %/90 %, disconnect and link loss on the real strip (`odd/tasks/deleluz-webapp.md` L64).
 - Phone-mic music modes (host-driven color/brightness from the phone microphone): deferred by the user until the firmware path advances (L31).
-- Native Android app: v1.0.0 published on GitHub Releases (`app/`, `odd/tasks/deleluz-android.md`). Follow-ups: scenes and the off timer keep running under the notification shade; no in-app update notice.
+- Native Android app: [v1.1.0 on GitHub Releases](https://github.com/LCubero/deleluz/releases/tag/v1.1.0) (`app/`; see RH-W-0001). Follow-ups: scenes and the off timer keep running under the notification shade; no in-app update notice.
 - Phone design: the webapp uses the approved Glow Glass design (`design/deleluz-webapp/`); earlier phone directions are archived locally in `_archive/` (still in Git history).
 
 ## Resolved Records
 <!-- doc-role:resolved-records -->
+
+- RH-W-0001 App polish (P1, completed): Android phase 1 released as [v1.1.0](https://github.com/LCubero/deleluz/releases/tag/v1.1.0) on 2026-11-25. Origin: owner requests ([plan](../PLAN.md)). Evidence: core features `ad070b5`, `22a0c70`, `64b5b8b`, `4546165`, `0257279`; owner approved build 2012, and the automated matrix covered 16 phone sizes ([phase 1 log](../../odd/tasks/app-polish.md#log), L42–L47; [compatibility tests](../../app/test/ui/compat_test.dart)). Remaining: none. Tablets and the webapp port were outside Android phase 1.
 
 - Strip configuration (RGB order + pixel count, T23): delivered in the webapp Ajustes tab (`odd/tasks/deleluz-webapp.md` T46-T49), verified on the strip at 100 and 150 LEDs.
 - Onboard-mic sensitivity (`0x0C`): verified on the strip (lab L59), implemented in the webapp and tested by the user (`335d91c`).

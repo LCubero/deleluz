@@ -4,23 +4,25 @@ Control your LEDDMX-03 LED strip from your phone over Bluetooth. No account, no 
 
 ## Descargar (Android)
 
-1. Abre la página de [**Releases**](https://github.com/LCubero/deleluz/releases/latest) y descarga **`DeleLuz-1.0.0.apk`**. Es un solo archivo y sirve en cualquier celular Android 7.0 o más nuevo.
+1. Abre la página de [**Releases**](https://github.com/LCubero/deleluz/releases/latest) y descarga **`DeleLuz-1.1.0.apk`**, el APK universal para Android 7.0 o más nuevo.
 2. Ábrelo en el celular. Si Android lo pide, permite instalar apps de esa fuente. Si aparece Google Play Protect, elige instalar de todas formas: la app no viene de la tienda.
 3. Abre **DeleLuz**, toca **Conectar** y elige tu tira (`LEDDMX-03-…`).
 
-Las versiones nuevas se instalan encima y conservan tus tiras, alias y escenas. En iPhone no está disponible.
+La release también incluye APK por arquitectura: `DeleLuz-1.1.0-arm64-v8a.apk`, `DeleLuz-1.1.0-armeabi-v7a.apk` y `DeleLuz-1.1.0-x86_64.apk`. Si no sabes cuál, descarga `DeleLuz-1.1.0.apk`.
+
+La versión 1.1.0 se instala sobre la 1.0.0 y conserva tus tiras, alias y escenas. En iPhone no está disponible.
 
 ## Download (Android)
 
-1. Open the [**Releases**](https://github.com/LCubero/deleluz/releases/latest) page and download **`DeleLuz-1.0.0.apk`**. It is one file and works on any Android phone with Android 7.0 or newer.
+1. Open the [**Releases**](https://github.com/LCubero/deleluz/releases/latest) page and download **`DeleLuz-1.1.0.apk`**, the universal APK for Android 7.0 or newer.
 2. Open it on the phone. If Android asks, allow installing apps from that source. If Google Play Protect warns, choose to install anyway: the app is not from the store.
 3. Open **DeleLuz**, tap **Conectar** and pick your strip (`LEDDMX-03-…`).
 
-New versions install over the old one and keep your strips, aliases and scenes. Not available for iPhone.
+The release also includes per-architecture APKs: `DeleLuz-1.1.0-arm64-v8a.apk`, `DeleLuz-1.1.0-armeabi-v7a.apk`, and `DeleLuz-1.1.0-x86_64.apk`. If unsure, download `DeleLuz-1.1.0.apk`.
 
-## Novedades de Android (aún no publicadas)
+Version 1.1.0 installs over 1.0.0 and keeps your strips, aliases, and scenes. Not available for iPhone.
 
-La fase 1 está en `feat/app-polish`: probada en un celular; la revisión de compatibilidad con más celulares sigue en curso. La descarga de arriba no incluye estos cambios.
+## Novedades de la versión 1.1.0
 
 - **Color:** disco con saturación y blancos Cálido, Neutro y Frío. Se usa el mismo selector en Color, Acciones rápidas y los pasos de color de Mis escenas.
 - **Efectos integrados:** búsqueda y favoritos con estrella al principio. El **AUTO de la app** muestra el nombre del efecto y cambia cada 10 s, 30 s, 1 min o 5 min, con Todos o Favoritos. Solo funciona con la app en primer plano y la tira conectada; el **Ciclo de la tira** es independiente.
@@ -28,9 +30,7 @@ La fase 1 está en `feat/app-polish`: probada en un celular; la revisión de com
 - **Temporizador:** anillo de cuenta regresiva, hora de apagado, botones +5 y +15 min y tiempo personalizado en minutos y segundos, con un máximo de 12 h.
 - **Bluetooth:** tarjeta visible si está apagado, avisos con iconos y errores claros, con límites de reintentos y tiempos de espera en BLE.
 
-## What's new on Android (unreleased)
-
-Phase 1 is on `feat/app-polish`: tested on one phone, with wider phone compatibility testing in progress. The download above does not include these changes.
+## What's new in 1.1.0
 
 - **Color:** a saturation disc with Warm, Neutral, and Cool white presets. The same picker is used in Color, Quick actions, and color steps in My scenes.
 - **Built-in effects:** search the catalog and star favorites to list them first. **App AUTO** shows the effect name and advances every 10 s, 30 s, 1 min, or 5 min, using All or Favorites. It runs only in the foreground while connected; the **Strip cycle** is separate.
@@ -40,7 +40,7 @@ Phase 1 is on `feat/app-polish`: tested on one phone, with wider phone compatibi
 
 ## What it looks like
 
-These screenshots show the published app, not the unreleased polish.
+Las capturas muestran la versión 1.0.0. / These screenshots show version 1.0.0.
 
 <p align="center"><img src="docs/app-screens/showreel.webp" width="300" alt="DeleLuz Android app tour: Inicio, Color, Escenas, Música, strip selector and Ajustes"></p>
 

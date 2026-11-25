@@ -4,9 +4,9 @@
 
 This file records meaningful completed changes in chronological order, newest first. Current state and future work belong in `docs/repo-harness/current-state.md`.
 
-## Unreleased — 2026-11-25
+## 1.1.0 — 2026-11-25
 
-Android phase 1 on `feat/app-polish`; tested on one phone. See [the phase 1 log](odd/tasks/app-polish.md#log).
+Android phase 1 was released on GitHub as [v1.1.0](https://github.com/LCubero/deleluz/releases/tag/v1.1.0). The owner tested it on two phones (Samsung Galaxy Note10 Lite class and Motorola edge 60 fusion), and the [automated compatibility matrix](app/test/ui/compat_test.dart) covered 16 phone sizes. See [the phase 1 log](odd/tasks/app-polish.md#log).
 
 ### Added
 

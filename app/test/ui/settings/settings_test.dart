@@ -73,7 +73,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('LCubero'), findsNothing);
       await tap(tester, find.text(title));
-      for (final text in [description, '$version 1.0.0', author, 'LCubero',
+      for (final text in [description, '$version 1.1.0', author, 'LCubero',
         license, 'MIT', repository, 'github.com/LCubero/deleluz', '¡Dele, enciéndala, mae!']) {
         expect(find.text(text), findsOneWidget);
       }
