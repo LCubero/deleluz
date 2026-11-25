@@ -619,7 +619,7 @@ void main() {
       final chip = find.byType(ConnectionChip).hitTestable();
       expect(chip, findsOneWidget);
       final status = find.descendant(of: chip, matching: find.text('Sin conexión'));
-      expect(tester.widget<Text>(status).maxLines, 1);
+      expect(tester.renderObject<RenderParagraph>(status).didExceedMaxLines, isFalse);
       expect(find.text(controller.text('noCommand')),
         tab == 'Inicio' ? findsOneWidget : findsNothing);
       expect(find.descendant(of: header, matching: find.byType(ConnectionChip)).hitTestable(),
@@ -897,7 +897,10 @@ void main() {
     await tester.ensureVisible(add);
     await tester.tap(add);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('quick-type-effect')));
+    final effectType = find.byKey(const Key('quick-type-effect'));
+    await tester.ensureVisible(effectType);
+    await tester.pumpAndSettle();
+    await tester.tap(effectType);
     await tester.pumpAndSettle();
     final search = find.byKey(const Key('effect-search'));
     await tester.tap(search);

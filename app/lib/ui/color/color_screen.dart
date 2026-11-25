@@ -89,7 +89,7 @@ class _ColorScreenState extends State<ColorScreen> {
 
   Widget _slider(String key, int value, ValueChanged<int> change) {
     final shown = value.clamp(1, 100);
-    return SliderZone(child: GlassCard(
+    return SliderZone(child: GlassCard(verticalInset: glassInset - 2,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         GlowValueLabel(label: c.text(key), value: c.text('percent', {'value': shown})),
         Semantics(label: c.text(key), child: Slider(key: Key('color-$key'),

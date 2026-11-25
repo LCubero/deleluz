@@ -96,7 +96,7 @@ ThemeData glowTheme() {
       focusedErrorBorder: OutlineInputBorder(borderSide: GlowSelection.border)),
 
     sliderTheme: const SliderThemeData(trackHeight: 10, trackShape: _FlushSliderTrack(),
-      thumbShape: _GlowThumb(), overlayShape: RoundSliderOverlayShape(overlayRadius: 22)),
+      thumbShape: _GlowThumb(), overlayShape: RoundSliderOverlayShape(overlayRadius: 24)),
     filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(
       backgroundColor: const Color(0xff7e22ce), foregroundColor: Colors.white,
       minimumSize: const Size(48, 48), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -541,8 +541,7 @@ class ConnectionChip extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle,
             boxShadow: status == LinkStatus.idle ? null : [BoxShadow(color: color, blurRadius: 10)])),
         const SizedBox(width: _gap),
-        Flexible(child: Text(controller.text(status.name), style: textStyle,
-          maxLines: 1, softWrap: false, overflow: TextOverflow.ellipsis)),
+        Flexible(child: Text(controller.text(status.name), style: textStyle)),
       ]),
     );
   }

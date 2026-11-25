@@ -268,13 +268,24 @@ class _StepPickerState extends State<_StepPicker> {
           ] else
             SharedColorPicker(controller: c, rgb: _color,
               onChanged: (rgb, _) => setState(() => _color = rgb)),
-          TextFormField(key: const Key('scene-step-duration'), initialValue: _initialDuration,
-            keyboardType: TextInputType.numberWithOptions(decimal: widget.effect),
-            decoration: InputDecoration(
-              labelText: c.text(widget.effect ? 'sceneDurationSeconds' : 'sceneDurationMillis'),
-              helperText: widget.effect ? '1–600 s' : '150–2000 ms',
-              errorText: _duration == null ? c.text('sceneInvalidDuration') : null),
-            onChanged: _changeDuration),
+          LayoutBuilder(builder: (context, constraints) {
+            final label = c.text(widget.effect ? 'sceneDurationSeconds' : 'sceneDurationMillis');
+            final style = Theme.of(context).textTheme.bodyLarge;
+            final painter = TextPainter(text: TextSpan(text: label, style: style),
+              textDirection: Directionality.of(context), textScaler: MediaQuery.textScalerOf(context))..layout();
+            final outside = painter.width + 32 > constraints.maxWidth;
+            painter.dispose();
+            final input = TextFormField(key: const Key('scene-step-duration'), initialValue: _initialDuration,
+              keyboardType: TextInputType.numberWithOptions(decimal: widget.effect),
+              decoration: InputDecoration(labelText: outside ? null : label,
+                helperText: widget.effect ? '1–600 s' : '150–2000 ms',
+                errorText: _duration == null ? c.text('sceneInvalidDuration') : null),
+              onChanged: _changeDuration);
+            return outside ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 4, children: [
+              ExcludeSemantics(child: Text(label, style: style)),
+              Semantics(label: label, child: input),
+            ]) : input;
+          }),
           FilledButton(key: const Key('scene-apply-step'), onPressed: !enabled ? null : () {
             Navigator.pop(context, <String, Object?>{
               if (widget.effect) 'effect': _effect else 'rgb': _color,

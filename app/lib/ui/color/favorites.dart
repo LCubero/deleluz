@@ -130,7 +130,7 @@ class _ColorFavoritesState extends State<ColorFavorites> {
   Widget build(BuildContext context) {
     final colors = _open ? c.models.loadPalette() : const <String>[];
     final trash = _dragging != null;
-    return GlowDisclosure(titleKey: const Key('color-favorites'), minHeight: 44,
+    return GlowDisclosure(titleKey: const Key('color-favorites'), minHeight: 48,
       inlineChevron: true,
       title: c.text('favorites'), initiallyExpanded: _open, onExpansionChanged: (open) {
         setState(() => _open = open);

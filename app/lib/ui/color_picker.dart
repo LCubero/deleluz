@@ -62,7 +62,7 @@ class SharedColorPicker extends StatelessWidget {
         child: Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 4, children: [
           for (final preset in _whites) chip(preset),
         ])),
-      const SizedBox(height: 12),
+      const SizedBox(height: 8),
       ColorFavorites(controller: controller, current: current, nameFor: _favoriteName,
         onColor: onChanged),
     ]);

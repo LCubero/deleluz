@@ -82,7 +82,9 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
           ],
           Flexible(key: const ValueKey('quick-picker-body'), child: ScrollHint(key: ValueKey(kind), shrinkWrap: true,
             showHint: !compactEffect, child: SingleChildScrollView(child: switch (kind) {
-            null => GlowGrid(columns: 2, children: [
+            null => LayoutBuilder(builder: (context, constraints) {
+              final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+              return GlowGrid(columns: scale >= 1.5 && constraints.maxWidth < 220 * scale ? 1 : 2, children: [
               for (final type in QuickActionKind.values)
                 GlowTile(key: Key('quick-type-${type.name}'), minHeight: 104,
                   onTap: () => setState(() => _kind = type),
@@ -91,7 +93,8 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
                     Text(c.text(type.label), style: style.titleMedium),
                     Text(c.text(type.hint), style: style.bodySmall),
                   ])),
-            ]),
+              ]);
+            }),
             QuickActionKind.color => _colors(rgb!),
             QuickActionKind.effect => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               ListenableBuilder(listenable: c, builder: (context, _) =>

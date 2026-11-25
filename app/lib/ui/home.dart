@@ -42,11 +42,12 @@ class _HomeScreenState extends State<HomeScreen> {
       GlowHeader(title: c.text('title'), controller: c, showStatus: false,
         leading: const GlowIcon(GlowGlyph.wave), actions: [
         Center(child: IconButton(tooltip: c.text('offTimer'),
-          icon: const GlowIcon(GlowGlyph.timer, size: 22),
-          style: IconButton.styleFrom(backgroundColor: glowGlass,
-            fixedSize: const Size.square(44), padding: EdgeInsets.zero,
-            side: const BorderSide(color: glowLine),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+          icon: SizedBox.square(dimension: 44, child: DecoratedBox(
+            decoration: BoxDecoration(color: glowGlass, border: Border.all(color: glowLine),
+              borderRadius: BorderRadius.circular(14)),
+            child: const Center(child: GlowIcon(GlowGlyph.timer, size: 22)),
+          )),
+          style: IconButton.styleFrom(fixedSize: const Size.square(48), padding: EdgeInsets.zero),
           onPressed: off ? null : () => TimerSheet.open(context, c))),
       ]),
       if (c.remaining case final seconds?)
@@ -146,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _brightness() =>
-    SliderZone(child: GlassCard(verticalInset: 14,
+    SliderZone(child: GlassCard(verticalInset: 12,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         GlowValueLabel(label: c.text('brightness'), value: c.text('percent', {'value': c.brightness}),
           icon: const GlowIcon(GlowGlyph.sun, size: 20)),
@@ -189,12 +190,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     ]);
     return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: [
-      Row(spacing: 12, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(child: name),
-        // Flexible keeps large text from overflowing; Align without widthFactor pins the chip right.
-        Flexible(child: Align(alignment: AlignmentDirectional.topEnd, heightFactor: 1,
-          child: ConnectionChip(controller: c, status: status))),
-      ]),
+      LayoutBuilder(builder: (context, constraints) => Row(spacing: 12,
+        crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(child: name),
+          // Give the status room before wrapping it, without crowding out the name.
+          ConstrainedBox(constraints: BoxConstraints(maxWidth: (constraints.maxWidth - 12) * .67),
+            child: ConnectionChip(controller: c, status: status)),
+        ])),
       Semantics(container: true, image: true,
         label: c.text(unknown ? 'stripPreviewUnknown' : 'stripPreview'),
         child: GlowStrip(colors: previewColors, height: 14, glow: glow)),
