@@ -35,7 +35,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - T10 — S10, S11 — Home speed enabled only for effects; generic multicolor strip preview when connected and nothing sent — worker — done 2e9540c (92 tests, analyze clean)
 - T11 — S2, S12 — Several remembered strips with per-phone aliases and the «Elegir tira» selector; Inicio card with alias + Cambiar — worker — done b5f9bd8 (96 tests; card shows the name once without alias, chip right-aligned)
 - T12 — S12, S13 — Selector: errors on the strip row, compact rows with icons above the button, Glow Glass detail, search — worker — done cde2b77 (100 tests)
-- T13 — S14, S15, S16 — Ajustes entry to «Elegir tira»; every slider card blocks the tab swipe — worker — pending
+- T13 — S14, S15, S16 — Ajustes entry to «Elegir tira»; every slider card blocks the tab swipe — worker — S14, S15 done 7272a8f (113 tests); S16 pending
 - T9 — S7 — Docs: `app/README.md`, CHANGELOG, current state, roadmap — inline — pending
 
 ## Log
