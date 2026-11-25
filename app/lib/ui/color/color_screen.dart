@@ -7,7 +7,7 @@ import '../../model/effects.dart';
 import '../../model/models.dart';
 import '../../protocol.dart' as wire;
 import '../glow_glass.dart';
-import '../hue_wheel.dart';
+import '../color_disc.dart';
 import 'favorites.dart';
 
 class ColorScreen extends StatefulWidget {
@@ -151,6 +151,31 @@ class _ColorScreenState extends State<ColorScreen> {
     ]));
   }
 
+  Widget _whites() {
+    final presets = [
+      ('whiteWarmTone', defaultShortcuts[0]['rgb'] as List<int>),
+      // #FFE4C4 rounds each channel at the midpoint of the two quick-scene whites.
+      ('whiteNeutralTone', const [255, 228, 196]),
+      ('whiteCoolTone', defaultShortcuts[1]['rgb'] as List<int>),
+    ];
+    return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text(c.text('whiteTones'), style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 6),
+      Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 4, children: [
+        for (final (label, rgb) in presets)
+          ChoiceChip(
+            avatar: CircleAvatar(backgroundColor: Color.fromARGB(255, rgb[0], rgb[1], rgb[2])),
+            label: Text(c.text(label)),
+            selected: rgbHex(_rgb) == rgbHex(rgb),
+            onSelected: (_) => _choose(rgb),
+            showCheckmark: false,
+            visualDensity: VisualDensity.standard,
+            materialTapTargetSize: MaterialTapTargetSize.padded,
+          ),
+      ]),
+    ]));
+  }
+
   Widget _slider(String key, int value, ValueChanged<int> change) {
     final shown = value.clamp(1, 100);
     return SliderZone(child: GlassCard(
@@ -187,12 +212,15 @@ class _ColorScreenState extends State<ColorScreen> {
             ]),
           const SizedBox(height: 16),
           if (_effects) _effectCard() else ...[
-            HueWheel(hue: HSVColor.fromColor(color).hue, color: color, label: c.text('hue'),
-              onChanged: (hue) {
-                final selected = HSVColor.fromAHSV(1, hue, 1, 1).toColor().toARGB32();
+            ColorDisc(color: color, label: c.text('colorDiscLabel'),
+              onChanged: (hsv) {
+                final selected = hsv.toColor().toARGB32();
                 _choose([(selected >> 16) & 255, (selected >> 8) & 255, selected & 255]);
               }),
-            const SizedBox(height: 16),
+            Text(c.text('colorDiscHint'), textAlign: TextAlign.center, style: style.bodySmall),
+            const SizedBox(height: 12),
+            _whites(),
+            const SizedBox(height: 12),
             ColorFavorites(controller: c, current: rgbHex(_rgb).toLowerCase(),
               onColor: _choose),
           ],

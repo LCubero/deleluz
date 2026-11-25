@@ -4,7 +4,7 @@ import 'package:deleluz/model/models.dart';
 import 'package:deleluz/protocol.dart' as wire;
 import 'package:deleluz/ui/color/color_screen.dart';
 import 'package:deleluz/ui/glow_glass.dart';
-import 'package:deleluz/ui/hue_wheel.dart';
+import 'package:deleluz/ui/color_disc.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -53,7 +53,54 @@ void main() {
   }
 
   void hue(WidgetTester tester, double value) =>
-      tester.widget<HueWheel>(find.byType(HueWheel)).onChanged(value);
+      tester.widget<ColorDisc>(find.byType(ColorDisc)).onChanged(
+        HSVColor.fromAHSV(1, value, 1, 1));
+
+  testWidgets('Disc taps and vertical drags send white, pastels and saturated red', (tester) async {
+    await start(tester, connected: true);
+    final disc = keyed('color-disc');
+    expect(disc, findsOneWidget);
+    final center = tester.getCenter(disc);
+    final radius = tester.getSize(disc).width / 2;
+    final edge = center - Offset(0, radius - 0.1);
+    await tester.tapAt(center);
+    await flush(tester);
+    expect(ble.writes.last, wire.color(255, 255, 255));
+    final drag = await tester.startGesture(center);
+    await drag.moveTo(center - Offset(0, radius / 3));
+    await drag.moveTo(center - Offset(0, radius / 2));
+    await flush(tester);
+    expect(ble.writes.last, wire.color(255, 128, 128));
+    await drag.moveTo(edge);
+    await flush(tester);
+    expect(ble.writes.last, wire.color(255, 0, 0));
+    await drag.moveTo(center + Offset(radius / 2, 0));
+    await flush(tester);
+    expect(ble.writes.last, wire.color(191, 255, 128));
+    await drag.moveTo(center);
+    await drag.up();
+    await flush(tester);
+    expect(ble.writes.last, wire.color(255, 255, 255));
+  });
+
+  testWidgets('White chips send the exact RGB presets and have 48 dp targets', (tester) async {
+    await start(tester, connected: true);
+    for (final (label, rgb) in [
+      ('Cálido', wire.color(255, 200, 128)),
+      ('Neutro', wire.color(255, 228, 196)),
+      ('Frío', wire.color(255, 255, 255)),
+    ]) {
+      final chip = find.widgetWithText(ChoiceChip, label);
+      expect(chip, findsOneWidget);
+      await tester.ensureVisible(chip);
+      expect(tester.getSize(chip).height, greaterThanOrEqualTo(48));
+      expect(tester.getSize(chip).width, greaterThanOrEqualTo(48));
+      await tester.tap(chip);
+      await flush(tester);
+      expect(ble.writes.last, rgb);
+      expect(tester.widget<ChoiceChip>(chip).selected, isTrue);
+    }
+  });
 
   testWidgets('Favorites start closed; offline choices add and replace with no writes', (tester) async {
     await start(tester);

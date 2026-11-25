@@ -7,6 +7,7 @@ import 'package:deleluz/main.dart';
 import 'package:deleluz/model/models.dart';
 import 'package:deleluz/protocol.dart' as wire;
 import 'package:deleluz/ui/glow_glass.dart';
+import 'package:deleluz/ui/color_disc.dart';
 import 'package:deleluz/ui/hue_wheel.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -858,27 +859,35 @@ void main() {
     });
   }
 
-  testWidgets('wheel and Favorites keep color gestures in the Color tab', (tester) async {
+  testWidgets('disc and Favorites keep color gestures in the Color tab', (tester) async {
     await tester.binding.setSurfaceSize(const Size(412, 915));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await start(tester);
     await tapTab(tester, 'Color');
-    final wheel = find.byType(HueWheel);
-    await tester.tapAt(tester.getCenter(wheel) + const Offset(80, 0));
+    final disc = find.byKey(const Key('color-disc'));
+    final picker = find.byType(ColorDisc);
+    HSVColor selection() => HSVColor.fromColor(tester.widget<ColorDisc>(picker).color);
+    await tester.tapAt(tester.getCenter(disc) + const Offset(80, 0));
     await tester.pumpAndSettle();
-    final tappedHue = tester.widget<HueWheel>(wheel).hue;
+    final tappedHue = selection().hue;
     expect(tappedHue, closeTo(90, 1));
-    await tester.dragFrom(tester.getCenter(wheel) + const Offset(0, -70), const Offset(-170, 0));
+    await tester.dragFrom(tester.getCenter(disc) + const Offset(0, -70), const Offset(-170, 0));
     await tester.pumpAndSettle();
-    expect(wheel, findsOneWidget);
-    expect(tester.widget<HueWheel>(wheel).hue, isNot(closeTo(tappedHue, 1)));
+    expect(disc.hitTestable(), findsOneWidget);
+    expect(selection().hue, isNot(closeTo(tappedHue, 1)));
     await tester.binding.setSurfaceSize(const Size(412, 600));
     await tester.pumpAndSettle();
     final page = tester.state<ScrollableState>(find.byType(Scrollable).hitTestable());
     final before = page.position.pixels;
-    await tester.drag(wheel, const Offset(0, -120));
+    await tester.drag(disc, const Offset(0, -85));
+    await tester.pumpAndSettle();
+    expect(selection().hue, 0);
+    expect(page.position.pixels, before);
+    await tester.dragFrom(tester.getRect(disc).centerRight + const Offset(24, 0),
+      const Offset(0, -120));
     await tester.pumpAndSettle();
     expect(page.position.pixels, greaterThan(before));
+    await tester.ensureVisible(find.byKey(const Key('color-favorites')));
     await tapKey(tester, 'color-favorites');
     final favorite = find.byKey(const Key('favorite-#00ff00'));
     await tester.ensureVisible(favorite);
@@ -887,10 +896,13 @@ void main() {
     expect(favorite.hitTestable(), findsOneWidget);
     await tester.tap(favorite);
     await tester.pumpAndSettle();
-    expect(tester.widget<HueWheel>(wheel).hue, 120);
+    expect(selection().hue, 120);
     await tester.binding.setSurfaceSize(const Size(412, 915));
     await tester.pumpAndSettle();
-    final header = tester.getRect(find.byType(GlowHeader));
+    final headerFinder = find.byType(GlowHeader);
+    await tester.ensureVisible(headerFinder);
+    await tester.pumpAndSettle();
+    final header = tester.getRect(headerFinder);
     await tester.dragFrom(header.bottomCenter + const Offset(0, 5), const Offset(-180, 0));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('scenes-mine')), findsOneWidget);
