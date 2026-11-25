@@ -16,6 +16,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - S9 — Protocol: frames byte-identical to `lab/web/protocol.js`; plain GATT on `FFE0`, write without response to `FFE1`; no vendor handshake; commands spaced 50 ms; up to 4 connect tries 300 ms apart; the app shows what it last sent, not the strip state (`docs/CAPABILITIES.md`).
 - S10 — Home speed (L18): "si lo que está ativo no tiene velocidad, que se deshabilite velocidad del inicio, es decir que aparezca si escenas está contraido obvio pero tmb si lo que está activo tiene velodidad si se puede usar si no nno en gris o algo."
 - S11 — Strip preview (L18): "aveces cuando abro el app y la tira está encendida el idicador de led de inicio en la parte de conectar, no sale con luz, si no se puede saber cual está y si está contectado y todo bien que ponga una generica ahi multiclor o algo tranqui, y obvio que cambie cuando cambio en el app, como ya lo hace."
+- S12 — Connection UI (L28): direction "03 Selector (Recomendado)" from design/deleluz-connection/03-selector-tiras.html; each remembered strip looks like the "Tiras cercanas nuevas" rows; "mmm creo que mejor que se vea como tiras cencanas nuevas, el botón conectar / desconectar es el mismo cambia segun estado, renombrar puede ser un lapiz y borrar un basurero.  dejar presionado sale el menu de conectar desconectar renombrar olvidar que tal ? y espacio horizontal entre card de dispositivo por dios, que se puede contrar o expandir mis tiras."
 
 ## Tasks
 
@@ -28,6 +29,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - T7 — S1, S3, S4 — Ajustes: strip settings, language, help, privacy — workers — done 991db58 (87 tests total)
 - T8 — S6 — Visual review at small to large phone widths; real-strip session with the user; debug APK build — inline + user — pending
 - T10 — S10, S11 — Home speed enabled only for effects; generic multicolor strip preview when connected and nothing sent — worker — done 2e9540c (92 tests, analyze clean)
+- T11 — S2, S12 — Several remembered strips with per-phone aliases and the «Elegir tira» selector; Inicio card with alias + Cambiar — worker — pending
 - T9 — S7 — Docs: `app/README.md`, CHANGELOG, current state, roadmap — inline — pending
 
 ## Log
@@ -59,3 +61,4 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - L25 — 2026-11-25, user: "y tenemos la posibilidad de agregar alias a las tiras o dispositivos". Checked: docs/PROTOCOL.md and docs/CAPABILITIES.md describe no command to rename the strip, so an alias can only be saved in the app on each phone. Connection directions 01 panel, 02 compact ⋯ menu and 03 strip picker are in design/deleluz-connection/, rendered and reviewed by the parent; all three keep Inicio no taller than today.
 - L26 — 2026-11-25, user answers: menu: "que pasa si tengo varias tiras ?"; alias: "Sí, dentro del menú (Recomendado)".
 - L27 — 2026-11-25, user answers: strips: "Varias, con alias (Recomendado)"; menu: "ye dije que quiero ver como sería con varias tiuras led como se vería" — redo the connection artboards showing several strips (with aliases) before choosing.
+- L28 — 2026-11-25, user answers: menu "03 Selector (Recomendado)"; buttons: "mmm creo que mejor que se vea como tiras cencanas nuevas, el botón conectar / desconectar es el mismo cambia segun estado, renombrar puede ser un lapiz y borrar un basurero.  dejar presionado sale el menu de conectar desconectar renombrar olvidar que tal ? y espacio horizontal entre card de dispositivo por dios, que se puede contrar o expandir mis tiras."
