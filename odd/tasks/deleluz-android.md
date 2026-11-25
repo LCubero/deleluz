@@ -118,3 +118,4 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - L62 — 2026-11-25, user after the release: "bien nada mas que la fig se ve muiy rara, mal los colores y calidad" — the showreel GIF (96 colours, 300 px) shows banding and poor quality.
 - L63 — 2026-11-25, showreel replaced by an animated WebP (420 px, full colour, 36 frames, ~740 KB) instead of the 96-colour GIF; README and app/README point to it.
 - L64 — 2026-11-25, user: "si se ve mejor" — WebP showreel approved and pushed.
+- L65 — 2026-11-25, user on extra per-ABI APKs: "a podriamos aregar al release los apks separados tmb, con el eso de sufijo me etniendes ?" then "nonono pero el sufijo ya tecnico, lo de x86 eetc" — add DeleLuz-1.0.0-arm64-v8a.apk, -armeabi-v7a.apk and -x86_64.apk to v1.0.0, each built for one ABI with the same versionCode 2004; the universal APK stays the recommended download.
