@@ -73,6 +73,11 @@ class _TimerSheetState extends State<TimerSheet> {
                     onPressed: () => Navigator.pop(context)),
                 ]),
                 const SizedBox(height: 12),
+                if (c.message == 'timerOffFailed') ...[
+                  Notice(c.text('timerOffFailed'), kind: NoticeKind.error, live: true),
+                  OutlinedButton(onPressed: c.canRetryTimerOff ? c.retryTimerOff : null,
+                    child: Text(c.text('retryTimerOff'))),
+                ],
                 if (remaining != null && end != null) ...[
                   LayoutBuilder(builder: (context, constraints) {
                     final scale = MediaQuery.textScalerOf(context).scale(24) / 24;
@@ -91,7 +96,8 @@ class _TimerSheetState extends State<TimerSheet> {
                   const SizedBox(height: 8),
                   Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 4, children: [
                     for (final minutes in [5, 15])
-                      OutlinedButton(onPressed: () => c.extendTimer(minutes * 60),
+                      OutlinedButton(onPressed: c.canExtendTimer(minutes * 60)
+                           ? () => c.extendTimer(minutes * 60) : null,
                         child: Text(c.text('timerAddMinutes', {'minutes': minutes}))),
                     TextButton(onPressed: () => c.cancelTimer(restoreBrightness: true),
                       child: Text(c.text('cancelTimer'))),

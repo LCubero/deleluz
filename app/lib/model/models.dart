@@ -13,18 +13,41 @@ abstract interface class LocalStore {
   Future<bool> write(String key, String? value);
 }
 
+abstract interface class SessionOnlyStore implements LocalStore {}
+
 class PreferencesStore implements LocalStore {
   PreferencesStore(this.preferences);
 
   final SharedPreferences preferences;
+  final _confirmed = <String, ({String? value, int revision})>{};
+  int _revision = 0;
 
   @override
-  String? read(String key) => preferences.getString(key);
+  String? read(String key) {
+    final confirmed = _confirmed[key];
+    return confirmed == null ? preferences.getString(key) : confirmed.value;
+  }
 
   @override
-  Future<bool> write(String key, String? value) => value == null
-      ? preferences.remove(key)
-      : preferences.setString(key, value);
+  Future<bool> write(String key, String? value) async {
+    // The plugin updates its local cache before it knows if the write worked.
+    // Keep reads on the last confirmed value, including during a pending write.
+    _confirmed.putIfAbsent(key, () {
+      String? previous;
+      try {
+        previous = preferences.getString(key);
+      } catch (_) {
+        // A corrupt previous value must not prevent a replacement.
+      }
+      return (value: previous, revision: 0);
+    });
+    final revision = ++_revision;
+    final saved = await (value == null ? preferences.remove(key) : preferences.setString(key, value));
+    if (saved && _confirmed[key]!.revision < revision) {
+      _confirmed[key] = (value: value, revision: revision);
+    }
+    return saved;
+  }
 }
 
 typedef Fields = Map<String, Object?>;
@@ -300,7 +323,7 @@ class Models {
         }
       } else {
         final saved = _palette(jsonDecode(raw));
-        if (saved != null && saved.isNotEmpty) return saved;
+        if (saved != null) return saved;
       }
     } catch (_) {
       // Only a missing key may trigger migration.

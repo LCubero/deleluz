@@ -31,6 +31,13 @@ void main() {
     models = Models(storage, presetIds: {'warm', 'rasta'});
   });
 
+  test('F12 intentionally empty palette survives reload', () async {
+    expect(models.loadPalette(), isNotEmpty);
+    expect(await models.savePalette([]), isTrue);
+    expect(storage.values[Models.paletteKey], '[]');
+    expect(models.loadPalette(), isEmpty);
+  });
+
   test('unreadable storage uses defaults and writes fail without throwing', () async {
     storage.denied = true;
     expect(models.loadState(), defaultState);
@@ -267,7 +274,7 @@ void main() {
     expect(models.loadPalette(), [...defaultPalette, '#010101']);
     storage.values[Models.paletteKey] = '["#ABCDEF"]';
     expect(models.loadPalette(), ['#abcdef']);
-    for (final raw in ['{', 'null', '{}', '[]', '["bad"]', '["#AA0000", "#aa0000"]']) {
+    for (final raw in ['{', 'null', '{}', '["bad"]', '["#AA0000", "#aa0000"]']) {
       storage.values[Models.paletteKey] = raw;
       expect(models.loadPalette(), defaultPalette);
     }

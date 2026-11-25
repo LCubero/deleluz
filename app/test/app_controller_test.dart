@@ -1,10 +1,30 @@
 import 'dart:async';
 
 import 'package:deleluz/app_controller.dart';
+import 'package:deleluz/link.dart' show LinkStatus;
+import 'package:deleluz/model/models.dart' show Models;
 import 'package:deleluz/protocol.dart' as wire;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:universal_ble/universal_ble.dart' show AvailabilityState;
 
 import 'ui/home_test.dart' show FakeBle, Store;
+
+class DroppingReleaseBle extends FakeBle {
+  @override
+  Future<void> disconnect(String id) async {
+    changes.add((id, false));
+    await Future<void>.value();
+    throw StateError('Release failed after loss');
+  }
+}
+
+class RefusingShortcutStore extends Store {
+  @override
+  Future<bool> write(String key, String? value) async {
+    if (key == Models.shortcutsKey) return false;
+    return super.write(key, value);
+  }
+}
 
 void main() {
   late FakeBle ble;
@@ -48,6 +68,171 @@ void main() {
     await drain(tester);
     await start;
   }
+
+  testWidgets('F1 background invalidates a pending open', (tester) async {
+    final gate = Completer<void>();
+    ble.opening = gate.future;
+    final opening = c.connect(FakeBle.strip);
+    await tester.pump();
+    expect(ble.connections, [FakeBle.strip.id]);
+    c.setForeground(false);
+    gate.complete();
+    await opening;
+    expect(c.ready, isFalse);
+    expect(ble.disconnects, [FakeBle.strip.id]);
+  });
+
+  testWidgets('F1 controller disposal invalidates a pending native open', (tester) async {
+    final controller = AppController(ble, Store(), checkAccess: (_) async => null);
+    final gate = Completer<void>();
+    ble.opening = gate.future;
+    final opening = controller.connect(FakeBle.strip);
+    await tester.pump();
+    expect(ble.connections, [FakeBle.strip.id]);
+    controller.dispose();
+    gate.complete();
+    await opening;
+    expect(ble.disconnects, [FakeBle.strip.id]);
+    expect(controller.remembered, isNull);
+  });
+
+  testWidgets('F3 failed deliberate release does not queue recovery', (tester) async {
+    final releasing = DroppingReleaseBle();
+    final controller = AppController(releasing, Store(), checkAccess: (_) async => null);
+    addTearDown(releasing.changes.close);
+    addTearDown(controller.dispose);
+    await controller.connect(FakeBle.strip);
+    await controller.disconnect();
+    await tester.pump();
+    expect(controller.link.status, LinkStatus.lost);
+    expect(releasing.connections, [FakeBle.strip.id]);
+  });
+
+  testWidgets('F3 rapid repeated link loss needs manual recovery', (tester) async {
+    final controller = AppController(ble, Store(), checkAccess: (_) async => null,
+        now: () => now);
+    addTearDown(controller.dispose);
+    await controller.connect(FakeBle.strip);
+    ble.changes.add((FakeBle.strip.id, false));
+    await tester.pump();
+    expect(ble.connections, hasLength(2));
+    expect(controller.ready, isTrue);
+    ble.changes.add((FakeBle.strip.id, false));
+    await tester.pump();
+    expect(ble.connections, hasLength(2));
+    expect(controller.ready, isFalse);
+    await controller.reconnect();
+    expect(controller.ready, isTrue);
+  });
+
+  testWidgets('F4 radio off tears down without a link-loss event', (tester) async {
+    final radio = StreamController<AvailabilityState>();
+    final controller = AppController(ble, Store(), checkAccess: (_) async => null,
+        bluetoothChanges: radio.stream, now: () => now);
+    addTearDown(radio.close);
+    addTearDown(controller.dispose);
+    await controller.connect(FakeBle.strip);
+    controller.startTimer(60, fade: false);
+    radio.add(AvailabilityState.poweredOff);
+    await tester.pump();
+    expect(controller.ready, isFalse);
+    expect(controller.link.status, LinkStatus.lost);
+    expect(controller.remaining, isNull);
+    radio.add(AvailabilityState.poweredOff);
+    await tester.pump();
+    expect(ble.connections, [FakeBle.strip.id]);
+  });
+
+  testWidgets('F5 interrupted fade restores brightness after foreground returns', (tester) async {
+    await c.connect(FakeBle.strip);
+    c.startTimer(30, fade: true);
+    await drain(tester);
+    expect(c.sentBrightness, isNot(c.brightness));
+    c.setForeground(false);
+    c.setForeground(true);
+    await drain(tester);
+    expect(c.sentBrightness, c.brightness);
+  });
+
+  testWidgets('F5 failed timer OFF can be retried without starting another timer', (tester) async {
+    await c.connect(FakeBle.strip);
+    ble.failWrite = (bytes) => bytes.toString() == wire.power(false).toString();
+    c.startTimer(1, fade: false);
+    await advance(tester, 1000);
+    expect(c.message, 'timerOffFailed');
+    expect(c.remaining, isNull);
+    ble.failWrite = null;
+    final retry = c.retryTimerOff();
+    await drain(tester);
+    await retry;
+    expect(ble.writes.last, wire.power(false));
+    expect(c.message, isNull);
+    expect(c.remaining, isNull);
+  });
+
+  testWidgets('F6 rapid colors share power preparation and send the latest color', (tester) async {
+    await c.connect(FakeBle.strip);
+    final sends = [for (final rgb in colors) c.applyShortcut({'kind': 'color', 'rgb': rgb})];
+    await drain(tester);
+    await Future.wait(sends);
+    expect(ble.writes.where((bytes) => bytes.toString() == wire.power(true).toString()), hasLength(1));
+    expect(ble.writes.last, wire.color(0, 255, 0));
+    expect(ble.writes, isNot(contains(wire.color(255, 0, 0))));
+  });
+
+  testWidgets('F7 command error notifies once and clears after a good send', (tester) async {
+    await c.connect(FakeBle.strip);
+    var notices = 0;
+    c.addListener(() { if (c.message == 'commandFailed') notices++; });
+    ble.failWrite = (_) => true;
+    c.setPower(false);
+    await drain(tester);
+    c.setPower(false);
+    await drain(tester);
+    expect(notices, 1);
+    ble.failWrite = null;
+    c.setPower(false);
+    await drain(tester);
+    expect(c.message, isNull);
+  });
+
+  testWidgets('F8 rejected shortcut edit is not presented as saved', (tester) async {
+    final controller = AppController(ble, RefusingShortcutStore(), checkAccess: (_) async => null);
+    addTearDown(controller.dispose);
+    final before = controller.shortcuts;
+    controller.updateShortcuts([]);
+    await tester.pump();
+    expect(controller.shortcuts, before);
+    expect(controller.message, 'appStorageFailed');
+  });
+
+  testWidgets('F10 favorite AUTO skips a removed next effect', (tester) async {
+    for (final id in [1, 2, 3]) {
+      c.toggleEffectFavorite(id);
+    }
+    c.setAppAutoOptions(seconds: 10, favorites: true);
+    await c.connect(FakeBle.strip);
+    await startAuto(tester);
+    expect(c.appAutoEffect, 1);
+    c.toggleEffectFavorite(2);
+    await advance(tester, 10000);
+    expect(c.appAutoEffect, 3);
+    await advance(tester, 10000);
+    expect(c.appAutoEffect, 1);
+    c.stopAppAuto();
+  });
+
+  testWidgets('F13 timer rejects starts and extensions over twelve hours', (tester) async {
+    await c.connect(FakeBle.strip);
+    c.startTimer(43201, fade: false);
+    expect(c.remaining, isNull);
+    c.startTimer(42900, fade: false);
+    c.extendTimer(300);
+    expect(c.remaining, 43200);
+    c.extendTimer(1);
+    expect(c.remaining, 43200);
+    c.cancelTimer();
+  });
 
   for (final seconds in [10, 30, 60, 300]) {
     testWidgets('app AUTO loops sorted favorites every $seconds seconds', (tester) async {
@@ -220,6 +405,8 @@ void main() {
     expect(ble.writes.last, wire.color(0, 255, 0));
     await c.models.saveSequences([]);
     c.stopSequence('running');
+    expect(c.models.storage.read(Models.stateKey), isNot(contains('sequence:running')),
+        reason: 'F9 persists the power-on fallback');
     final count = ble.writes.length;
     now += 1000;
     await tester.pump(const Duration(seconds: 1));

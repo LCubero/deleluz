@@ -133,6 +133,8 @@ class _ScenesScreenState extends State<ScenesScreen> {
         onPressed: items.length < maxSequences ? () => _edit(null) : null)),
       const SizedBox(height: 12),
       if (items.isEmpty) Notice(c.text('sequencesEmpty')),
+      if (items.length >= maxSequences)
+        Notice(c.text('scenesLimit', {'max': maxSequences}), kind: NoticeKind.warning),
       GlowGrid(columns: 2, children: [
         for (final item in items)
           _card('scene-play-${item['id']}', item['name'] as String, item['colors'] as List<List<int>>,

@@ -124,6 +124,16 @@ void main() {
     expect(find.text(controller.text('noCommand')), findsNothing);
   });
 
+  testWidgets('F12 duplicate palette add explains why nothing was saved', (tester) async {
+    await start(tester);
+    await tap(tester, 'color-favorites');
+    hue(tester, 120);
+    await tester.pump();
+    await tap(tester, 'favorite-plus');
+    expect(find.text(controller.text('paletteDuplicate')), findsOneWidget);
+    expect(controller.models.loadPalette(), defaultPalette);
+  });
+
   testWidgets('Favorites at 15 can replace; long drag reorders and deletes', (tester) async {
     await start(tester);
     final full = List.generate(15, (i) => '#0102${i.toRadixString(16).padLeft(2, '0')}');
@@ -212,6 +222,11 @@ void main() {
     expect(ble.writes.last, [0x7b, 0xff, 3, 210, 255, 255, 255, 255, 0xbf]);
     expect(tester.widget<ListTile>(keyed('effect-row-210')).selected, isTrue);
     expect(keyed('strip-cycle-all'), findsNothing);
+    ble.failWrite = (_) => true;
+    await tap(tester, 'effect-auto');
+    await flush(tester);
+    expect(tester.widget<ChoiceChip>(keyed('effect-auto')).selected, isFalse);
+    expect(tester.widget<ListTile>(keyed('effect-row-210')).selected, isTrue);
   });
 
   testWidgets('effect favorites move, reload, and unstar without sending', (tester) async {

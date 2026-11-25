@@ -40,7 +40,8 @@ class _SceneEditorState extends State<SceneEditor> {
   Future<void> _save() async {
     final name = _name.text.trim();
     final items = c.models.loadSequences();
-    final error = sequenceNameError(items, _id, name);
+    final error = _id == null && items.length >= maxSequences
+        ? 'scenesLimit' : sequenceNameError(items, _id, name);
     if (error != null) {
       setState(() { _error = error; _renaming = true; });
       return;
@@ -82,7 +83,7 @@ class _SceneEditorState extends State<SceneEditor> {
     final ok = await c.models.saveSequences(removeSequence(c.models.loadSequences(), id));
     if (ok) {
       c.stopSequence(id);
-      c.updateShortcuts(c.shortcuts);
+      await c.updateShortcuts(c.shortcuts);
     }
     if (!mounted) return;
     if (ok) {
@@ -153,15 +154,21 @@ class _SceneEditorState extends State<SceneEditor> {
         Text(_renaming ? c.text('sequenceNameLabel') : _name.text,
           style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 8),
-        if (_renaming) TextField(key: const Key('scene-name'), controller: _name, enabled: !_busy,
-          decoration: InputDecoration(hintText: c.text('sequenceNameLabel')),
-          onChanged: (_) { if (_error != null) setState(() => _error = null); }),
+        if (_renaming) ...[
+          TextField(key: const Key('scene-name'), controller: _name, enabled: !_busy,
+            decoration: InputDecoration(hintText: c.text('sequenceNameLabel')),
+            onChanged: (_) { if (_error != null) setState(() => _error = null); }),
+          ValueListenableBuilder(valueListenable: _name, builder: (context, value, _) => Text(
+            c.text('sceneNameCount', {'count': value.text.trim().length, 'max': maxSequenceName}),
+            style: Theme.of(context).textTheme.bodySmall)),
+        ],
         if (!_renaming) Align(alignment: AlignmentDirectional.centerStart,
           child: TextButton.icon(key: const Key('scene-rename'),
             onPressed: _busy ? null : () => setState(() => _renaming = true),
             icon: const Icon(Icons.edit_outlined), label: Text(c.text('renameSequence')))),
         if (_error != null) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Notice(
-          c.text(_error!, {'max': maxSequenceName}), kind: NoticeKind.error, live: true,
+          c.text(_error!, {'max': _error == 'scenesLimit' ? maxSequences : maxSequenceName}),
+          kind: NoticeKind.error, live: true,
         )),
         const SizedBox(height: 12),
         Text(c.text('sceneSteps'), style: Theme.of(context).textTheme.titleMedium),
@@ -172,6 +179,8 @@ class _SceneEditorState extends State<SceneEditor> {
         ])),
         const SizedBox(height: 8),
         Notice(c.text('sequenceReorderHint')),
+        if (_steps.length >= maxColors)
+          Notice(c.text('sceneStepsLimit', {'max': maxColors}), kind: NoticeKind.warning),
         Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 4, children: [
           OutlinedButton(key: const Key('scene-add-color'),
             onPressed: _busy || _steps.length >= maxColors ? null : () => _pick(effect: false),

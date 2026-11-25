@@ -56,6 +56,10 @@ class _HomeScreenState extends State<HomeScreen> {
         BluetoothCard(controller: c),
         const SizedBox(height: 12),
       ],
+      if (c.sessionOnlyStorage) ...[
+        Notice(c.text('sessionOnlyStorage'), kind: NoticeKind.warning, live: true),
+        const SizedBox(height: 12),
+      ],
       SliderZone(child: dim(_device(context))),
       const SizedBox(height: 12),
       Center(child: Opacity(opacity: c.ready ? 1 : .5, child: DecoratedBox(
@@ -108,6 +112,10 @@ class _HomeScreenState extends State<HomeScreen> {
             GlowTile(onTap: () => _pickShortcut(), minHeight: 60,
               child: Tooltip(message: c.text('addShortcut'), child: const Center(child: Icon(Icons.add)))),
         ]),
+        if (c.shortcuts.length >= maxShortcuts) ...[
+          const SizedBox(height: 8),
+          Notice(c.text('quickActionsLimit', {'max': maxShortcuts}), kind: NoticeKind.warning),
+        ],
       ],
     ]);
   }
@@ -232,16 +240,16 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     switch (action) {
       case 'changeShortcut': await _pickShortcut(index);
-      case 'moveLeft': c.updateShortcuts(moveItem(c.shortcuts, index, index - 1));
-      case 'moveRight': c.updateShortcuts(moveItem(c.shortcuts, index, index + 1));
-      case 'removeShortcut': c.updateShortcuts(removeShortcut(c.shortcuts, index));
+      case 'moveLeft': await c.updateShortcuts(moveItem(c.shortcuts, index, index - 1));
+      case 'moveRight': await c.updateShortcuts(moveItem(c.shortcuts, index, index + 1));
+      case 'removeShortcut': await c.updateShortcuts(removeShortcut(c.shortcuts, index));
     }
   }
 
   Future<void> _pickShortcut([int? index]) async {
     final item = await QuickActionsSheet.open(context, c, replacing: index != null);
     if (!mounted || item == null) return;
-    c.updateShortcuts(index == null ? addShortcut(c.shortcuts, item) : replaceShortcut(c.shortcuts, index, item));
+    await c.updateShortcuts(index == null ? addShortcut(c.shortcuts, item) : replaceShortcut(c.shortcuts, index, item));
   }
 
 }

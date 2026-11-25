@@ -52,10 +52,13 @@ class Link {
   late final StreamSubscription<(String, bool)> _sub;
 
   static const maxTries = 4;
+  static const _openDeadline = Duration(seconds: 10);
+  static const _ioDeadline = Duration(seconds: 2);
 
   // Bumped by every connect/cancel/forget; a pending open that finds it changed is stale and
   // releases whatever it opened, so only one strip is ever held.
   int _generation = 0;
+  bool _disposed = false;
   bool _droppedWhileOpening = false;
   Future<void>? _releasing;
   Future<void>? _opening;
@@ -68,7 +71,7 @@ class Link {
 
   void _set(LinkStatus next) {
     status = next;
-    onChange?.call();
+    if (!_disposed) onChange?.call();
   }
 
   /// Restores a remembered strip without connecting.
@@ -91,7 +94,7 @@ class Link {
   }
 
   Future<void> _connect(Strip target, LinkStatus fallback) async {
-    if (status == LinkStatus.connecting || (ready && strip?.id == target.id)) return;
+    if (_disposed || status == LinkStatus.connecting || (ready && strip?.id == target.id)) return;
     final generation = ++_generation;
     final previous = _opening;
     final drained = Completer<void>();
@@ -130,18 +133,18 @@ class Link {
     try {
       for (var attempt = 1; generation == _generation; attempt++) {
         try {
-          await _ble.connect(id);
+          await _connectNative(id);
           opened = true;
           break;
-        } catch (_) {
+        } catch (error) {
           if (generation != _generation) return;
-          if (attempt >= maxTries) rethrow;
+          if (error is TimeoutException || attempt >= maxTries) rethrow;
           await Future<void>.delayed(retryDelay);
         }
       }
       if (!opened) return;
       if (generation != _generation) return;
-      if (!await _ble.hasWriteWithoutResponse(id)) throw UnsupportedController();
+      if (!await _ble.hasWriteWithoutResponse(id).timeout(_openDeadline)) throw UnsupportedController();
       if (generation != _generation) return;
       if (_droppedWhileOpening) throw StateError('Link dropped while opening');
       _set(LinkStatus.connected);
@@ -150,29 +153,51 @@ class Link {
       if (generation == _generation) rethrow;
     } finally {
       if (opened && !(generation == _generation && ready)) {
-        try {
-          await _ble.disconnect(id);
-        } catch (_) {/* Preserve the original error, or silently finish canceling. */}
+        await _releaseQuietly(id);
       }
       if (generation == _generation && !ready) _set(fallback);
     }
   }
 
+  Future<void> _connectNative(String id) async {
+    final native = _ble.connect(id);
+    await native.timeout(_openDeadline, onTimeout: () {
+      // A timeout cannot cancel the platform operation. A late connection
+      // must not disconnect a newer session using the same device.
+      unawaited(native.then((_) async {
+        if (strip?.id == id && status == LinkStatus.connecting) await _opening;
+        if (!ready || strip?.id != id) await _releaseQuietly(id);
+      }, onError: (Object _) {}));
+      throw TimeoutException('BLE connect timed out', _openDeadline);
+    });
+  }
+
+  Future<void> _releaseQuietly(String id) async {
+    try {
+      await _ble.disconnect(id).timeout(_ioDeadline);
+    } catch (_) {
+      // Preserve the original failure; cleanup is best effort.
+    }
+  }
+
   Future<void> write(Uint8List bytes) async {
     if (!ready) throw StateError('Not connected');
-    await _ble.write(strip!.id, bytes);
+    await _ble.write(strip!.id, bytes).timeout(_ioDeadline);
   }
 
   Future<void> _release() async {
     final id = strip!.id;
     _droppedWhileOpening = false;
-    final release = Future<void>.microtask(() => _ble.disconnect(id));
+    final generation = _generation;
+    final release = Future<void>.microtask(() => _ble.disconnect(id)).timeout(_ioDeadline);
     _releasing = release;
     _set(LinkStatus.connecting);
     try {
       await release;
     } catch (_) {
-      _set(_droppedWhileOpening ? LinkStatus.lost : LinkStatus.connected);
+      if (generation == _generation) {
+        _set(_droppedWhileOpening ? LinkStatus.lost : LinkStatus.connected);
+      }
       rethrow;
     } finally {
       _releasing = null;
@@ -182,8 +207,9 @@ class Link {
   /// Releases the strip on purpose, so another phone or app can connect.
   Future<void> disconnect() async {
     if (!ready) return;
+    final generation = _generation;
     await _release();
-    _set(LinkStatus.idle);
+    if (generation == _generation) _set(LinkStatus.idle);
   }
 
   Future<void> forget() async {
@@ -197,7 +223,30 @@ class Link {
     onRemember?.call(null);
   }
 
-  Future<void> dispose() => _sub.cancel();
+  void radioOff() {
+    _generation++;
+    _cancelFallback = null;
+    _set(strip == null ? LinkStatus.idle : LinkStatus.lost);
+  }
+
+  Future<void> dispose() async {
+    if (_disposed) return;
+    _disposed = true;
+    final owned = ready ? strip?.id : null;
+    final opening = _opening;
+    final releasing = _releasing;
+    _generation++;
+    _cancelFallback = null;
+    _set(LinkStatus.idle);
+    await _sub.cancel();
+    try {
+      if (owned != null) await _releaseQuietly(owned);
+      if (releasing != null) await releasing;
+    } catch (_) {
+      // Disposal cannot recover a failed native release.
+    }
+    if (opening != null) await opening;
+  }
 }
 
 /// Production adapter over universal_ble (BSD 3-Clause).

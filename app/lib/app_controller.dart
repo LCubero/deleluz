@@ -118,7 +118,14 @@ class AppController extends ChangeNotifier {
     final off = state == AvailabilityState.poweredOff;
     if (_bluetoothOff == off) return;
     _bluetoothOff = off;
-    _refresh();
+    if (off) {
+      _foregroundGeneration++;
+      _recoverPending = false;
+      unawaited(stopScan(silent: true));
+      link.radioOff();
+    } else {
+      _refresh();
+    }
   }
 
   Future<void> requestEnableBluetooth() async {
@@ -138,6 +145,7 @@ class AppController extends ChangeNotifier {
 
   final BleApi _ble;
   final Models models;
+  bool get sessionOnlyStorage => models.storage is SessionOnlyStore;
   final Future<String?> Function(bool request) checkAccess;
   late final Link link;
   late final Sender _sender;
@@ -254,6 +262,7 @@ class AppController extends ChangeNotifier {
   }
 
   void _notice(String? key) {
+    if (key != null && message == key) return;
     message = key;
     _refresh();
   }
@@ -289,16 +298,17 @@ class AppController extends ChangeNotifier {
       _generation++;
       _sender.cancel();
       _stopPlayback();
-      cancelTimer();
+      _interruptTimer();
       sentPower = null;
       sentBrightness = null;
       sentColor = null;
       _sentEffect = null;
-    } else if (_sentDeviceId != link.strip?.id) {
-      lastCommand = null;
+    } else {
+      if (_sentDeviceId != link.strip?.id) lastCommand = null;
+      _restoreInterruptedFade();
     }
     _refresh();
-    if (link.status == LinkStatus.lost && _previousStatus == LinkStatus.connected) {
+    if (!_bluetoothOff && link.status == LinkStatus.lost && _previousStatus == LinkStatus.connected) {
       _recoverPending = true;
     } else if (link.status != LinkStatus.lost) {
       _recoverPending = false;
@@ -307,10 +317,19 @@ class AppController extends ChangeNotifier {
     _maybeRecover();
   }
 
+  static const _recoveryCooldownMs = 5000;
+  double _nextRecoveryAt = double.negativeInfinity;
+  bool _recovering = false;
+
   void _maybeRecover() {
     if (_recoverPending && _foreground && !busy && !_disposed) {
       _recoverPending = false;
-      unawaited(_reconnect(request: false));
+      if (_bluetoothOff || _recovering || _now() < _nextRecoveryAt) return;
+      _recovering = true;
+      unawaited(_reconnect(request: false).whenComplete(() {
+        _nextRecoveryAt = _now() + _recoveryCooldownMs;
+        _recovering = false;
+      }));
     }
   }
 
@@ -338,6 +357,7 @@ class AppController extends ChangeNotifier {
     connectingId = null;
     _scanRequested = false;
     busy = false;
+    _restoreInterruptedFade();
     _refresh();
     _maybeRecover();
   }
@@ -424,7 +444,7 @@ class AppController extends ChangeNotifier {
       void Function(String)? onFailure}) => _deviceAction(() async {
     final generation = _deviceGeneration;
     final foreground = _foregroundGeneration;
-    bool active() => _foreground && !_disposed && generation == _deviceGeneration &&
+    bool active() => _foreground && !_disposed && !_bluetoothOff && generation == _deviceGeneration &&
         foreground == _foregroundGeneration;
     if (recovery || !_devices.containsKey(target.id)) {
       final problem = await checkAccess(request);
@@ -464,9 +484,17 @@ class AppController extends ChangeNotifier {
     _refresh();
   }
 
-  void updateShortcuts(List<Fields> items) {
-    shortcuts = models.filterShortcuts(items);
-    unawaited(_save(models.saveShortcuts(shortcuts)));
+  int _shortcutEdit = 0;
+
+  Future<void> updateShortcuts(List<Fields> items) async {
+    final edit = ++_shortcutEdit;
+    final next = models.filterShortcuts(items);
+    if (!await models.saveShortcuts(next)) {
+      if (edit == _shortcutEdit) _notice('appStorageFailed');
+      return;
+    }
+    if (_disposed || edit != _shortcutEdit) return;
+    shortcuts = next;
     _refresh();
   }
 
@@ -479,6 +507,7 @@ class AppController extends ChangeNotifier {
   Future<bool> _send(Uint8List frame, String label, {
     String? key, Map<String, Object?> values = const {},
     void Function()? onSent, void Function()? onWriteError,
+    String failure = 'commandFailed',
   }) async {
     if (!canSend) return false;
     final generation = _generation;
@@ -488,6 +517,7 @@ class AppController extends ChangeNotifier {
         return false;
       }
       onSent?.call();
+      if (message == 'commandFailed') message = null;
       _sentDeviceId = link.strip?.id;
       lastCommand = label;
       lastValues = values;
@@ -495,15 +525,16 @@ class AppController extends ChangeNotifier {
       return true;
     } catch (_) {
       if (generation == _generation) {
-        _notice('commandFailed');
+        _notice(failure);
         onWriteError?.call();
       }
       return false;
     }
   }
 
-  Future<bool> _sendPower(bool value) => _send(wire.power(value),
-      value ? 'power' : 'off', onSent: () {
+  Future<bool> _sendPower(bool value, {bool fromTimer = false}) => _send(wire.power(value),
+      value ? 'power' : 'off', failure: fromTimer ? 'timerOffFailed' : 'commandFailed', onSent: () {
+        if (message == 'timerOffFailed') message = null;
         sentPower = value;
         if (!value) _sentEffect = null;
       });
@@ -543,8 +574,24 @@ class AppController extends ChangeNotifier {
     unawaited(_powerOff());
   }
 
-  Future<void> _powerOff() async {
-    if (await _sendPower(false)) _select({'on': false});
+  Future<void> _powerOff({bool fromTimer = false}) async {
+    if (await _sendPower(false, fromTimer: fromTimer)) _select({'on': false});
+  }
+
+  bool _retryingTimerOff = false;
+  bool get canRetryTimerOff => message == 'timerOffFailed' && canSend && !_retryingTimerOff;
+
+  Future<void> retryTimerOff() async {
+    if (!canRetryTimerOff) return;
+    _retryingTimerOff = true;
+    _refresh();
+    try {
+      _stopPlayback();
+      await _powerOff(fromTimer: true);
+    } finally {
+      _retryingTimerOff = false;
+      _refresh();
+    }
   }
 
   Future<bool> _sendBrightness(int value, {void Function()? onWriteError}) => _send(wire.brightness(value),
@@ -577,7 +624,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<bool> _prepare(int run, int intensity) async {
-    if (sentPower != true && !await _sendPower(true)) return false;
+    if (sentPower != true && !await _preparePower()) return false;
     if (run != _playback) return false;
     if (sentBrightness != intensity && !await _sendBrightness(intensity)) return false;
     return run == _playback && canSend;
@@ -595,26 +642,42 @@ class AppController extends ChangeNotifier {
     _refresh();
   }
 
+  ({int generation, Future<bool> result})? _pendingPowerOn;
+
+  Future<bool> _preparePower() async {
+    final pending = _pendingPowerOn;
+    if (pending != null && pending.generation == _generation) return pending.result;
+    final result = _sendPower(true);
+    _pendingPowerOn = (generation: _generation, result: result);
+    try {
+      return await result;
+    } finally {
+      if (identical(_pendingPowerOn?.result, result)) _pendingPowerOn = null;
+    }
+  }
+
   Future<void> startAppAuto() async {
     if (!canSend || appAutoPlaying) return;
-    final ids = appAutoFavorites ? (_effectFavorites.toList()..sort()) :
-        List.generate(effectNames.length, (index) => index + 1);
-    if (ids.isEmpty) return;
+    final favoritesOnly = appAutoFavorites;
+    if (favoritesOnly && _effectFavorites.isEmpty) return;
+    final catalog = List.generate(effectNames.length, (index) => index + 1);
     _beginPlayback(playing: true);
     final run = _playback;
     _appAutoPlaying = true;
     _refresh();
     if (!await _prepare(run, brightness)) return _stopCurrentPlayback(run);
     final duration = Duration(seconds: appAutoSeconds);
-    var index = 0;
+    var last = 0;
     Future<void> next() async {
       if (run != _playback || !canSend) return _stopCurrentPlayback(run);
-      final id = ids[index];
+      final ids = favoritesOnly ? (_effectFavorites.toList()..sort()) : catalog;
+      if (ids.isEmpty) return _stopCurrentPlayback(run);
+      final id = ids.where((id) => id > last).firstOrNull ?? ids.first;
       if (!await _sendEffect(id, 'effectNamed') || run != _playback) return _stopCurrentPlayback(run);
       _appAutoEffect = id;
       _appAutoStartedAt = _now();
       _appAutoStep++;
-      index = (index + 1) % ids.length;
+      last = id;
       _player = Timer(duration, () => unawaited(next()));
       _refresh();
     }
@@ -625,18 +688,20 @@ class AppController extends ChangeNotifier {
     if (appAutoPlaying) stopPlayback();
   }
 
-  Future<void> setEffect(int id, {bool preview = false}) async {
-    if (!canSend || (id != wire.autoEffect && (id < 1 || id > 210))) return;
+  Future<bool> setEffect(int id, {bool preview = false}) async {
+    if (!canSend || (id != wire.autoEffect && (id < 1 || id > 210))) return false;
     _beginPlayback(preview: preview);
     final run = _playback;
-    if (!await _prepare(run, brightness)) return;
+    if (!await _prepare(run, brightness)) return false;
     final label = id == wire.autoEffect ? 'autoCycle' : 'effectNamed';
-    if (await _sendEffect(id, label) && run == _playback && !preview) {
+    if (!await _sendEffect(id, label) || run != _playback) return false;
+    if (!preview) {
       final fx = id == wire.autoEffect ? 'AUTO' : id;
       _select({'on': true, 'fx': fx, 'scene': null,
         'label': [label, {'id': id, 'name': effectName(id) ?? 'AUTO'}],
         'mode': {'effect': fx}});
     }
+    return true;
   }
 
   Future<void> setVoiceMode(int id) async {
@@ -807,6 +872,9 @@ class AppController extends ChangeNotifier {
 
   void stopSequence(String id) {
     if (_playingSequence == id) stopPlayback();
+    if (_selection['scene'] == 'sequence:$id') {
+      _select(solidSelection(_selection['rgb'] as List<int>));
+    }
   }
 
   void _stopCurrentPlayback(int run) {
@@ -843,13 +911,14 @@ class AppController extends ChangeNotifier {
   }
 
   void startTimer(int seconds, {required bool fade}) {
-    if (!ready || !_foreground || seconds <= 0) return;
+    if (!ready || !_foreground || seconds <= 0 || seconds > maxTimerDuration) return;
     cancelTimer(restoreBrightness: true);
+    if (message == 'timerOffFailed') message = null;
     remaining = _timerSpan = seconds;
     _timerFade = fade;
     _timerDeadline = _now() + seconds * 1000;
     _timerEndTime = _wallClock().toLocal().add(Duration(seconds: seconds));
-    if (seconds <= 43200 && seconds != _lastTimerDuration) {
+    if (seconds != _lastTimerDuration) {
       _lastTimerDuration = seconds;
       unawaited(_save(saveTimerDuration(models.storage, seconds)));
     }
@@ -858,9 +927,12 @@ class AppController extends ChangeNotifier {
     _refresh();
   }
 
+  bool canExtendTimer(int seconds) =>
+      remaining != null && seconds > 0 && seconds <= maxTimerDuration - _timerSpan;
+
   void extendTimer(int seconds) {
     final end = _timerEndTime;
-    if (end == null || seconds <= 0) return;
+    if (end == null || !canExtendTimer(seconds)) return;
     if (_timerDeadline <= _now()) {
       _tickTimer();
       return;
@@ -875,7 +947,8 @@ class AppController extends ChangeNotifier {
     final left = (_timerDeadline - _now()) / 1000;
     if (left <= 0) {
       cancelTimer();
-      setPower(false);
+      _stopPlayback();
+      unawaited(_powerOff(fromTimer: true));
       return;
     }
     // If an extension backs out of the fade window, restore the selected
@@ -902,17 +975,36 @@ class AppController extends ChangeNotifier {
     _refresh();
   }
 
+  String? _interruptedFadeDevice;
+
+  void _interruptTimer() {
+    if (_fadeLevel != null) _interruptedFadeDevice = link.strip?.id;
+    cancelTimer();
+  }
+
+  void _restoreInterruptedFade() {
+    if (!canSend || _disposed || _interruptedFadeDevice == null ||
+        _interruptedFadeDevice != link.strip?.id) {
+      return;
+    }
+    _interruptedFadeDevice = null;
+    unawaited(_sendBrightness(brightness));
+  }
+
   void setForeground(bool value) {
     if (_foreground == value) return;
     _foreground = value;
     if (!value) {
       _foregroundGeneration++;
-      cancelTimer();
+      _generation++;
+      if (!_disposed) link.cancelConnect();
+      _interruptTimer();
       _stopPlayback();
       _sender.cancel();
       unawaited(stopScan());
     } else {
       _maybeRecover();
+      _restoreInterruptedFade();
     }
     _refresh();
   }

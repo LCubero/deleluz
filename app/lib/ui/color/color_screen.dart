@@ -59,12 +59,14 @@ class _ColorScreenState extends State<ColorScreen> {
 
   Future<void> _playEffect(int id) async {
     if (!c.canSend) return;
+    final controller = c;
+    if (id == wire.autoEffect) FocusScope.of(context).unfocus();
+    final sent = await controller.setEffect(id);
+    if (!sent || !mounted || c != controller) return;
     setState(() {
       _auto = id == wire.autoEffect;
       if (!_auto) _effect = id;
     });
-    if (_auto) FocusScope.of(context).unfocus();
-    await c.setEffect(id);
   }
 
   Widget _effectCard() {

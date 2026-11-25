@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:deleluz/link.dart';
+import 'package:deleluz/sender.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class FakeBle implements BleApi {
@@ -16,9 +17,12 @@ class FakeBle implements BleApi {
   Future<void> connect(String id) async {
     connectCalls++;
     if (failConnects-- > 0) throw Exception('Connection attempt failed');
+    await connectGate?.future;
     open.add(id);
   }
 
+  Completer<void>? connectGate;
+  Completer<void>? writeGate;
   Completer<void>? discoveryGate;
   Completer<void>? disconnectGate;
   Object? discoveryError;
@@ -33,7 +37,10 @@ class FakeBle implements BleApi {
   }
 
   @override
-  Future<void> write(String id, Uint8List bytes) async => written.add('$id:${bytes.first}');
+  Future<void> write(String id, Uint8List bytes) async {
+    await writeGate?.future;
+    written.add('$id:${bytes.first}');
+  }
 
   @override
   Future<void> disconnect(String id) async {
@@ -62,6 +69,79 @@ void main() {
     ble = FakeBle();
     saved = [];
     link = Link(ble, retryDelay: Duration.zero, onRemember: saved.add);
+  });
+
+  testWidgets('F2 stalled open times out and a different strip can connect', (tester) async {
+    final gate = ble.connectGate = Completer<void>();
+    Object? failure;
+    final opening = link.connect(const Strip('A', 'x')).catchError((Object error) {
+      failure = error;
+    });
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 10));
+    expect(failure, isA<TimeoutException>());
+    await opening;
+    ble.connectGate = null;
+    await link.connect(const Strip('B', 'x'));
+    gate.complete();
+    await tester.pump();
+    expect(ble.open, {'B'});
+    expect(saved, ['B']);
+  });
+
+  testWidgets('F2 stalled write rejects so the next queued frame can send', (tester) async {
+    await link.connect(const Strip('A', 'x'));
+    final gate = ble.writeGate = Completer<void>();
+    var now = 0.0;
+    final sender = Sender(write: link.write, now: () => now);
+    Object? failure;
+    final writing = sender.send(Uint8List.fromList([1])).catchError((Object error) {
+      failure = error;
+      return 'failed';
+    });
+    final next = sender.send(Uint8List.fromList([2]));
+    ble.writeGate = null;
+    now = 2000;
+    await tester.pump(const Duration(seconds: 2));
+    expect(failure, isA<TimeoutException>());
+    expect(await writing, 'failed');
+    expect(await next, 'sent');
+    expect(ble.written, ['A:2']);
+    gate.complete();
+  });
+
+  testWidgets('F2 stalled discovery releases the link without remembering it', (tester) async {
+    final gate = ble.discoveryGate = Completer<void>();
+    Object? failure;
+    final opening = link.connect(const Strip('A', 'x')).catchError((Object error) {
+      failure = error;
+    });
+    await tester.pump();
+    expect(ble.open, {'A'});
+    await tester.pump(const Duration(seconds: 10));
+    expect(failure, isA<TimeoutException>());
+    await opening;
+    expect(saved, isEmpty);
+    expect(ble.open, isEmpty);
+    gate.complete();
+  });
+
+  test('F1 disposing releases an owned connection', () async {
+    await link.connect(const Strip('A', 'x'));
+    await link.dispose();
+    expect(ble.open, isEmpty);
+  });
+
+  test('F1 disposing during discovery releases the late open', () async {
+    final gate = ble.discoveryGate = Completer<void>();
+    final opening = link.connect(const Strip('A', 'x'));
+    await Future<void>.delayed(Duration.zero);
+    final disposing = link.dispose();
+    gate.complete();
+    await opening;
+    await disposing;
+    expect(ble.open, isEmpty);
+    expect(saved, isEmpty);
   });
 
   test('connects after up to 4 tries and remembers the strip', () async {

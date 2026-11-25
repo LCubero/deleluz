@@ -82,6 +82,35 @@ void main() {
     });
   }
 
+  testWidgets('F11 scene name counter uses trimmed UTF-16 units', (tester) async {
+    await start(tester);
+    await tap(tester, 'scenes-mine');
+    await tap(tester, 'scene-new');
+    await tester.enterText(key('scene-name'), '  A😀  ');
+    await tester.pump();
+    expect(find.text(c.text('sceneNameCount', {'count': 3, 'max': 24})), findsOneWidget);
+  });
+
+  testWidgets('F11 full scenes and steps explain why add is disabled', (tester) async {
+    await start(tester);
+    expect(await c.models.saveSequences([
+      for (var i = 1; i <= maxSequences; i++)
+        {'id': '$i', 'name': 'Scene $i', 'bri': 80, 'steps': [
+          for (var step = 1; step <= maxColors; step++)
+            {'rgb': [step, 0, 0], 'durationMs': 500},
+        ]},
+    ]), isTrue);
+    await tap(tester, 'scenes-mine');
+    expect(find.text(c.text('scenesLimit', {'max': maxSequences})), findsOneWidget);
+    expect(tester.widget<FilledButton>(key('scene-new')).onPressed, isNull);
+    await tap(tester, 'scene-edit-1');
+    final stepLimit = find.text(c.text('sceneStepsLimit', {'max': maxColors}));
+    expect(stepLimit, findsOneWidget);
+    await tester.ensureVisible(key('scene-add-color'));
+    expect(tester.widget<OutlinedButton>(key('scene-add-color')).onPressed, isNull);
+    expect(tester.widget<OutlinedButton>(key('scene-add-effect')).onPressed, isNull);
+  });
+
   testWidgets('legacy scene duration edited in the picker survives save and playback', (tester) async {
     await start(tester, connected: true, savedScenes: legacyScene);
     await tap(tester, 'scenes-mine');

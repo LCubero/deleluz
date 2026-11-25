@@ -1030,6 +1030,18 @@ void main() {
     expect(store.read(Models.rememberedStripsKey), contains(FakeBle.strip.name));
   });
 
+  testWidgets('F11 six quick actions explain why add is unavailable', (tester) async {
+    final controller = await start(tester);
+    await controller.updateShortcuts([
+      for (var i = 1; i <= maxShortcuts; i++) {'kind': 'effect', 'effect': i},
+    ]);
+    await tester.pump();
+    await tester.tap(find.text(controller.text('quickActions')));
+    await tester.pumpAndSettle();
+    expect(find.text(controller.text('quickActionsLimit', {'max': maxShortcuts})), findsOneWidget);
+    expect(find.byTooltip(controller.text('addShortcut')), findsNothing);
+  });
+
   testWidgets('a drop recovers the remembered strip without requesting permissions', (tester) async {
     final controller = await start(tester);
     await connect(tester);

@@ -4,11 +4,12 @@ import 'models.dart';
 
 const _durationKey = 'timerDuration';
 const defaultTimerDuration = 15 * 60;
+const maxTimerDuration = 720 * 60;
 
 int loadTimerDuration(LocalStore store) {
   try {
     final seconds = int.tryParse(store.read(_durationKey) ?? '');
-    if (seconds != null && seconds >= 1 && seconds <= 43200) return seconds;
+    if (seconds != null && seconds >= 1 && seconds <= maxTimerDuration) return seconds;
   } catch (_) {
     // Unavailable preferences fall back to the first-run duration.
   }
@@ -41,9 +42,9 @@ int? _field(String value) {
 int? parseTimerDuration(String minutes, String seconds) {
   final min = _field(minutes);
   final sec = _field(seconds);
-  if (min == null || sec == null || min > 720 || sec > 59) return null;
+  if (min == null || sec == null || min > maxTimerDuration ~/ 60 || sec > 59) return null;
   final total = min * 60 + sec;
-  return total >= 1 && total <= 43200 ? total : null;
+  return total >= 1 && total <= maxTimerDuration ? total : null;
 }
 
 String formatRemaining(num seconds) {

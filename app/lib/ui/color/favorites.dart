@@ -67,6 +67,11 @@ class _ColorFavoritesState extends State<ColorFavorites> {
   void _plus() {
     final before = c.models.loadPalette();
     final index = before.indexOf(_slot ?? '');
+    final duplicate = before.indexOf(widget.current.toLowerCase());
+    if (duplicate >= 0 && duplicate != index) {
+      setState(() => _message = 'paletteDuplicate');
+      return;
+    }
     if (index < 0 && before.length >= paletteLimit) {
       setState(() => _message = 'paletteFull');
       return;
@@ -151,7 +156,7 @@ class _ColorFavoritesState extends State<ColorFavorites> {
         Notice(c.text('paletteHint')),
         if (_message case final message?) Padding(padding: const EdgeInsets.only(top: 8),
           child: Notice(c.text(message), live: true,
-            kind: message == 'paletteFull' ? NoticeKind.warning : NoticeKind.error)),
+            kind: message == 'appStorageFailed' ? NoticeKind.error : NoticeKind.warning)),
       ],
     ]);
   }

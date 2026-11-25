@@ -23,7 +23,7 @@ Future<LocalStore> loadStore({
   }
 }
 
-class _MemoryStore implements LocalStore {
+class _MemoryStore implements SessionOnlyStore {
   final _values = <String, String>{};
 
   @override
