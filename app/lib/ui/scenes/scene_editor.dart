@@ -72,10 +72,15 @@ class _SceneEditorState extends State<_SceneEditor> {
       ],
     ));
     if (yes != true || !mounted) return;
+    final id = _id;
+    if (id == null) {
+      Navigator.pop(context);
+      return;
+    }
     setState(() { _busy = true; _error = null; });
-    final ok = await c.models.saveSequences(removeSequence(c.models.loadSequences(), _id!));
+    final ok = await c.models.saveSequences(removeSequence(c.models.loadSequences(), id));
     if (ok) {
-      c.stopSequence(_id);
+      c.stopSequence(id);
       c.updateShortcuts(c.shortcuts);
     }
     if (!mounted) return;
@@ -158,9 +163,9 @@ class _SceneEditorState extends State<_SceneEditor> {
         Text(c.text('sequenceFrames'), style: Theme.of(context).textTheme.titleMedium),
         Text(c.text('sequenceEditHint')),
         const SizedBox(height: 8),
-        Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [
+        SliderZone(child: Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [
           for (final (index, frame) in _frames.indexed) _square(index, frame),
-        ]),
+        ])),
         const SizedBox(height: 8),
         Text(c.text('sequenceReorderHint'), style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 8),
@@ -181,26 +186,32 @@ class _SceneEditorState extends State<_SceneEditor> {
         _wheel(),
         const SizedBox(height: 8),
         GlowDisclosure(title: c.text('favorites'), minHeight: 44, inlineChevron: true, children: [
-          Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [
+          SliderZone(child: Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [
             for (final hex in c.models.loadPalette())
               IconButton.outlined(tooltip: c.text('paletteColorHex', {'hex': hex.toUpperCase()}),
                 onPressed: _busy ? null : () => _setColor([
                   for (var i = 1; i < 7; i += 2) int.parse(hex.substring(i, i + 2), radix: 16),
                 ]), icon: Icon(Icons.circle, color: Color(0xff000000 | int.parse(hex.substring(1), radix: 16)))),
-          ]),
+          ])),
         ]),
         const SizedBox(height: 14),
         SliderZone(child: _SceneSlider(controller: c, id: 'scene-speed', label: 'speed', value: _speed,
           onChanged: (value) => setState(() { _speed = value; _interval = intervalFromSpeed(value); }))),
-        SliderZone(child: _SceneSlider(controller: c, id: 'scene-intensity', label: 'intensity', min: 1,
-          value: _intensity, onChanged: (value) => setState(() => _intensity = value))),
+        SliderZone(child: _SceneSlider(controller: c, id: 'scene-intensity', label: 'brightness', min: 1,
+          icon: const GlowIcon(GlowGlyph.sun, size: 20), value: _intensity, onChanged: (value) {
+            setState(() => _intensity = value);
+            c.setDraftPreviewBrightness(value);
+          })),
         const SizedBox(height: 8),
         Text(c.text('foregroundPlaybackHint'), style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 8),
         _LastSent(transport: widget.transport),
         if (widget.transport.failed) Text(c.text('commandFailed')),
-        if (_id != null) Align(alignment: AlignmentDirectional.centerStart,
-          child: TextButton.icon(key: const Key('scene-delete'), onPressed: _busy ? null : _delete,
+        const SizedBox(height: 18),
+        Align(alignment: AlignmentDirectional.centerStart,
+          child: OutlinedButton.icon(key: const Key('scene-delete'), onPressed: _busy ? null : _delete,
+            style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error,
+              side: BorderSide(color: Theme.of(context).colorScheme.error.withValues(alpha: .45))),
             icon: const Icon(Icons.delete_outline), label: Text(c.text('deleteSequence')))),
       ]))),
       Padding(padding: const EdgeInsets.fromLTRB(12, 2, 12, 10), child: Wrap(

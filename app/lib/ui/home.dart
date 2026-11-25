@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .firstOrNull?['colors'] as List<List<int>>?,
       _ => [item['rgb'] as List<int>],
     };
-    return GlowTile(minHeight: 60, onTap: () {
+    final tile = GlowTile(minHeight: 60, onTap: () {
       if (c.ready) {
         c.applyShortcut(item);
       } else {
@@ -135,6 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
       ],
     ));
+    return item['kind'] == 'color' ? SliderZone(child: tile) : tile;
   }
 
   Widget _slider(String label, int value, ValueChanged<int>? change, {String? hint}) =>
@@ -243,8 +244,8 @@ class _HomeScreenState extends State<HomeScreen> {
               for (final hex in c.models.loadPalette()) {'kind': 'color', 'rgb': [
                 for (final offset in [1, 3, 5]) int.parse(hex.substring(offset, offset + 2), radix: 16),
               ]}])
-              ListTile(leading: _swatch(item['rgb'] as List<int>), title: Text(c.shortcutLabel(item)),
-                onTap: () => Navigator.pop(context, item)),
+              SliderZone(child: ListTile(leading: _swatch(item['rgb'] as List<int>),
+                title: Text(c.shortcutLabel(item)), onTap: () => Navigator.pop(context, item))),
             const SizedBox(height: 12),
             HueWheel(hue: hue, label: c.text('hue'),
               onChanged: (value) => setModalState(() => hue = value)),

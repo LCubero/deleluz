@@ -8,6 +8,7 @@ import '../../model/effects.dart';
 import '../../model/models.dart';
 import '../../protocol.dart' as wire;
 import '../glow_glass.dart';
+import '../glow_icon.dart';
 import '../home_presets.dart';
 import '../hue_wheel.dart';
 import 'scene_transport.dart';
@@ -201,19 +202,20 @@ class _LastSent extends StatelessWidget {
 
 class _SceneSlider extends StatelessWidget {
   const _SceneSlider({required this.controller, required this.id, required this.label,
-    required this.value, required this.onChanged, this.onChangeEnd, this.min = 0});
+    required this.value, required this.onChanged, this.onChangeEnd, this.min = 0, this.icon});
 
   final AppController controller;
   final String id, label;
   final int value, min;
   final ValueChanged<int> onChanged;
   final ValueChanged<double>? onChangeEnd;
+  final Widget? icon;
 
   @override
   Widget build(BuildContext context) {
     String percent(int n) => controller.text('percent', {'value': n});
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      GlowValueLabel(label: controller.text(label), value: percent(value)),
+      GlowValueLabel(label: controller.text(label), value: percent(value), icon: icon),
       Semantics(label: controller.text(label), child: Slider(key: Key(id),
         value: value.toDouble(), min: min.toDouble(), max: 100,
         label: percent(value), semanticFormatterCallback: (value) => percent(value.round()),

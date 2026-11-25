@@ -124,7 +124,7 @@ class _BackdropPainter extends CustomPainter {
   bool shouldRepaint(_BackdropPainter oldDelegate) => false;
 }
 
-/// Keeps a drag that starts on a slider's label, track or padding in its zone.
+/// Keeps horizontal drags that start in a slider or color selector off the tab swipe.
 class SliderZone extends StatelessWidget {
   const SliderZone({super.key, required this.child});
   final Widget child;
@@ -133,7 +133,7 @@ class SliderZone extends StatelessWidget {
   Widget build(BuildContext context) => GestureDetector(
     behavior: HitTestBehavior.opaque,
     excludeFromSemantics: true,
-    // The slider can win on its track; a vertical scroll can still win anywhere.
+    // A child control can handle the drag; vertical scrolling can still win.
     onHorizontalDragStart: (_) {},
     child: child,
   );

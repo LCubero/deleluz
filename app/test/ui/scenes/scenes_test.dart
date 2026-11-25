@@ -100,6 +100,49 @@ void main() {
     expect(c.models.loadSequences(), isEmpty);
   });
 
+  testWidgets('draft delete is destructive and separated from playback status', (tester) async {
+    await start(tester);
+    await tap(tester, 'scenes-mine');
+    await tap(tester, 'scene-new');
+    final action = key('scene-delete');
+    expect(action, findsOneWidget);
+    final button = tester.widget<OutlinedButton>(action);
+    final context = tester.element(action);
+    expect(button.style!.foregroundColor!.resolve({}), Theme.of(context).colorScheme.error);
+    expect(tester.getTopLeft(action).dy - tester.getBottomLeft(find.text(c.text('foregroundPlaybackHint'))).dy,
+      greaterThanOrEqualTo(18));
+    await tap(tester, 'scene-delete');
+    await tap(tester, 'scene-cancel-delete');
+    expect(action, findsOneWidget);
+    await tap(tester, 'scene-delete');
+    await tap(tester, 'scene-confirm-delete');
+    expect(action, findsNothing);
+    expect(c.models.loadSequences(), isEmpty);
+  });
+
+  testWidgets('scene brightness sends the latest draft value before the next color', (tester) async {
+    await start(tester, connected: true);
+    await tap(tester, 'scenes-mine');
+    await tap(tester, 'scene-new');
+    await tap(tester, 'scene-start');
+    await tick(tester);
+    await tick(tester);
+    expect(ble.writes.map((w) => w[2]), [4, 1, 7]);
+    final slider = key('scene-intensity');
+    final change = tester.widget<Slider>(slider).onChanged!;
+    change(28);
+    change(71);
+    await tick(tester);
+    expect(ble.writes.skip(3).map((w) => w.sublist(2, 5)), [[1, 22, 71]]);
+    expect(find.text('Brillo'), findsOneWidget);
+    expect(tester.widget<Slider>(slider).value, 71);
+    await tick(tester, 2000);
+    expect(ble.writes.last[2], 7);
+    await tap(tester, 'scene-save');
+    await tick(tester);
+    expect(c.models.loadSequences().single['bri'], 71);
+  });
+
   testWidgets('music sends four wire modes and higher sensitivity without phone audio', (tester) async {
     await start(tester, connected: true);
     await tap(tester, 'scenes-music');

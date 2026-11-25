@@ -539,18 +539,32 @@ class AppController extends ChangeNotifier {
     }
   }
 
+  void setDraftPreviewBrightness(int value) {
+    if (!canSend || !previewing || !_playing || sentPower != true || value < 1 || value > 100) return;
+    unawaited(_sendBrightness(value));
+  }
+
   Future<void> playDraft(List<List<int>> colors, int interval, int intensity,
       {bool preview = true,
       ({List<List<int>> colors, int interval, int intensity}) Function()? draft}) async {
     if (!canSend || colors.isEmpty) return;
     _beginPlayback(preview: preview, playing: true);
     final run = _playback;
-    if (!await _prepare(run, intensity)) return;
+    final liveDraft = preview && draft != null;
+    if (liveDraft) {
+      if (sentPower != true && !await _sendPower(true)) return;
+      if (run != _playback || !canSend) return;
+      // Queue ahead of the first color, but don't await a frame that a drag can replace.
+      final initialBrightness = draft().intensity;
+      if (sentBrightness != initialBrightness) setDraftPreviewBrightness(initialBrightness);
+    } else if (!await _prepare(run, intensity)) {
+      return;
+    }
     var index = 0;
     Future<void> next() async {
       if (run != _playback || !canSend) return;
       final step = draft?.call() ?? (colors: colors, interval: interval, intensity: intensity);
-      if (step.colors.isEmpty || !await _prepare(run, step.intensity)) return;
+      if (step.colors.isEmpty || (!liveDraft && !await _prepare(run, step.intensity))) return;
       if (!await _sendColor(step.colors[index % step.colors.length]) || run != _playback) return;
       index++;
       _player = Timer(Duration(milliseconds: step.interval), () => unawaited(next()));

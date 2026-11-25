@@ -132,7 +132,7 @@ class _ColorFavoritesState extends State<ColorFavorites> {
       }, children: [
       if (_open) ...[
         const SizedBox(height: 8),
-        Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [
+        SliderZone(child: Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [
           for (final hex in colors) _swatch(hex),
           DragTarget<String>(key: const Key('favorite-plus'),
             onWillAcceptWithDetails: (_) => !_saving,
@@ -145,7 +145,7 @@ class _ColorFavoritesState extends State<ColorFavorites> {
                 color: incoming.isEmpty ? null : glowPink),
             ),
           ),
-        ]),
+        ])),
         const SizedBox(height: 12),
         Text(c.text('paletteHint'), textAlign: TextAlign.center, style: style),
         if (_message case final message?) Padding(padding: const EdgeInsets.only(top: 8),

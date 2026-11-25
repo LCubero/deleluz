@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
 
+import 'glow_glass.dart';
+
 /// Hue only, matching the fully saturated colors in the web shortcut picker.
 class HueWheel extends StatelessWidget {
   const HueWheel({super.key, required this.hue, required this.label, required this.onChanged,
@@ -32,11 +34,11 @@ class HueWheel extends StatelessWidget {
         decreasedValue: '${((hue - 15) % 360).round()}°',
         onIncrease: () => onChanged((hue + 15) % 360),
         onDecrease: () => onChanged((hue - 15) % 360),
-        child: GestureDetector(
+        child: SliderZone(child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTapUp: (details) => select(details.localPosition),
-          onPanStart: (details) => select(details.localPosition),
-          onPanUpdate: (details) => select(details.localPosition),
+          onHorizontalDragStart: (details) => select(details.localPosition),
+          onHorizontalDragUpdate: (details) => select(details.localPosition),
           child: Stack(alignment: Alignment.center, children: [
             const Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -55,7 +57,7 @@ class HueWheel extends StatelessWidget {
                 color: color, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 4),
                 boxShadow: const [BoxShadow(color: Color(0x80000000), offset: Offset(0, 2), blurRadius: 10)]))),
           ]),
-        ),
+        )),
       );
     })),
   ));
