@@ -48,3 +48,5 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - L10 (2026-11-25): T5 done (4546165): flutter test 170/170, analyze clean; native assess not due. Firmware cycle relabelled "Ciclo de la tira" (still sends FF).
 - L11 (2026-11-25): T6 done (0257279): flutter test 175/175, analyze clean. T7 split into T7a-T7c (webapp port).
 - L12 (2026-11-25): T7a done (2fbcecb): node --test 97/97. Visual check at 412x915 and 320x640 (device emulation): no horizontal overflow or off-screen controls. Minor, left for T7b: the scroll-hint chevron overlaps content at the fold; "Efectos integrados" tab wraps to two lines at 320 px.
+- L13 (2026-11-25, owner, verbatim): "pero mi rey primero concentrados en el app"
+- L14 (2026-11-25): webapp work paused (T7b, T7c). T7b partial edits saved as `git stash` "T7b partial webapp work (paused: app first)". Next: T9/T10 on Android after the owner picks 08/09 and 10/11.
