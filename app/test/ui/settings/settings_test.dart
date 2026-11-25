@@ -4,6 +4,7 @@ import 'package:deleluz/model/models.dart';
 import 'package:deleluz/protocol.dart';
 import 'package:deleluz/ui/glow_glass.dart';
 import 'package:deleluz/ui/settings/settings_screen.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -52,6 +53,50 @@ void main() {
   }
 
   bool enabled(WidgetTester tester) => tester.widget<FilledButton>(send).onPressed != null;
+
+  for (final (language, title, description, version, author, license, repository, copied) in [
+    ('es', 'Acerca de', 'Control de tiras LED LEDDMX-03 por Bluetooth',
+      'Versión', 'Autor', 'Licencia', 'Repositorio', 'Enlace copiado'),
+    ('en', 'About', 'LEDDMX-03 LED strip control over Bluetooth',
+      'Version', 'Author', 'License', 'Repository', 'Link copied'),
+  ]) {
+    testWidgets('About shows localized details and copies the repository in $language', (tester) async {
+      final clipboard = <Object?>[];
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'Clipboard.setData') clipboard.add(call.arguments);
+        return null;
+      });
+      addTearDown(() => messenger.setMockMethodCallHandler(SystemChannels.platform, null));
+      await start(tester);
+      controller.setLanguage(language);
+      await tester.pumpAndSettle();
+      expect(find.text('LCubero'), findsNothing);
+      await tap(tester, find.text(title));
+      for (final text in [description, '$version 1.0.0', author, 'LCubero',
+        license, 'MIT', repository, 'github.com/LCubero/deleluz', '¡Dele, enciéndala, mae!']) {
+        expect(find.text(text), findsOneWidget);
+      }
+      expect(find.byIcon(Icons.copy), findsOneWidget);
+      await tap(tester, find.text(repository));
+      expect(clipboard, [{'text': 'https://github.com/LCubero/deleluz'}]);
+      expect(find.text(copied), findsOneWidget);
+    });
+  }
+
+  for (final size in [const Size(320, 640), const Size(412, 915)]) {
+    testWidgets('expanded About fits $size at enlarged text', (tester) async {
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await start(tester, scale: 2);
+      await tap(tester, find.text('Acerca de'));
+      final tagline = find.text('¡Dele, enciéndala, mae!');
+      await tester.ensureVisible(tagline);
+      await tester.pumpAndSettle();
+      expect(tagline.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('offline edits persist without writes or permission requests', (tester) async {
     final saved = Store();

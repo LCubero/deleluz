@@ -1,11 +1,14 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app_controller.dart';
 import '../../model/models.dart';
 import '../../protocol.dart' show chipOrders;
+import '../../version.dart';
 import '../glow_glass.dart';
+import '../glow_icon.dart';
 import '../strip_selector.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -203,10 +206,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _symptom('sceneStopped', ['keepForeground', 'applyAgain']),
           ]),
           _section('privacyTitle', [Text(_text('privacyText')), Text(_text('privacyTimer'))]),
+          _about(theme),
         ]),
       )),
     ));
   });
+
+  static const _repository = 'github.com/LCubero/deleluz';
+
+  Future<void> _copyRepository() async {
+    await Clipboard.setData(const ClipboardData(text: 'https://$_repository'));
+    if (mounted) _notice('aboutLinkCopied');
+  }
+
+  Widget _about(TextTheme theme) => _section('about', [
+    Row(spacing: 8, children: [
+      const GlowIcon(GlowGlyph.wave),
+      Flexible(child: Text('DeleLuz', style: theme.titleMedium)),
+    ]),
+    Text(_text('aboutDescription')),
+    Text(c.text('aboutVersion', {'version': appVersion}), style: theme.bodySmall),
+    Column(children: [
+      _aboutRow('aboutAuthor', 'LCubero'),
+      _aboutRow('aboutLicense', 'MIT'),
+      InkWell(onTap: _copyRepository, child: _aboutRow('aboutRepository', _repository, copy: true)),
+    ]),
+    Center(child: ShaderMask(
+      blendMode: BlendMode.srcIn,
+      shaderCallback: (bounds) => const LinearGradient(colors: [glowViolet, glowPink]).createShader(bounds),
+      child: Text('¡Dele, enciéndala, mae!', textAlign: TextAlign.center, style: theme.titleMedium),
+    )),
+  ]);
+
+  Widget _aboutRow(String key, String value, {bool copy = false}) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Row(crossAxisAlignment: CrossAxisAlignment.start, spacing: 8, children: [
+      Expanded(flex: 2, child: Text(_text(key))),
+      Expanded(flex: 3, child: Text(value)),
+      SizedBox(width: 18, child: copy ? const Icon(Icons.copy, size: 18) : null),
+    ]),
+  );
 
   Widget _stripsRow() {
     final alias = c.remembered?.alias;
