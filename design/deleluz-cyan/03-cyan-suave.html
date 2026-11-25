@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cyan solo en progreso · DeleLuz</title>
+<style>
+:root{color-scheme:dark;--bg:#0a0918;--ink:#f5f3ff;--muted:#bdb6dc;--faint:#8f88b3;--link:#f0abfc;--primary:#e3c2ff;--ok:#4ade80;--cyan:#22d3ee;--glass:#ffffff11;--line:#ffffff24;--selected:#ffffff1c;--edge:#ffffff2e;--focus:var(--cyan);--font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 var(--font)}
+.phone{width:100%;max-width:390px;min-height:100svh;margin:auto;display:flex;flex-direction:column;background:radial-gradient(ellipse 210px 150px at 10% 0%,#a855f74d,transparent 70%),radial-gradient(ellipse 200px 170px at 100% 70%,#ec48992e,transparent 70%),var(--bg)}
+main{flex:1;display:flex;flex-direction:column;gap:10px;padding:16px 18px 18px}h1,h2,p,figure,ul{margin:0}h1{font-size:22px;letter-spacing:-.44px}h2{font-size:15px}small,figcaption{display:block;color:var(--muted);font-size:13px}header,.timer,.row,.auto-label{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.status{display:flex;align-items:center;gap:8px;min-height:36px;padding:6px 12px;border:1px solid var(--line);border-radius:99px;background:var(--glass);font-size:13px;font-weight:600}.status::before{content:"";width:8px;height:8px;background:var(--ok);border-radius:50%;box-shadow:0 0 10px var(--ok)}
+.card,.segments{border:1px solid var(--line);background:var(--glass)}.card{border-radius:24px;padding:16px}.segments{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:14px}.choice,button{font:600 15px/1.4 var(--font);color:inherit;background:none;border:1px solid transparent;min-height:48px;min-width:48px}.choice{position:relative;display:flex;align-items:center;justify-content:center;gap:4px;text-align:center;padding:2px;border-radius:10px;color:var(--muted);cursor:pointer}.choice input{position:absolute;width:100%;height:100%;inset:0;margin:0;opacity:0;cursor:pointer}.choice:has(input:checked),.row:has(.choice input:checked){color:var(--ink);background:var(--selected);border-color:var(--edge)}.check{display:none;color:var(--primary)}.choice input:checked + .check{display:inline}
+.choice:has(input:focus-visible),button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}.presets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px}.presets .choice{border-radius:99px;border-color:var(--line);background:var(--glass)}.presets .choice:has(input:checked){background:var(--selected);border-color:var(--edge)}
+.auto-label{margin-bottom:8px}.auto-label small{font-variant-numeric:tabular-nums}.track{height:10px;border-radius:99px;background:#ffffff1f;overflow:hidden}.track::before{content:"";display:block;width:60%;height:100%;border-radius:inherit;background:var(--cyan)}
+ul{list-style:none;padding:0;margin-top:8px}.row{border:1px solid transparent;border-radius:16px;gap:0}.row+.row{margin-top:4px}.row .choice{flex:1;justify-content:flex-start;text-align:left;padding-inline:10px}.row:has(.choice input:checked) .choice{background:none;border-color:transparent;color:var(--primary)}.star{color:var(--link);font-size:20px;border-radius:14px}
+.timer{background:linear-gradient(#201840,#120e26);justify-content:flex-start;gap:16px}.ring{width:96px;height:96px;flex:none;display:grid;place-items:center;position:relative;text-align:center;font-variant-numeric:tabular-nums}.ring svg{position:absolute;inset:0;width:100%;height:100%}.ring figcaption{position:relative}.ring strong{display:block;color:var(--ink);font-size:22px;line-height:1.1}
+.primary{background:linear-gradient(135deg,#7e22ce,#be185d);border-radius:14px;color:white;font-weight:700}.nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));min-height:72px;padding:6px 10px max(6px,env(safe-area-inset-bottom));background:#0a0818;border-top:1px solid var(--line)}.nav button{display:grid;place-content:center;justify-items:center;gap:4px;color:var(--faint);font-size:12px;border-radius:14px}.nav [aria-current]{color:var(--primary);background:var(--selected)}.nav svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<div class="phone">
+<main aria-label="Muestra de interfaz: Cyan solo en progreso">
+<header><h1>Color</h1><span class="status">Conectado</span></header>
+<div class="segments" role="group" aria-label="Modo de color">
+<label class="choice"><input type="radio" name="modo"><span class="check" aria-hidden="true">✓</span><span>Color fijo</span></label>
+<label class="choice"><input type="radio" name="modo" checked><span class="check" aria-hidden="true">✓</span><span>Efectos integrados</span></label>
+</div>
+<section class="card" aria-labelledby="auto"><div class="auto-label"><div><h2 id="auto">AUTO</h2><p>02 · Backward Dreaming</p></div><small>18 de 30 s</small></div><div class="track" role="progressbar" aria-label="Tiempo del efecto AUTO" aria-valuenow="18" aria-valuemax="30"></div></section>
+<section class="card" aria-labelledby="duracion"><h2 id="duracion">Duración</h2><div class="presets" role="group" aria-labelledby="duracion">
+<label class="choice"><input type="radio" name="duracion"><span class="check" aria-hidden="true">✓</span><span>10 s</span></label><label class="choice"><input type="radio" name="duracion" checked><span class="check" aria-hidden="true">✓</span><span>30 s</span></label><label class="choice"><input type="radio" name="duracion"><span class="check" aria-hidden="true">✓</span><span>1 min</span></label><label class="choice"><input type="radio" name="duracion"><span class="check" aria-hidden="true">✓</span><span>5 min</span></label>
+</div></section>
+<section class="card" aria-labelledby="favoritos"><h2 id="favoritos">Efectos favoritos</h2><ul>
+<li class="row"><label class="choice"><input type="radio" name="efecto"><span class="check" aria-hidden="true">✓</span><span>01 · Forward Dreaming</span></label><button type="button" class="star" aria-label="Favorito: Forward Dreaming" aria-pressed="true" title="Favorito: Forward Dreaming">★</button></li>
+<li class="row"><label class="choice"><input type="radio" name="efecto" checked><span class="check" aria-hidden="true">✓</span><span>02 · Backward Dreaming</span></label><button type="button" class="star" aria-label="Favorito: Backward Dreaming" aria-pressed="true" title="Favorito: Backward Dreaming">★</button></li>
+</ul></section>
+<section class="card timer" aria-labelledby="timer"><figure class="ring"><svg viewBox="0 0 96 96" aria-hidden="true"><circle cx="48" cy="48" r="43" fill="#1b1436" stroke="#ffffff1f" stroke-width="6"/><circle cx="48" cy="48" r="43" pathLength="100" transform="rotate(-90 48 48)" fill="none" stroke="var(--cyan)" stroke-width="6" stroke-dasharray="70 100" stroke-linecap="round"/></svg><figcaption><strong>0:42</strong>restantes</figcaption></figure><div><h2 id="timer">Temporizador</h2><small>Apagado automático · 1 min</small></div></section>
+<button type="button" class="primary">Iniciar AUTO</button>
+</main>
+<nav class="nav" aria-label="Navegación principal">
+<button type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10h-6v-6H9v6H3z"/></svg>Inicio</button>
+<button type="button" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11Z"/></svg>Color</button>
+<button type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2 6 6 3-6 2-2 7-2-7-6-2 6-3z"/></svg>Escenas</button>
+<button type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16M8 4v4m8 2v4m-6 2v4"/></svg>Ajustes</button>
+</nav>
+</div>
+</html>

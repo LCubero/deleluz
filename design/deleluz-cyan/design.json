@@ -1,0 +1,28 @@
+{
+  "title": "DeleLuz · acento cyan",
+  "brief": "Comparación de la misma pantalla Glow Glass en tres variantes: la paleta actual, cyan en selección y progreso, y cyan solo en progreso y foco. El botón principal conserva el degradado violeta/magenta.",
+  "feature": "odd/tasks/app-polish.md",
+  "artboards": [
+    {
+      "file": "01-actual.html",
+      "title": "Actual (violeta/magenta)",
+      "tradeoff": "Conserva la identidad actual, pero cuesta más distinguir lo seleccionado de un vistazo.",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "02-cyan-acentos.html",
+      "title": "Cyan en selección y progreso",
+      "tradeoff": "La selección se reconoce antes con tinte, borde y marca, pero comparte protagonismo con el progreso.",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "03-cyan-suave.html",
+      "title": "Cyan solo en progreso",
+      "tradeoff": "El cyan guía la vista al avance y al foco de teclado; la selección conserva su color actual y gana una marca.",
+      "width": 390,
+      "height": 844
+    }
+  ]
+}
