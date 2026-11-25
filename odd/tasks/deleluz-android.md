@@ -43,7 +43,7 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - T14 — S17 — Per-device strip setup, Ajustes labels, centered delete — worker — done 61335e7 (121 tests)
 - T15 — S18 — Full-app review against S1-S17 — done (L43); fixes in T18
 - T18 — S5, S8, S18 — Fix review findings B1, F1-F3 and minor strings — worker + parent — done 3985282 (132 tests)
-- T19 — S19 — Cancel a pending connect/reconnect; circular swipe between saved strips on the Inicio device card — worker — pending
+- T19 — S19 — Cancel a pending connect/reconnect; circular swipe between saved strips on the Inicio device card — worker — done 101ce3c (140 tests)
 - T20 — S20 — Acerca de in Ajustes — after T19 — pending
 - T16 — S18, S6 — Screenshots for a showreel and README images — pending
 - T17 — S18 — Release build (version, signing, notes) for the user to test; publish only after the user's yes — pending
