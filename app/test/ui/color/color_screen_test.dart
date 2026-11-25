@@ -127,11 +127,22 @@ void main() {
       await flush(tester);
       expect(ble.writes.last, wire.effect(expected));
     }
+    await tester.tap(keyed('effect-number'));
+    await tester.pump();
+    final number = tester.widget<TextField>(keyed('effect-number'));
+    expect(number.focusNode!.hasFocus, isTrue);
     await tap(tester, 'effect-auto');
     await flush(tester);
     expect(ble.writes.last, wire.effect(wire.autoEffect));
+    expect(tester.widget<TextField>(keyed('effect-number')).decoration?.hintText, 'AUTO');
+    expect(number.focusNode!.hasFocus, isFalse);
     expect(find.text(controller.text('allEffects')), findsOneWidget);
     expect(find.textContaining(controller.text('lastSent', {'command': ''})), findsNothing);
+    await tester.enterText(keyed('effect-number'), '42');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await flush(tester);
+    expect(ble.writes.last, wire.effect(42));
+    expect(find.text(controller.text('allEffects')), findsNothing);
   });
 
   testWidgets('brightness, speed and color keep only the latest queued value per key', (tester) async {
@@ -172,6 +183,9 @@ void main() {
       controller.setLanguage('en');
       await tester.pump();
       await tap(tester, 'color-effects');
+      await tap(tester, 'effect-auto');
+      await flush(tester);
+      expect(find.descendant(of: keyed('effect-number'), matching: find.text('AUTO')), findsOneWidget);
       await tester.ensureVisible(keyed('color-speed'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);

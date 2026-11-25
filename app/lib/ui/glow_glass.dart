@@ -189,6 +189,32 @@ class GlowTile extends StatelessWidget {
   );
 }
 
+Future<T?> showGlowConfirmation<T>({required BuildContext context, required String title,
+  required Widget content, required String cancelLabel, required String confirmLabel,
+  required T Function() confirmValue}) => showDialog<T>(context: context, builder: (context) {
+    final theme = Theme.of(context);
+    final buttonShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(14));
+    return AlertDialog(
+      scrollable: true,
+      backgroundColor: theme.colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24),
+        side: const BorderSide(color: glowLine)),
+      title: Text(title),
+      titleTextStyle: theme.textTheme.titleLarge,
+      content: content,
+      contentTextStyle: theme.textTheme.bodyMedium,
+      actions: [
+        TextButton(style: TextButton.styleFrom(foregroundColor: Colors.grey),
+          onPressed: () => Navigator.pop(context), child: Text(cancelLabel)),
+        Ink(decoration: ShapeDecoration(gradient: glowStrongGradient, shape: buttonShape),
+          child: FilledButton(style: FilledButton.styleFrom(backgroundColor: Colors.transparent,
+            shape: buttonShape), onPressed: () => Navigator.pop(context, confirmValue()),
+            child: Text(confirmLabel))),
+      ],
+    );
+  });
+
 // Illustrative swatch for controller effects, whose actual colors are not read.
 const glowEffectColors = [[236, 72, 153], [168, 85, 247], [34, 211, 238]];
 
@@ -280,7 +306,7 @@ class GlowValueLabel extends StatelessWidget {
     ));
 }
 
-class GlowDisclosure extends StatelessWidget {
+class GlowDisclosure extends StatefulWidget {
   const GlowDisclosure({super.key, required this.title, required this.children,
     this.titleKey, this.subtitle, this.initiallyExpanded = false, this.onExpansionChanged,
     this.padding = EdgeInsets.zero, this.minHeight = 56,
@@ -294,25 +320,37 @@ class GlowDisclosure extends StatelessWidget {
   final EdgeInsets padding;
   final double minHeight;
   final bool inlineChevron, smallChevron;
-  static const _chevron = Icon(Icons.chevron_right, size: 18);
+
+  @override
+  State<GlowDisclosure> createState() => _GlowDisclosureState();
+}
+
+class _GlowDisclosureState extends State<GlowDisclosure> {
+  late bool _expanded = widget.initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
-    final label = Text(title, key: titleKey, style: TextStyle(fontSize: 15,
-      fontWeight: inlineChevron ? FontWeight.w700 : FontWeight.w600,
-      color: inlineChevron ? Colors.white : glowInk));
+    final label = Text(widget.title, key: widget.titleKey, style: TextStyle(fontSize: 15,
+      fontWeight: widget.inlineChevron ? FontWeight.w700 : FontWeight.w600,
+      color: widget.inlineChevron ? Colors.white : glowInk));
+    final chevron = AnimatedRotation(turns: _expanded ? .25 : 0,
+      duration: const Duration(milliseconds: 150),
+      child: Icon(Icons.chevron_right, size: widget.smallChevron || widget.inlineChevron ? 18 : 24));
     return ExpansionTile(
-      tilePadding: padding,
-      minTileHeight: minHeight,
+      tilePadding: widget.padding,
+      minTileHeight: widget.minHeight,
       shape: const Border(), collapsedShape: const Border(),
       controlAffinity: ListTileControlAffinity.trailing,
-      showTrailingIcon: !inlineChevron,
-      trailing: smallChevron ? _chevron : null,
-      title: inlineChevron ? Row(children: [Flexible(child: label), _chevron]) : label,
-      subtitle: subtitle,
-      initiallyExpanded: initiallyExpanded,
-      onExpansionChanged: onExpansionChanged,
-      children: children,
+      showTrailingIcon: !widget.inlineChevron,
+      trailing: widget.inlineChevron ? null : chevron,
+      title: widget.inlineChevron ? Row(children: [Flexible(child: label), chevron]) : label,
+      subtitle: widget.subtitle,
+      initiallyExpanded: widget.initiallyExpanded,
+      onExpansionChanged: (expanded) {
+        setState(() => _expanded = expanded);
+        widget.onExpansionChanged?.call(expanded);
+      },
+      children: widget.children,
     );
   }
 }

@@ -84,6 +84,23 @@ void main() {
     });
   }
 
+  testWidgets('About disclosure turns down when open and back right when closed', (tester) async {
+    await start(tester);
+    final title = find.text('Acerca de');
+    final chevron = find.descendant(of: find.ancestor(of: title,
+      matching: find.byType(GlowDisclosure)), matching: find.byIcon(Icons.chevron_right));
+    Offset direction() {
+      final box = tester.renderObject<RenderBox>(chevron);
+      return box.localToGlobal(const Offset(1, 0)) - box.localToGlobal(Offset.zero);
+    }
+    expect(direction(), const Offset(1, 0));
+    await tap(tester, title);
+    expect(direction().dx, closeTo(0, .01));
+    expect(direction().dy, closeTo(1, .01));
+    await tap(tester, title);
+    expect(direction(), const Offset(1, 0));
+  });
+
   for (final size in [const Size(320, 640), const Size(412, 915)]) {
     testWidgets('expanded About fits $size at enlarged text', (tester) async {
       await tester.binding.setSurfaceSize(size);

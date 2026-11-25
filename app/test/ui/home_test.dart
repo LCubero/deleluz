@@ -414,6 +414,27 @@ void main() {
   final selectorScroll = find.descendant(of: find.byKey(const Key('strip-selector-list')),
     matching: find.byType(Scrollable), matchRoot: false).first;
 
+  testWidgets('selector shows the Bluetooth name once without an alias', (tester) async {
+    await Models(store, presetIds: {}).saveRememberedStrips([
+      RememberedStrip('1', 'LEDDMX 1'),
+    ]);
+    await start(tester);
+    await tester.tap(find.text('Cambiar'));
+    await tester.pumpAndSettle();
+    expect(find.text('LEDDMX 1'), findsOneWidget);
+  });
+
+  void expectGlowDialog(WidgetTester tester, String action) {
+    final dialog = tester.widget<AlertDialog>(find.byType(AlertDialog));
+    expect((dialog.shape as RoundedRectangleBorder?)?.side.color, glowLine);
+    final primary = find.widgetWithText(FilledButton, action);
+    expect(find.ancestor(of: primary, matching: find.byWidgetPredicate((widget) =>
+      widget is Ink && (widget.decoration as ShapeDecoration?)?.gradient == glowStrongGradient)),
+      findsOneWidget);
+    final cancel = tester.widget<TextButton>(find.widgetWithText(TextButton, 'Cancelar'));
+    expect(cancel.style?.foregroundColor?.resolve({}), Colors.grey);
+  }
+
   testWidgets('selector states, management actions and expansion persist', (tester) async {
     await tester.binding.setSurfaceSize(const Size(412, 915));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -447,10 +468,12 @@ void main() {
     await tester.ensureVisible(within('1', find.byTooltip('Renombrar')));
     await tester.tap(within('1', find.byTooltip('Renombrar')));
     await tester.pumpAndSettle();
+    expectGlowDialog(tester, 'Guardar');
     await tester.enterText(find.byType(TextFormField), '  Sala  ');
     await tester.tap(find.text('Guardar'));
     await tester.pumpAndSettle();
     expect(within('1', find.text('Sala')), findsOneWidget);
+    expect(within('1', find.text('LEDDMX 1')), findsOneWidget);
     await tester.tap(find.byTooltip('Volver a Inicio'));
     await tester.pumpAndSettle();
     expect(find.text('Sala'), findsOneWidget);
@@ -473,6 +496,7 @@ void main() {
     await tester.tap(find.widgetWithText(SimpleDialogOption, 'Olvidar'));
     await tester.pumpAndSettle();
     expect(find.text('¿Olvidar Sala en este teléfono?'), findsOneWidget);
+    expectGlowDialog(tester, 'Olvidar');
     await tester.tap(find.text('Cancelar'));
     await tester.pumpAndSettle();
     await menu('Sala');
@@ -939,8 +963,22 @@ void main() {
       await start(tester);
       await tester.tap(find.text('Cambiar'));
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(find.text('Buscar de nuevo'), 160, scrollable: selectorScroll);
-      expect(find.text('Buscar de nuevo').hitTestable(), findsOneWidget);
+      final firstRow = find.byKey(const ValueKey('0'));
+      for (final (tooltip, action) in [('Renombrar', 'Guardar'), ('Olvidar', 'Olvidar')]) {
+        final icon = find.descendant(of: firstRow, matching: find.byTooltip(tooltip));
+        await tester.ensureVisible(icon);
+        await tester.tap(icon);
+        await tester.pumpAndSettle();
+        expect(find.widgetWithText(FilledButton, action).hitTestable(), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.widgetWithText(TextButton, 'Cancelar'));
+        await tester.pumpAndSettle();
+      }
+      final scanAgain = find.text('Buscar de nuevo');
+      await tester.scrollUntilVisible(scanAgain, 160, scrollable: selectorScroll);
+      await tester.ensureVisible(scanAgain);
+      await tester.pumpAndSettle();
+      expect(scanAgain.hitTestable(), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.tap(find.byTooltip('Volver a Inicio'));
       await tester.pumpAndSettle();

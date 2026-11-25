@@ -34,7 +34,7 @@ class _ColorScreenState extends State<ColorScreen> {
   void initState() {
     super.initState();
     _loadSelection();
-    _number = TextEditingController(text: '$_effect');
+    _number = TextEditingController(text: _auto ? '' : '$_effect');
     _numberFocus.addListener(_focusChanged);
   }
 
@@ -57,7 +57,7 @@ class _ColorScreenState extends State<ColorScreen> {
     if (!identical(oldWidget.controller, c)) {
       _dirty = false;
       _loadSelection();
-      _number.text = '$_effect';
+      _number.text = _auto ? '' : '$_effect';
     }
   }
 
@@ -108,6 +108,7 @@ class _ColorScreenState extends State<ColorScreen> {
       if (!_auto) _effect = id;
       _number.text = _auto ? '' : '$_effect';
     });
+    if (_auto) _numberFocus.unfocus();
     await c.setEffect(id);
   }
 
@@ -127,7 +128,8 @@ class _ColorScreenState extends State<ColorScreen> {
           textInputAction: TextInputAction.done, textAlign: TextAlign.center,
           onChanged: (_) => setState(() => _dirty = true),
           onSubmitted: (_) { if (_dirty) _commitEffect(); },
-          decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()),
+          decoration: InputDecoration(isDense: true, border: const OutlineInputBorder(),
+            hintText: _auto ? 'AUTO' : null),
         ))),
         const SizedBox(width: 8),
         IconButton.outlined(key: const Key('effect-next'),

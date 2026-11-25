@@ -189,7 +189,8 @@ class _StripSelectorState extends State<StripSelector> {
               Expanded(flex: 3, child: Padding(padding: EdgeInsets.zero,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(saved?.label ?? strip.name, style: theme.titleMedium),
-                  if (saved != null) Text(strip.name, style: theme.bodySmall),
+                  if (saved != null && saved.label != strip.name)
+                    Text(strip.name, style: theme.bodySmall),
                   if (state != null) Row(spacing: 5, children: [
                     DecoratedBox(decoration: BoxDecoration(shape: BoxShape.circle,
                       color: connected ? const Color(0xff34d399) : glowFaint),
@@ -237,8 +238,7 @@ class _StripSelectorState extends State<StripSelector> {
 
   Future<void> _rename(RememberedStrip strip) async {
     var value = strip.alias ?? '';
-    final alias = await showDialog<String>(context: context, builder: (context) => AlertDialog(
-      scrollable: true, title: Text(c.text('renameStripTitle')),
+    final alias = await showGlowConfirmation<String>(context: context, title: c.text('renameStripTitle'),
       content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, spacing: 8, children: [
         Text(strip.name),
         TextFormField(initialValue: value, maxLength: maxStripAlias,
@@ -246,23 +246,16 @@ class _StripSelectorState extends State<StripSelector> {
           onChanged: (text) => value = text),
         Text(c.text('stripAliasHint'), style: Theme.of(context).textTheme.bodySmall),
       ]),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(c.text('cancel'))),
-        FilledButton(onPressed: () => Navigator.pop(context, value), child: Text(c.text('saveStripAlias'))),
-      ],
-    ));
+      cancelLabel: c.text('cancel'), confirmLabel: c.text('saveStripAlias'), confirmValue: () => value,
+    );
     if (mounted && alias != null) c.renameStrip(strip.id, alias);
   }
 
   Future<void> _forget(RememberedStrip strip) async {
-    final confirmed = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
-      scrollable: true, title: Text(c.text('forgetStrip')),
+    final confirmed = await showGlowConfirmation<bool>(context: context, title: c.text('forgetStrip'),
       content: Text(c.text('forgetStripConfirm', {'name': strip.label})),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(c.text('cancel'))),
-        FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(c.text('forgetStripAction'))),
-      ],
-    ));
+      cancelLabel: c.text('cancel'), confirmLabel: c.text('forgetStripAction'), confirmValue: () => true,
+    );
     if (mounted && confirmed == true) await c.forgetStrip(strip.id);
   }
 }
