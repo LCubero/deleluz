@@ -104,3 +104,4 @@ Protocol truth: `docs/PROTOCOL.md`, `docs/CAPABILITIES.md`; frame builder to mir
 - L51 — 2026-11-25, user on the About mock: "sin esto \" Sin cuentas ni internet. Tus tiras, escenas y ajustes se guardan solo en este teléfono.\" mejor \"Dele luz mae\" o algo asi, algo tico" — tagline «¡Dele luz, mae!», kept untranslated in English.
 - L52 — 2026-11-25, user: "asi: !Dele, enciandala mae! algo asi" — tagline «¡Dele, enciéndala, mae!» (spelling and accents normalized), untranslated in English.
 - L53 — 2026-11-25, T19 native review (Risk item 4) approved; its three findings were refuted. T20 About in 315e5b8; build number 1.0.0+2 so testers install over 1.0.0+1 without losing data. Parent verified 145 tests, analyze clean.
+- L54 — 2026-11-25, user after testing 1.0.0+2: "bien nada más que el color de cancelar deberia ser como gris o no sé pero diferente al de conectar. todo lo demás buenisimo".
