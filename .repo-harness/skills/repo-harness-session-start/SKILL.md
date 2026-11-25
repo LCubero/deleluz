@@ -1,7 +1,7 @@
 ---
 name: repo-harness-session-start
 description: "Start a work session for deleluz from current repository evidence."
-license: "UNLICENSED"
+license: "MIT"
 metadata:
   author: repo-harness-builder
   version: "3.0"

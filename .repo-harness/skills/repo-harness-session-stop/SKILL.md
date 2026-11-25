@@ -1,7 +1,7 @@
 ---
 name: repo-harness-session-stop
 description: "Close a work session for deleluz with an evidence-based handoff."
-license: "UNLICENSED"
+license: "MIT"
 metadata:
   author: repo-harness-builder
   version: "3.0"

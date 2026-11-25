@@ -1,7 +1,7 @@
 ---
 name: repo-harness-documentation
 description: "Maintain concise canonical documentation for deleluz."
-license: "UNLICENSED"
+license: "MIT"
 metadata:
   author: repo-harness-builder
   version: "3.0"
