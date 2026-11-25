@@ -16,8 +16,8 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 
 ## Tasks
 
-- T1 [S6, S1-S5, S7] Design proposals in `design/deleluz-phase1/`; owner picks the directions. Route: worker. Commit: -
-- T2 [S1] Color: saturation and white tones (Android). Route: TBD after T1. Commit: -
+- T1 [S6, S1-S5, S7] Design proposals in `design/deleluz-phase1/`; owner picks the directions. Route: worker. Commit: b1e9cdb, d50a60e [x]
+- T2 [S1] Color: saturation and white tones (Android). Route: worker. Commit: ad070b5 [x]
 - T3 [S4] Effect list with search and favorites; effects as quick-scene targets (Android). Commit: -
 - T4 [S2] Effect steps in "Mis escenas" (Android). Commit: -
 - T5 [S3] App-driven AUTO: current effect name, per-effect duration (Android). Commit: -
@@ -31,3 +31,4 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - L3 (2026-11-25): T1 delivered `design/deleluz-phase1/` with 7 artboards (01-color-anillo-saturacion, 02-color-disco-blancos, 03-efectos-lista-buscar, 04-efectos-favoritos-reproductor, 05-escena-pasos-efecto, 06-temporizador-anillo, 07-temporizador-rueda). Checked at 390x844 and 320x640 with device emulation: no overflow, clipping or overlap; fixed the "Apagado gradual" switch in 06/07. Waiting for the owner to choose.
 - L4 (2026-11-25, owner, verbatim): "color el 02 / efectos el 03 pero sin los favoritos en card, pára eso la estrella de la lista y que se pongan de primero los favoritos quizá. / escenas 05 me gusta, no veo como se escogen los colores o efectos pero va bien. / temprizador el 01 mientras se puedan poner segundos en personalizaod genial."
 - L5 (2026-11-25, decision): chosen artboards: Color 02-color-disco-blancos; Effects 03-efectos-lista-buscar without the Todos/Favoritos chips (favorites marked with the star and listed first); Scenes 05-escena-pasos-efecto, plus showing how a color or an effect is picked; Timer 06-temporizador-anillo ("el 01" read as the first timer option), with minutes and seconds in Personalizado. Others are alternatives.
+- L6 (2026-11-25): T2 done: color disc + Cálido/Neutro/Frío whites; flutter test 150/150, analyze clean; native assess not due. Slice boundary: branch passed ~400 authored lines at ad070b5.
