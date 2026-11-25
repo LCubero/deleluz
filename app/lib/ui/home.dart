@@ -24,6 +24,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   AppController get c => widget.controller;
   bool _quickOpen = false;
+  String? _previewId;
+  String? _previewAnchor;
+  double _swipeStart = 0;
 
   Future<void> _chooseStrip() => StripSelector.open(context, c);
 
@@ -61,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Notice(c.text('sessionOnlyStorage'), kind: NoticeKind.warning, live: true),
         const SizedBox(height: 12),
       ],
-      SliderZone(child: dim(_device(context))),
+      dim(_device(context)),
       const SizedBox(height: 12),
       Center(child: Opacity(opacity: c.ready ? 1 : .5, child: DecoratedBox(
         decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xff1b1636),
@@ -129,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (c.ready) {
         c.applyShortcut(item);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Notice(c.text('connectFirst'), kind: NoticeKind.warning)));
+        showGlowNotice(context, c.text('connectFirst'), kind: NoticeKind.warning);
       }
     }, onLongPress: () => _editShortcut(index), child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 6, children: [
@@ -160,13 +163,22 @@ class _HomeScreenState extends State<HomeScreen> {
     ));
 
   Widget _device(BuildContext context) {
-    final strip = c.remembered;
+    final remembered = c.remembered;
+    final saved = c.rememberedStrips;
+    if (_previewAnchor != remembered?.id) {
+      _previewAnchor = remembered?.id;
+      _previewId = null;
+    }
+    final previewIndex = saved.indexWhere((strip) => strip.id == _previewId);
+    final strip = previewIndex < 0 ? remembered : saved[previewIndex];
+    final showingRemembered = strip?.id == remembered?.id;
     final off = c.bluetoothOff;
+    final chooseStrip = off || c.busy ? null : _chooseStrip;
     final connected = !off && c.link.ready && c.link.strip?.id == strip?.id;
     final pending = c.connectingId != null;
     final status = c.connectingId == strip?.id && pending ? LinkStatus.connecting
         : connected ? LinkStatus.connected
-        : !c.link.ready ? c.link.status : LinkStatus.idle;
+        : showingRemembered && !c.link.ready ? c.link.status : LinkStatus.idle;
     // Color unknown (nothing sent yet, or on with a mode that has no color such as music):
     // this gradient is decorative, not device telemetry. Off stays dark.
     final rgb = connected && c.sentPower == true ? c.sentColor : null;
@@ -187,9 +199,9 @@ class _HomeScreenState extends State<HomeScreen> {
       Text(strip != null && strip.label != strip.name ? strip.name
           : c.text(status == LinkStatus.lost ? 'keepsColor' : 'controller'),
         style: theme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-
     ]);
-    return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: [
+    final card = GlassCard(onTap: chooseStrip, child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: [
       LayoutBuilder(builder: (context, constraints) => Row(spacing: 12,
         crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(child: name),
@@ -202,10 +214,10 @@ class _HomeScreenState extends State<HomeScreen> {
         child: GlowStrip(colors: previewColors, height: 14, glow: glow)),
       Row(spacing: 8, children: [
         Expanded(child: _connectButton(c.text(pending ? 'cancel' : connected ? 'disconnect'
-            : strip != null ? 'reconnect' : 'connect'), neutral: pending,
+            : strip != null && showingRemembered ? 'reconnect' : 'connect'), neutral: pending,
           off ? null : pending ? c.cancelConnection : c.busy ? null : connected ? c.disconnect
-            : strip == null ? _chooseStrip : c.reconnect)),
-        TextButton(onPressed: off || c.busy ? null : _chooseStrip,
+            : strip == null ? _chooseStrip : showingRemembered ? c.reconnect : () => c.connect(strip))),
+        TextButton(onPressed: chooseStrip,
           style: TextButton.styleFrom(foregroundColor: glowLink,
             padding: const EdgeInsets.symmetric(horizontal: 8)), child: Text(c.text('changeStrip'))),
       ]),
@@ -215,6 +227,19 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
       if (c.timerOffFailed) TimerOffNotice(c),
     ]));
+    // Claim horizontal drags even with a single saved strip, without stealing taps.
+    return SliderZone(
+      onHorizontalDragStart: (details) => _swipeStart = details.globalPosition.dx,
+      onHorizontalDragEnd: (details) {
+        if (c.bluetoothOff || c.busy || saved.length < 2) return;
+        final dx = details.globalPosition.dx - _swipeStart;
+        if (dx.abs() < 24) return;
+        final index = saved.indexWhere((item) => item.id == strip?.id);
+        final next = saved[(index + (dx < 0 ? 1 : -1)) % saved.length];
+        setState(() => _previewId = next.id);
+      },
+      child: card,
+    );
   }
 
   // neutral: grey glass for Cancelar, so it never looks like Conectar (L54).

@@ -214,17 +214,25 @@ class SliderZone extends StatelessWidget {
 }
 
 class GlassCard extends StatelessWidget {
-  const GlassCard({super.key, required this.child, this.verticalInset = glassInset});
+  const GlassCard({super.key, required this.child, this.verticalInset = glassInset, this.onTap});
   final Widget child;
   final double verticalInset;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: EdgeInsets.symmetric(horizontal: glassInset, vertical: verticalInset),
-    decoration: BoxDecoration(color: glowGlass, border: Border.all(color: glowLine),
-      borderRadius: BorderRadius.circular(24)),
-    child: Material(type: MaterialType.transparency, child: child),
-  );
+  Widget build(BuildContext context) {
+    const radius = BorderRadius.all(Radius.circular(24));
+    final content = Padding(
+      padding: EdgeInsets.symmetric(horizontal: glassInset, vertical: verticalInset),
+      child: child,
+    );
+    return Container(
+      decoration: BoxDecoration(color: glowGlass, border: Border.all(color: glowLine),
+        borderRadius: radius),
+      child: Material(type: MaterialType.transparency, child: onTap == null ? content
+        : InkWell(borderRadius: radius, onTap: onTap, child: content)),
+    );
+  }
 }
 
 class GlowGrid extends StatelessWidget {

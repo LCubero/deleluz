@@ -101,13 +101,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!saved && mounted && c == controller) _notice('appStorageFailed');
   }
 
-  void _notice(String key) => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Notice(_text(key), kind: switch (key) {
-      'aboutLinkCopied' => NoticeKind.info,
-      'deviceSetupConnect' => NoticeKind.warning,
-      _ => NoticeKind.error,
-    })),
-  );
+  void _notice(String key) => showGlowNotice(context, _text(key), kind: switch (key) {
+    'aboutLinkCopied' => NoticeKind.info,
+    'deviceSetupConnect' => NoticeKind.warning,
+    _ => NoticeKind.error,
+  });
 
   Future<void> _confirm() async {
     final controller = c;

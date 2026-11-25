@@ -55,9 +55,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
     super.dispose();
   }
 
-  void _connectFirst() => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Notice(c.text('connectFirst'), kind: NoticeKind.warning)),
-  );
+  void _connectFirst() => showGlowNotice(context, c.text('connectFirst'), kind: NoticeKind.warning);
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(

@@ -61,12 +61,16 @@ class _StripSelectorState extends State<StripSelector> {
     if (_connected(strip)) {
       c.disconnect();
     } else {
-      if (c.busy) return;
-      setState(() => _failures.remove(strip.id));
-      c.connect(strip, onFailure: (key) {
-        if (mounted) setState(() => _failures[strip.id] = key);
-      });
+      _connect(strip);
     }
+  }
+
+  void _connect(Strip strip) {
+    if (c.busy || _connected(strip)) return;
+    setState(() => _failures.remove(strip.id));
+    c.connect(strip, onFailure: (key) {
+      if (mounted) setState(() => _failures[strip.id] = key);
+    });
   }
 
   @override
@@ -182,6 +186,7 @@ class _StripSelectorState extends State<StripSelector> {
         side: BorderSide(color: failure != null ? error : connected ? glowViolet : glowLine)),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
+        onTap: saved == null || c.busy || connected ? null : () => _connect(strip),
         onLongPress: saved == null || c.busy ? null : () => _menu(saved),
         child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

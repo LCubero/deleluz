@@ -407,7 +407,7 @@ void main() {
   });
 
   for (final size in [const Size(320, 640), const Size(412, 915)]) {
-    testWidgets('connection card ignores horizontal drags at $size', (tester) async {
+    testWidgets('connection card swipes change preview, not the tab or connection, at $size', (tester) async {
       await tester.binding.setSurfaceSize(size);
       tester.platformDispatcher.textScaleFactorTestValue = 1.5;
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -420,10 +420,11 @@ void main() {
       await tester.pumpAndSettle();
       ble.connections.clear();
       ble.disconnects.clear();
-      for (final dx in [-85.0, 85.0]) {
-        await tester.drag(find.text('Alias A'), Offset(dx, 0));
+      for (final (from, to, dx) in [('A', 'B', -85.0), ('B', 'A', 85.0)]) {
+        await tester.drag(find.text('Alias $from'), Offset(dx, 0));
         await tester.pumpAndSettle();
-        expect(find.text('Alias A').hitTestable(), findsOneWidget);
+        expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 0);
+        expect(find.text('Alias $to').hitTestable(), findsOneWidget);
         expect(tester.takeException(), isNull);
       }
       expect(find.text('Desconectar'), findsOneWidget);
@@ -1582,6 +1583,105 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.widget<ColorDisc>(find.byType(ColorDisc)).color, const Color(0xffffc800));
   });
+
+  testWidgets('Inicio strip swipe previews the next saved strip without changing tabs', (tester) async {
+    const next = RememberedStrip('second', 'Second strip');
+    await Models(store, presetIds: {}).saveRememberedStrips([
+      const RememberedStrip('fake', 'LEDDMX Test'), next,
+    ]);
+    final c = await start(tester);
+    final change = find.widgetWithText(TextButton, c.text('changeStrip'));
+    await tester.drag(change, const Offset(-160, 0));
+    await tester.pumpAndSettle();
+    expect(tester.widget<IndexedStack>(find.byType(IndexedStack)).index, 0);
+    expect(find.text(next.label), findsOneWidget);
+    expect(ble.connections, isEmpty);
+    await tester.tap(find.widgetWithText(FilledButton, c.text('connect')));
+    await tester.pumpAndSettle();
+    expect(ble.connections, [next.id]);
+    expect(find.text(c.text('chooseStrip')), findsNothing);
+  });
+
+  testWidgets('Inicio strip card opens the chooser without connecting', (tester) async {
+    await Models(store, presetIds: {}).saveRemembered(FakeBle.strip);
+    final c = await start(tester);
+    await tester.tap(find.text(FakeBle.strip.name));
+    await tester.pumpAndSettle();
+    expect(find.text(c.text('chooseStrip')), findsOneWidget);
+    expect(ble.connections, isEmpty);
+  });
+
+  testWidgets('saved strip card connects and uses the existing pending and error states', (tester) async {
+    await Models(store, presetIds: {}).saveRemembered(FakeBle.strip);
+    final c = await start(tester);
+    await tester.tap(find.widgetWithText(TextButton, c.text('changeStrip')));
+    await tester.pumpAndSettle();
+    final strip = find.text(FakeBle.strip.name);
+    final opening = Completer<void>();
+    ble.opening = opening.future;
+    ble.unreachable.add(FakeBle.strip.id);
+    await tester.tap(strip);
+    await tester.pump();
+    expect(ble.connections, [FakeBle.strip.id]);
+    expect(find.widgetWithText(FilledButton, c.text('cancel')), findsOneWidget);
+    opening.complete();
+    await tester.pump();
+    for (var i = 0; i < 3; i++) {
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+    await tester.pumpAndSettle();
+    final retry = find.widgetWithText(FilledButton, c.text('retryStrip'));
+    expect(retry, findsOneWidget);
+    ble.unreachable.clear();
+    ble.connections.clear();
+    await tester.tap(strip);
+    await tester.pumpAndSettle();
+    expect(c.link.strip?.id, FakeBle.strip.id);
+    await tester.tap(strip);
+    await tester.pumpAndSettle();
+    expect(ble.connections, [FakeBle.strip.id]);
+    expect(c.link.ready, isTrue);
+    await tester.tap(find.widgetWithText(FilledButton, c.text('disconnect')));
+    await tester.pumpAndSettle();
+    expect(c.link.ready, isFalse);
+  });
+
+  for (final (width, language) in [(320.0, 'es'), (412.0, 'en')]) {
+    testWidgets('transient notice is floating Glow Glass at $width dp ($language)', (tester) async {
+      await tester.binding.setSurfaceSize(Size(width, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final c = await start(tester);
+      c.setLanguage(language);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(c.text('quickActions')));
+      await tester.pumpAndSettle();
+      final shortcut = find.text(c.shortcutLabel(c.shortcuts.first));
+      await tester.ensureVisible(shortcut);
+      await tester.tap(shortcut);
+      await tester.pumpAndSettle();
+      final finder = find.byType(SnackBar);
+      final bar = tester.widget<SnackBar>(finder);
+      expect(bar.behavior, SnackBarBehavior.floating);
+      expect(bar.backgroundColor, Colors.transparent);
+      final blur = find.descendant(of: finder, matching: find.byType(BackdropFilter));
+      expect(blur, findsOneWidget);
+      final surface = find.descendant(of: blur, matching: find.byType(DecoratedBox)).first;
+      final decoration = tester.widget<DecoratedBox>(surface).decoration as BoxDecoration;
+      expect(decoration.color!.a, lessThan(1));
+      expect(decoration.border, Border.all(color: glowLine));
+      final worstBackground = Color.alphaBlend(decoration.color!, Colors.white);
+      final label = find.text(c.text('connectFirst'));
+      expect(tester.widget<Text>(label).style?.color, glowInk);
+      expect((glowInk.computeLuminance() + .05) / (worstBackground.computeLuminance() + .05),
+        greaterThanOrEqualTo(4.5));
+      expect(find.descendant(of: finder, matching: find.byIcon(Icons.warning_amber_rounded)), findsOneWidget);
+      final nav = tester.widget<Scaffold>(find.byType(Scaffold)).bottomNavigationBar!;
+      expect(tester.getBottomLeft(surface).dy, lessThan(tester.getTopLeft(find.byWidget(nav)).dy));
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('right swipe from Inicio wraps to Ajustes', (tester) async {
     await start(tester);
