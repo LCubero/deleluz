@@ -23,8 +23,8 @@ Source snapshot for [T14 / S18](../odd/tasks/app-polish.md). Flutter is the Andr
 | `GlowStrip.empty` | `0xff2a2540` | Empty preview | `app/lib/ui/glow_glass.dart` |
 | `_StripDots.paint` | `0x73000000` | Strip dot overlay | `app/lib/ui/glow_glass.dart` |
 | `glowEffectColors` | `[[236, 72, 153], [168, 85, 247], [34, 211, 238]]` | Illustrative only; not reported strip colors | `app/lib/ui/glow_glass.dart` |
-| `BluetoothCard._warn` | `0xfffbbf24` | Warning icon, title and border | `app/lib/ui/bluetooth_card.dart` |
-| `BluetoothCard._surface` | `0xff251e2c` | Warning card surface | `app/lib/ui/bluetooth_card.dart` |
+| `Notice.warningColor` | `0xfffbbf24` | Warning icon, title and Bluetooth card border | `app/lib/ui/notice.dart` |
+| `Notice.warningSurface` | `0xff251e2c` | Bluetooth warning surface | `app/lib/ui/notice.dart` |
 | `AppShell._navigation.color` | `0xff0a0818` | Bottom navigation surface | `app/lib/ui/app_shell.dart` |
 | `_CountdownRing.fill` | `0xff1b1436` | Timer ring interior | `app/lib/ui/timer_sheet.dart` |
 | `--bg` | `#0a0918` | Scaffold counterpart | `webapp/style.css` |
@@ -44,7 +44,8 @@ Source snapshot for [T14 / S18](../odd/tasks/app-polish.md). Flutter is the Andr
 |---|---|---|---|
 | `glowLine` | `0x24ffffff` | Glass outline | `app/lib/ui/glow_glass.dart` |
 | `glowGlass` | `0x11ffffff` | Translucent fill | `app/lib/ui/glow_glass.dart` |
-| `glowGlassSelected` | `0x1cffffff` | Selected glass or status pill | `app/lib/ui/glow_glass.dart` |
+| `glowGlassSelected` | `0x1cffffff` | Status pills and neutral surfaces | `app/lib/ui/glow_glass.dart` |
+| `GlowSelection` | Tint `0x1c22d3ee`; border and check `0xff22d3ee` | Interactive selection | `app/lib/ui/glow_glass.dart` |
 | `_FlushSliderTrack.inactive` | `0x1fffffff` | Unfilled track | `app/lib/ui/glow_glass.dart` |
 | `--glass` | `rgba(255,255,255,.065)` | Translucent fill | `webapp/style.css` |
 | `--glass-2` | `rgba(255,255,255,.11)` | Stronger glass | `webapp/style.css` |
@@ -61,7 +62,7 @@ Glass in `GlassCard` is tint plus border, not a backdrop filter. Blur values bel
 | `_BackdropPainter.radial` | `radius .5; stops [0, .7]; source color → alpha 0` | Radial bloom falloff | `app/lib/ui/glow_glass.dart` |
 | `_BackdropPainter.pink` | `0x2eec4899; center (width, height × .7); scale (400, 340)` | Lower right bloom | `app/lib/ui/glow_glass.dart` |
 | `_BackdropPainter.violet` | `0x4da855f7; center (width × .1, 0); scale (420, 300)` | Upper left bloom, painted last | `app/lib/ui/glow_glass.dart` |
-| `TimerSheet.surfaceGradient` | `topCenter → bottomCenter; 0xff201840 → 0xff120e26` | Timer sheet panel | `app/lib/ui/timer_sheet.dart` |
+| `GlowSheet` gradient | `topCenter → bottomCenter; 0xff201840 → 0xff120e26` | Shared sheet surface, including timer handle | `app/lib/ui/glow_sheet.dart` |
 | `_CountdownRing.progress` | `SweepGradient(glowViolet → glowPink); rotation -π/2` | Timer progress | `app/lib/ui/timer_sheet.dart` |
 | `--grad` | `linear-gradient(135deg,#a855f7 0%,#ec4899 100%)` | Accent gradient | `webapp/style.css` |
 | `--grad-strong` | `linear-gradient(135deg,#7e22ce 0%,#be185d 100%)` | Strong gradient | `webapp/style.css` |
@@ -120,7 +121,7 @@ Glass in `GlassCard` is tint plus border, not a backdrop filter. Blur values bel
 | `AppShell.navItemSpacing` | `4` | Icon and label gap | `app/lib/ui/app_shell.dart` |
 | `BluetoothCard.padding` | `14` | Warning card inset | `app/lib/ui/bluetooth_card.dart` |
 | `BluetoothCard.spacing` | `10` | Warning content and icon gaps | `app/lib/ui/bluetooth_card.dart` |
-| `BluetoothCard.iconBox` | `44 × 44` | Decorative icon well | `app/lib/ui/bluetooth_card.dart` |
+| Notice icon | `16` (`glassInset`) | Decorative icon; no separate Bluetooth icon well | `app/lib/ui/notice.dart` |
 
 ## Typography
 
@@ -143,7 +144,7 @@ Glass in `GlassCard` is tint plus border, not a backdrop filter. Blur values bel
 |---|---|---|
 | Cards and tiles | Use `GlassCard` for sections and `GlowTile` for tap actions; align paired tiles with `GlowGrid`. | `app/lib/ui/glow_glass.dart` |
 | Segmented tabs | Use `GlowSegments`: equal-width, equal-height siblings; every segment reserves the check slot; labels and check centered vertically; selected cyan tint, cyan border and check plus semantic selection. Selecting must not move, rewrap or resize any label. | `app/lib/ui/glow_glass.dart` |
-| Chips | Status combines a dot with a text label; timer presets are wrapping `ChoiceChip`s. Add a visible selection cue for interactive choices. Do not copy existing status ellipsis into new work. | `app/lib/ui/glow_glass.dart`, `app/lib/ui/timer_sheet.dart` |
+| Chips | `ConnectionChip` pairs a dot with wrapping text; timer presets wrap `GlowChoice` chips. | `app/lib/ui/glow_glass.dart`, `app/lib/ui/timer_sheet.dart` |
 | Sliders | Use the shared flush track and glowing thumb with a label and current value. `SliderZone` keeps horizontal control drags out of tab swipe. | `app/lib/ui/glow_glass.dart`, `app/lib/ui/home.dart` |
 | Bottom sheets | Use safe areas, keyboard insets, scrollable content and a labeled close action. Timer uses a vertical gradient; quick actions separates type selection from the picker and confirmation. | `app/lib/ui/timer_sheet.dart`, `app/lib/ui/quick_actions_sheet.dart` |
 | Navigation | Use equal-width Home, Color, Scenes and Settings items; combine icon and label, expose selected state and respect bottom safe area. | `app/lib/ui/app_shell.dart` |
@@ -155,5 +156,19 @@ Glass in `GlassCard` is tint plus border, not a backdrop filter. Blur values bel
 | Grid rows | `GlowGrid` rows take the tallest tile height; scene footers (swatch, tag) bottom-aligned. | `app/lib/ui/glow_glass.dart`, `app/lib/ui/scenes/scenes_screen.dart` |
 | Playing state | `SceneTransport` keeps one session-only selection across Incluidas, Mis escenas and Música. | `app/lib/ui/scenes/scene_transport.dart` |
 | Sheet headers | Reserve the Back slot on every step so the title keeps its axis. | `app/lib/ui/quick_actions_sheet.dart` |
+| Catalog and language | Buscar/Search; no status gap when disconnected. Search matches vendor English names, plus Spanish in ES; use directo/inverso with grammatical agreement. About tagline is bilingual. | `app/lib/ui/effect_list.dart`, `app/lib/ui/color/color_screen.dart`, `app/lib/strings.dart`, `app/lib/model/effects.dart` |
+| Scenes | Use `GlowStrip` in previews; leave 12 dp after the Mis escenas note. List strip-native effects first in cards and legend. Keep the last successful Scenes card marked across all three tabs for the session; failed sends, Color and quick actions do not clear it. | `app/lib/ui/scenes/scenes_screen.dart`, `app/lib/ui/scenes/scene_transport.dart` |
+| Spacing and idle states | Expanded Home quick-actions header: radius 16 and `glassInset`. Timer: handle shares the sheet gradient; 8 dp between Start and adjacent notices. Omit the empty saved-strips section. The connected catalog shows the effect-range hint in its reserved idle slot. | `app/lib/ui/home.dart`, `app/lib/ui/glow_sheet.dart`, `app/lib/ui/timer_sheet.dart`, `app/lib/ui/strip_selector.dart`, `app/lib/ui/color/color_screen.dart` |
 
 For new work, the design-rules skill sets the accessibility bar: 48 dp interactive targets, WCAG AA contrast on the composited surface, non-color selection cues, wrapped Spanish/English labels, meaningful semantics and a scroll hint when content continues. Source values above describe current code, not blanket accessibility conformance.
+
+## Known exceptions in 1.2.0
+
+Current released behavior that differs from the default rules. Do not copy these into new UI.
+
+- Navigation intentionally uses cyan tint, border and selected semantics without a check. `GlowChoice` inserts its check and can widen the avatar slot from 18 to 38 dp. Stacked compact segments can differ in height. Strip search focus is violet.
+- Home reserves an empty countdown slot and uses a minimum-height box for last sent. Color inserts command errors and strip-cycle text inline.
+- App AUTO, Bluetooth enable and scene-step Apply use plain `FilledButton`; Home Connect and shared confirmations use local gradients.
+- Home ellipsizes Bluetooth and some shortcut names. The About copy-repository target has no explicit 48 dp minimum. Quick-action grids use their own column rules; the short keyboard-open effect picker hides its header and scroll hint.
+
+Before physical tests, follow the owner approval and visual-command announcement rule in [current state](../docs/repo-harness/current-state.md#next-step). Connecting or retrying does not authorize playback.

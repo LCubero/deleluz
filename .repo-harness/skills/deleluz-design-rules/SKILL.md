@@ -14,6 +14,8 @@ Read `design/system.md` before changing DeleLuz UI. Skip for non-UI work.
 
 ## Hard Rules
 
+Defaults for new work. Current released exceptions: `design/system.md` → "Known exceptions in 1.2.0"; do not copy them into new UI.
+
 - Use only `design/system.md` tokens. Keep rounded corners, effects, glows and shadows consistent. Align edges and use symmetric spacing; nothing touches or overlaps unintentionally.
 - Reuse one shared component per job: one color picker across Color, quick actions and scene steps; one effect list across entry points.
 - Show selection with a cyan-tinted surface, a cyan (`#22d3ee`) border and a check. Never rely on color alone. Focus outlines are cyan. Progress bars and rings keep the violet→magenta gradient; primary buttons keep the gradient fill. Expose selection, roles and labels to assistive technology.
