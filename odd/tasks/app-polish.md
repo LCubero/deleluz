@@ -36,6 +36,8 @@ Phase 1 of `docs/PLAN.md`: white tones and saturation, effect list with search a
 - S25 (strip card gestures): "perdismos el modo de cambiar el led haciedno slide o swipe en inicio en el area de conectar, nada más era desactivar el slide para cambiar de pestaña en esa zona no quitarle la funcion, además quiero que al tocar ese card entre a elegir tira y quiero que cuando toco el card de la tira en elegir tira se conecte a esa q toque,"
 - S26 (snackbar style): "el aviso de "Conectate a la tira primero, sale un fondo blanco que feo, eso nada que ver. mejor algo negro trslucido blur que se yo, el estilo del app."
 
+- S27 (new screenshots): "si y hay que hacer la toma de screenshots nueva y el showreel etc"
+
 Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect is running; no per-effect duration command exists; app-driven AUTO works only while the app is open and connected; white is plain RGB.
 
 ## Tasks
@@ -59,6 +61,7 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - T18 [S22, S23, S18] Fit and polish (Android): remove Velocidad from Inicio (it stays in Color → Efectos integrados, below Brillo); Brillo fits on the first screen of Inicio and Color on the owner's phone again; fix build 2007 findings (tab check alignment, no check in the bottom nav, quick-action sheets use the same Glow Glass surface as the timer sheet). Commit: -
 - T19 [S24] Robustness audit and fixes (Android): error handling, no loops or stuck states, limits (scenes, steps, quick actions, favorites), storage and BLE failures. Commit: -
 - T20 [S25, S26, S16, S18] Strip card: horizontal swipe switches saved strips again (but never switches tabs); tapping the card opens Elegir tira; tapping a strip card in Elegir tira connects to it. All transient messages (snackbars) use a dark translucent blurred Glow Glass surface. Commit: -
+- T21 [S27] New 1.1.0 screenshots and WebP showreel in docs/app-screens/ (same method as the 1.0.0 set: owner phone over adb after his go-ahead, 540 px wide, no system navigation bar, alias Sala only, WebP showreel full colour ~36 frames); update README/app README image references and alt text. Commit: -
 - T7a [S1, S3, S4, S7] Webapp: color disc + whites, effect list with favorites, app-driven AUTO. Route: worker + parent visual check. Commit: 2fbcecb [x]
 - T7b [S2, S5, S7] Webapp: scene steps (stored-format change, backward compatible) and timer sheet. Commit: -
 - T7c [S8-S11] Webapp: quick actions and Bluetooth notice, after T9/T10. Commit: -
@@ -127,3 +130,4 @@ Constraints (verified, see `docs/PLAN.md`): the strip never reports which effect
 - L60 (2026-11-25): chunk 12 findings fixed at HEAD (all four reproduced); flutter test 335/335, analyze clean.
 - L61 (2026-11-25): final chunk 13 (211d3c1..8f21e86, review-36130f68bd028276) approved; advisory: no test for cancel/restart while a timer save is pending. Split review complete; release next.
 - L62 (2026-11-25): released v1.1.0: main fast-forwarded to 2ac92f9 and pushed; tag v1.1.0; GitHub release (latest) with DeleLuz-1.1.0.apk (universal, 52983707 bytes) and per-ABI arm64-v8a/armeabi-v7a/x86_64; all versionCode 2013, versionName 1.1.0, same release signer as earlier builds; each per-ABI APK carries only its ABI. Per-ABI assets for v1.0.0 are no longer needed.
+- L63 (2026-11-25, owner, verbatim): "si y hay que hacer la toma de screenshots nueva y el showreel etc" -> docs pushed to origin/main; T21 planned, device session waits for the owner's go-ahead.
