@@ -85,6 +85,15 @@ void main() {
     }
   });
 
+  test('legacy sequence selection loads a whole decimal interval as int without rewriting', () {
+    storage.values[Models.sequencesKey] = '[{"id":"1","name":"Cine","colors":[[1,2,3]],"interval":500,"bri":50}]';
+    storage.values[Models.stateKey] = '{"scene":"sequence:1","mode":{"colors":[[1,2,3]],"interval":500.0}}';
+    final before = Map.of(storage.values);
+    final mode = models.loadState()['mode'] as Fields;
+    expect(mode['interval'], isA<int>().having((value) => value, 'duration', 500));
+    expect(storage.values, before);
+  });
+
   const red = {'kind': 'color', 'rgb': [255, 0, 0]};
   const scene = {'kind': 'scene', 'preset': 'rasta'};
   const sequence = {'kind': 'sequence', 'id': '1'};

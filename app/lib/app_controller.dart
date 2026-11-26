@@ -64,7 +64,7 @@ class AppController extends ChangeNotifier {
        _requestBluetooth = requestBluetooth ?? (_ble is AppBleApi ? _enableSystemBluetooth : null),
        _now = now ?? _monotonicClock(),
        _wallClock = wallClock ?? DateTime.now {
-    _lastTimerDuration = loadTimerDuration(store);
+    _lastTimerDuration = _savedTimerDuration = loadTimerDuration(store);
     _selection = models.loadState();
     language = models.loadLanguage();
     shortcuts = models.loadShortcuts();
@@ -82,6 +82,7 @@ class AppController extends ChangeNotifier {
     final read = readBluetooth ?? (production ? UniversalBle.getBluetoothAvailabilityState : null);
     var receivedChange = false;
     _bluetoothChanges = changes?.listen((state) {
+      if (!_isBluetoothPowerState(state)) return;
       receivedChange = true;
       _updateBluetooth(state);
     }, onError: (Object _) {});
@@ -113,8 +114,11 @@ class AppController extends ChangeNotifier {
     }
   }
 
+  static bool _isBluetoothPowerState(AvailabilityState state) =>
+      state == AvailabilityState.poweredOff || state == AvailabilityState.poweredOn;
+
   void _updateBluetooth(AvailabilityState state) {
-    if (_disposed || (state != AvailabilityState.poweredOff && state != AvailabilityState.poweredOn)) return;
+    if (_disposed || !_isBluetoothPowerState(state)) return;
     final off = state == AvailabilityState.poweredOff;
     if (_bluetoothOff == off) return;
     _bluetoothOff = off;
@@ -209,6 +213,8 @@ class AppController extends ChangeNotifier {
   DateTime? _timerEndTime;
   DateTime? get timerEndTime => _timerEndTime;
   late int _lastTimerDuration;
+  late int _savedTimerDuration;
+  Future<void> _timerDurationSave = Future<void>.value();
   int get lastTimerDuration => _lastTimerDuration;
   int _timerSpan = 1;
   double get timerFraction => (remaining ?? 0) / _timerSpan;
@@ -935,10 +941,16 @@ class AppController extends ChangeNotifier {
     _timerFade = fade;
     _timerDeadline = _now() + seconds * 1000;
     _timerEndTime = _wallClock().toLocal().add(Duration(seconds: seconds));
-    if (seconds != _lastTimerDuration) {
-      _lastTimerDuration = seconds;
-      unawaited(_save(saveTimerDuration(models.storage, seconds)));
-    }
+    _lastTimerDuration = seconds;
+    // Compare after earlier writes settle so a failed save can be retried.
+    _timerDurationSave = _timerDurationSave.then((_) async {
+      if (seconds == _savedTimerDuration) return;
+      if (await saveTimerDuration(models.storage, seconds)) {
+        _savedTimerDuration = seconds;
+      } else {
+        _notice('appStorageFailed');
+      }
+    });
     _timer = Timer.periodic(const Duration(milliseconds: 250), (_) => _tickTimer());
     _tickTimer();
     _refresh();

@@ -221,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextButton.styleFrom(foregroundColor: glowLink,
             padding: const EdgeInsets.symmetric(horizontal: 8)), child: Text(c.text('changeStrip'))),
       ]),
-      if (c.message case final key? when key != 'bluetoothOff' && key != 'bluetoothEnableFailed') ...[
+      if (c.message case final key? when (key != 'bluetoothOff' || !off) && key != 'bluetoothEnableFailed') ...[
         const SizedBox(height: 8),
         Notice(c.text(key), kind: NoticeKind.error, live: true),
       ],

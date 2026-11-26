@@ -197,7 +197,7 @@ class Models {
       if (steps.isNotEmpty && _sequenceIds().contains(scene.substring(9))) {
         accepted['mode'] = mode is Fields && mode.containsKey('steps')
             ? {'steps': steps}
-            : {'colors': _colors((mode as Fields)['colors']), 'interval': mode['interval']};
+            : {'colors': _colors((mode as Fields)['colors']), 'interval': steps.first['durationMs']};
       } else if (recover) {
         accepted.addAll(solidSelection(rgb ?? defaultState['rgb'] as List<int>));
       } else {

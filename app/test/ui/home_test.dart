@@ -6,6 +6,7 @@ import 'package:deleluz/app_controller.dart';
 import 'package:deleluz/link.dart';
 import 'package:deleluz/main.dart';
 import 'package:deleluz/model/models.dart';
+import 'package:deleluz/model/timer.dart';
 import 'package:deleluz/protocol.dart' as wire;
 import 'package:deleluz/ui/glow_glass.dart';
 import 'package:deleluz/ui/notice.dart';
@@ -17,10 +18,12 @@ import 'package:universal_ble/universal_ble.dart' show AvailabilityState;
 
 class Store implements LocalStore {
   final values = <String, String>{};
+  String? refusedKey;
   @override
   String? read(String key) => values[key];
   @override
   Future<bool> write(String key, String? value) async {
+    if (key == refusedKey) return false;
     if (value == null) {
       values.remove(key);
     } else {
@@ -1215,6 +1218,51 @@ void main() {
       expect(ble.connections, isEmpty);
     });
   }
+
+  testWidgets('Home explains Bluetooth off before an availability read fails', (tester) async {
+    await Models(store, presetIds: {}).saveRemembered(FakeBle.strip);
+    final initial = Completer<AvailabilityState>();
+    accessProblem = 'bluetoothOff';
+    final c = await start(tester, readBluetooth: () => initial.future);
+    await tester.tap(find.text('Reconectar'));
+    await tester.pumpAndSettle();
+    expect(find.text(c.text('bluetoothOff')), findsOneWidget);
+    initial.completeError(StateError('Availability unavailable'));
+    await tester.pumpAndSettle();
+    expect(find.text(c.text('bluetoothOff')), findsOneWidget);
+    expect(ble.connections, isEmpty);
+  });
+
+  for (final definitive in [false, true]) {
+    testWidgets('only definitive power events supersede the initial Bluetooth read ($definitive)', (tester) async {
+      final initial = Completer<AvailabilityState>();
+      final changes = StreamController<AvailabilityState>();
+      addTearDown(changes.close);
+      final c = await start(tester, readBluetooth: () => initial.future, bluetoothChanges: changes.stream);
+      changes.add(definitive ? AvailabilityState.poweredOn : AvailabilityState.values.firstWhere(
+        (state) => state != AvailabilityState.poweredOn && state != AvailabilityState.poweredOff));
+      await tester.pump();
+      initial.complete(AvailabilityState.poweredOff);
+      await tester.pumpAndSettle();
+      expect(find.text(c.text('bluetoothOffTitle')), definitive ? findsNothing : findsOneWidget);
+    });
+  }
+
+  testWidgets('starting the same duration retries a failed timer save', (tester) async {
+    expect(await saveTimerDuration(store, 60), isTrue);
+    final c = await start(tester);
+    await connect(tester);
+    store.refusedKey = 'timerDuration';
+    c.startTimer(90, fade: false);
+    await tester.pump();
+    expect(c.lastTimerDuration, 90);
+    expect(loadTimerDuration(store), 60);
+    c.cancelTimer();
+    store.refusedKey = null;
+    c.startTimer(90, fade: false);
+    await tester.pump();
+    expect(loadTimerDuration(store), 90);
+  });
 
   testWidgets('timer sends off in foreground and cancels when hidden', (tester) async {
     final controller = await start(tester);
