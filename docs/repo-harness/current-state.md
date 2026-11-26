@@ -27,4 +27,4 @@ The webapp port and two-strip spike await the owner's choice. See the [roadmap](
 
 <!-- doc-role:next-step -->
 
-The owner chooses the next phase from [the plan](../PLAN.md): the webapp port (RH-W-0003) or the two-strip spike (RH-W-0002). Get explicit owner approval in the current turn before any test on a physical phone or strip ([phase 1 log](../../odd/tasks/app-polish.md#log), L41).
+First, T21: new 1.1.0 screenshots and WebP showreel in `docs/app-screens/` over adb, then update the README images and ask before pushing ([phase 1 tasks](../../odd/tasks/app-polish.md#tasks)). Then the owner chooses the next phase from [the plan](../PLAN.md): the webapp port (RH-W-0003) or the two-strip spike (RH-W-0002). Get explicit owner approval in the current turn before any test on a physical phone or strip ([phase 1 log](../../odd/tasks/app-polish.md#log), L41).
