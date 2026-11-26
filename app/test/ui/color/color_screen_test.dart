@@ -209,7 +209,7 @@ void main() {
       await tester.ensureVisible(keyed('app-auto-toggle'));
       await tester.tap(keyed('app-auto-toggle'));
       await flush(tester);
-      expect(tester.widget<Text>(keyed('app-auto-current')).data, '01 · ${effectNames.first}');
+      expect(tester.widget<Text>(keyed('app-auto-current')).data, '01 · Sueño hacia adelante');
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       final duration = keyed('app-auto-${controller.appAutoSeconds}');
       final disabled = tester.widget<ChoiceChip>(duration);
@@ -250,12 +250,12 @@ void main() {
     await tester.ensureVisible(search);
     await tester.enterText(search, 'FÓRWARD DREAMING');
     await tester.pumpAndSettle();
-    expect(find.text('01 · ${effectNames.first}'), findsOneWidget);
-    expect(find.text('02 · ${effectNames[1]}'), findsNothing);
+    expect(find.text('01 · Sueño hacia adelante'), findsOneWidget);
+    expect(keyed('effect-row-2'), findsNothing);
     await tester.enterText(search, '210');
     await tester.pumpAndSettle();
-    expect(find.text('210 · ${effectNames.last}'), findsOneWidget);
-    expect(find.text('01 · ${effectNames.first}'), findsNothing);
+    expect(find.text('210 · Barrido de cierre cian / violeta'), findsOneWidget);
+    expect(keyed('effect-row-1'), findsNothing);
     expect(ble.writes, isEmpty);
     await tap(tester, 'effect-auto');
     await flush(tester);
@@ -285,7 +285,7 @@ void main() {
     final before = tester.getRect(catalog);
     await tester.tap(keyed('effect-row-1'));
     await flush(tester);
-    final label = find.text(controller.text('manualEffectPlaying', {'id': '01', 'name': effectNames.first}));
+    final label = find.text(controller.text('manualEffectPlaying', {'id': '01', 'name': 'Sueño hacia adelante'}));
     expect(label, findsOneWidget);
     expect(tester.getRect(catalog), before);
     controller.setPower(false);
@@ -301,7 +301,8 @@ void main() {
       await tester.pump();
       await tap(tester, 'color-effects');
       final search = keyed('effect-search');
-      final label = find.text('$prefix: 210 · ${effectNames.last}');
+      final name = language == 'es' ? 'Barrido de cierre cian / violeta' : effectNames.last;
+      final label = find.text('$prefix: 210 · $name');
       expect(label, findsNothing);
       await tester.enterText(search, '210');
       await tester.pumpAndSettle();
@@ -329,11 +330,59 @@ void main() {
     });
   }
 
+  testWidgets('all catalog rows have distinct Spanish names and unchanged English names', (tester) async {
+    await start(tester, size: const Size(320, 915), scale: 1.5);
+    await tap(tester, 'color-effects');
+    final search = keyed('effect-search');
+    final spanish = <String>{};
+    final untranslated = RegExp(r'\b(forward|backward|RD|GN|BU|YE|CN|VT|WH|BK)\b', caseSensitive: false);
+    for (final language in ['es', 'en']) {
+      controller.setLanguage(language);
+      await tester.pump();
+      for (var id = 1; id <= effectNames.length; id++) {
+        final number = '$id'.padLeft(2, '0');
+        await tester.enterText(search, number);
+        await tester.pump();
+        final prefix = '$number · ';
+        final title = find.descendant(of: keyed('effect-row-$id'), matching: find.textContaining(prefix));
+        final name = tester.widget<Text>(title).data!.substring(prefix.length);
+        if (language == 'es') {
+          expect(name.trim(), isNotEmpty, reason: 'effect $id');
+          expect(untranslated.hasMatch(name), isFalse, reason: 'effect $id: $name');
+          expect(spanish.add(name), isTrue, reason: 'effect $id: $name');
+        } else {
+          expect(name, effectNames[id - 1], reason: 'effect $id');
+        }
+      }
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('legacy favorite displays and searches in both languages', (tester) async {
+    final store = Store();
+    store.values['deleluz.app.effectFavorites'] = '[1]';
+    await start(tester, store: store, size: const Size(320, 915), scale: 1.5);
+    await tap(tester, 'color-effects');
+    final search = keyed('effect-search');
+    for (final query in ['sueno hacia adelante', 'Forward Dreaming']) {
+      await tester.enterText(search, query);
+      await tester.pumpAndSettle();
+      expect(find.text('01 · Sueño hacia adelante'), findsOneWidget);
+      expect(find.byTooltip('Favorito: Sueño hacia adelante'), findsOneWidget);
+      expect(find.text('Favoritos'), findsNWidgets(2));
+    }
+    controller.setLanguage('en');
+    await tester.pumpAndSettle();
+    expect(find.text('01 · Forward Dreaming'), findsOneWidget);
+    expect(store.values['deleluz.app.effectFavorites'], '[1]');
+    expect(ble.writes, isEmpty);
+  });
+
   testWidgets('effect favorites move, reload, and unstar without sending', (tester) async {
     final store = Store();
     await start(tester, store: store);
     await tap(tester, 'color-effects');
-    final star = find.byTooltip('Favorito: ${effectNames[1]}');
+    final star = find.byTooltip('Favorito: Sueño hacia atrás');
     await tester.ensureVisible(keyed('effect-search'));
     await tester.pumpAndSettle();
     expect(tester.getSize(star), const Size(48, 48));

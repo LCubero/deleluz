@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app_controller.dart';
-import '../../model/effects.dart';
 import '../../protocol.dart' as wire;
 import '../color_picker.dart';
 import '../effect_list.dart';
@@ -77,7 +76,7 @@ class _ColorScreenState extends State<ColorScreen> {
   Widget _effectCard() {
     final manual = _manualEffect;
     final name = manual != null && manual == c.effect && c.hasActiveEffect && !c.appAutoPlaying
-        ? effectName(manual) : null;
+        ? c.displayEffectName(manual) : null;
     return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (_auto) ...[
         Text(c.text('allEffects'), key: const Key('strip-cycle-all'), textAlign: TextAlign.center),
@@ -87,11 +86,11 @@ class _ColorScreenState extends State<ColorScreen> {
         label: Text(c.text('stripCycle')), selected: _auto,
         onSelected: c.canSend ? (_) => _playEffect(wire.autoEffect) : null)),
       const SizedBox(height: 12),
-      GlowStatusSlot(lines: MediaQuery.textScalerOf(context).scale(13) > 16 ? 4 : 2,
+      GlowStatusSlot(lines: MediaQuery.textScalerOf(context).scale(13) > 16 ? 6 : 3,
         live: true, text: name == null ? null :
           c.text('manualEffectPlaying', {'id': '$manual'.padLeft(2, '0'), 'name': name})),
       const SizedBox(height: 8),
-      EffectList(favorites: c.effectFavorites, text: c.text,
+      EffectList(favorites: c.effectFavorites, text: c.text, language: c.language,
         selected: _auto || c.appAutoPlaying ? null : _effect, onFavorite: c.toggleEffectFavorite,
         onSelected: c.canSend ? _playEffect : null),
       const SizedBox(height: 12),

@@ -88,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       const SizedBox(height: 6),
       ConstrainedBox(constraints: BoxConstraints(
-        minHeight: 2 * MediaQuery.textScalerOf(context).scale(13) * 1.4),
+        minHeight: 3 * MediaQuery.textScalerOf(context).scale(13) * 1.4),
         child: Text(last == null ? c.text('noCommand') : c.text('lastSent', {'command': last}),
           textAlign: TextAlign.center, style: style.bodySmall,
           strutStyle: const StrutStyle(fontSize: 13, height: 1.4, forceStrutHeight: true))),
@@ -146,7 +146,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Flexible(child: Text(c.text(kind.label), style: Theme.of(context).textTheme.bodySmall)),
         ]),
         Text(c.shortcutLabel(item), key: const Key('shortcut-display-name'),
-          maxLines: 2, overflow: TextOverflow.ellipsis,
+          maxLines: kind == QuickActionKind.effect ? null : 2,
+          overflow: kind == QuickActionKind.effect ? null : TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
       ],
     ));

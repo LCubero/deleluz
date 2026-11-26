@@ -210,8 +210,13 @@ void main() {
       }
       expect(await sent, isTrue);
       await tester.pumpAndSettle();
-      expect(find.textContaining(prefix), findsOneWidget);
+      final name = language == 'es' ? 'Efecto 1: Sueño hacia adelante' : 'Effect 1: Forward Dreaming';
+      expect(find.text('$prefix $name'), findsOneWidget);
       expect(tester.getRect(card), before);
+      c.setLanguage(language == 'es' ? 'en' : 'es');
+      await tester.pumpAndSettle();
+      expect(find.text(language == 'es' ? 'Last command sent: Effect 1: Forward Dreaming'
+        : 'Último comando enviado: Efecto 1: Sueño hacia adelante'), findsOneWidget);
     });
   }
 
@@ -511,7 +516,7 @@ void main() {
   });
 
   for (final size in [const Size(320, 640), const Size(412, 915)]) {
-    testWidgets('command status reserves two lines and wraps long readouts at $size', (tester) async {
+    testWidgets('command status reserves space and wraps long readouts at $size', (tester) async {
       await tester.binding.setSurfaceSize(size);
       tester.platformDispatcher.textScaleFactorTestValue = 1.5;
       addTearDown(() => tester.binding.setSurfaceSize(null));

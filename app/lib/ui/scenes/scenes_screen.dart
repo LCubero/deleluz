@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app_controller.dart';
-import '../../model/effects.dart';
 import '../../model/models.dart';
 import '../../protocol.dart' as wire;
 import '../glow_glass.dart';
@@ -123,7 +122,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
         needsApp: false),
   ];
 
-  String _effectName(int id) => id == wire.autoEffect ? c.text('autoCycle') : effectNames[id - 1];
+  String _effectName(int id) => id == wire.autoEffect ? c.text('autoCycle') : c.displayEffectName(id)!;
 
   void _applyPreset(String preset) {
     if (!_transport.ready) return _connectFirst();

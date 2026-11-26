@@ -101,7 +101,8 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
             QuickActionKind.color => _colors(rgb!),
             QuickActionKind.effect => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               ListenableBuilder(listenable: c, builder: (context, _) =>
-                EffectList(favorites: c.effectFavorites, text: c.text, onFavorite: c.toggleEffectFavorite,
+                EffectList(favorites: c.effectFavorites, text: c.text, language: c.language,
+                   onFavorite: c.toggleEffectFavorite,
                   selected: selected?['effect'] as int?,
                   onSelected: (id) => _select({'kind': 'effect', 'effect': id}))),
               if (compactEffect) confirm,

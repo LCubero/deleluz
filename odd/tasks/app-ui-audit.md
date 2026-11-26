@@ -27,11 +27,11 @@ Branch `feat/ui-polish-2`. Standard: `design/system.md` and the `deleluz-design-
 
 - T1 [S4, F1] Scene tabs: reserve check space in every segment, equal height, stable label; widget test. Route: inline. Commit: fcf6938
 - T2 [S5, F2] Runtime tag on scene cards ("Necesita la app" / "En la tira") plus legend; notes in Mis escenas and quick-action scene pickers; test. Route: inline. Commit: b662d78
-- T3 [S1, F3] Selection and primary buttons consistent (Music selected, gradient primary). Route: gentle-ai-worker. Commit: see L6
-- T4 [S1, F4] Reserve space for changing status/notice text (Scenes, Home, Color). Route: gentle-ai-worker. Commit: see L6
-- T5 [S1, F5, F6] 48 dp targets in strip selector; quick actions header alignment; preview uses GlowStrip. Route: gentle-ai-worker. Commit: see L6
-- T6 [S1, F7, L5] Localize About tagline; translate effect names to Spanish in the Spanish locale. Route: inline. Commit: -
-- T7 [S2, F8] Update `deleluz-design-rules` skill (canonical + runtime copies, `check.py`) and `design/system.md`. Route: inline. Commit: -
+- T3 [S1, F3] Selection and primary buttons consistent (Music selected, gradient primary). Route: gentle-ai-worker. Commit: 10c30cc
+- T4 [S1, F4] Reserve space for changing status/notice text (Scenes, Home, Color). Route: gentle-ai-worker. Commit: 10c30cc
+- T5 [S1, F5, F6] 48 dp targets in strip selector; quick actions header alignment; preview uses GlowStrip. Route: gentle-ai-worker. Commit: 10c30cc
+- T6 [S1, F7, L5] Localize About tagline; translate effect names to Spanish in the Spanish locale. Route: gentle-ai-worker. Commit: see L9
+- T7 [S2, F8] Update `deleluz-design-rules` skill (canonical + runtime copies, `check.py`) and `design/system.md`. Route: inline. Commit: 30dcf9a
 - T8 [S1, S3, S6] Full UI test suite + emulator or simulated screenshots at 320/412 dp, ES/EN, large text; no strip. Route: inline. Commit: -
 
 ## Log
@@ -54,3 +54,4 @@ no voy a conectar la tira aun, hasta que el app esté perffecta visualmente"
 - L6 (T3-T5, 2026-11-26): worker mwxs0ez3-2-ety0, RED then GREEN per rule. Music cards mark last sent voice mode (session only; failed send keeps previous). Scenes new/apply/save use GlowPrimaryButton. Scenes command-failure notice floats; shared GlowStatusSlot reserves height for last-sent, Home countdown, Color now-playing (RED shifts 101/18/89 dp). Strip selector actions >=48 dp (was 44); quick actions Back slot reserved (title shifted 48 dp); preview uses GlowStrip. Full suite 348 pass (parent rerun).
 - L7 (slice, 2026-11-26): review slice 1 = fcf6938..10c30cc (454 authored lines, T1-T5). T6 onward starts slice 2.
 - L8 (T7, 2026-11-26): design-rules skill 1.1 (canonical + .pi copy; check.py status current): selection never changes geometry, GlowStatusSlot, runtime tag, localized effect names with stored IDs, GlowPrimaryButton for primary actions, app-first review without strip. design/system.md: segments 48 dp + reserved check slot, overlay 24, removed stale white selected border, new rows status slots / runtime tag / sheet headers.
+- L9 (T6, 2026-11-26): worker mwxsovih-3-3ywb. RED 3 failing (Spanish search, About tagline in EN). All 210 effect names get unique Spanish labels via pattern + overrides (e.g. 01 Sueño hacia adelante, 03 Ciclo de 7 colores directo); English unchanged; search matches Spanish and English; IDs persisted unchanged (legacy favorite [1] loads). Full suite 350 pass (parent rerun).

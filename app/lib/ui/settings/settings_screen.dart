@@ -236,7 +236,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Center(child: ShaderMask(
       blendMode: BlendMode.srcIn,
       shaderCallback: (bounds) => const LinearGradient(colors: [glowViolet, glowPink]).createShader(bounds),
-      child: Text('¡Dele, enciéndala, mae!', textAlign: TextAlign.center, style: theme.titleMedium),
+      child: Text(_text('aboutTagline'), textAlign: TextAlign.center, style: theme.titleMedium),
     )),
   ]);
 

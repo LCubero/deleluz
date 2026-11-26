@@ -213,6 +213,7 @@ const _strings = <String, (String, String)>{
   'enableBluetooth': ('Activa Bluetooth. Si Android te pide un ajuste del sistema para encontrar dispositivos cercanos, revisa ese aviso.', 'Turn on Bluetooth. If Android asks you to change a system setting to find nearby devices, check that prompt.'),
   'about': ('Acerca de', 'About'),
   'aboutDescription': ('Control de tiras LED LEDDMX-03 por Bluetooth', 'LEDDMX-03 LED strip control over Bluetooth'),
+  'aboutTagline': ('¡Dele, enciéndala, mae!', 'Go on, light it up!'),
   'aboutVersion': ('Versión {version}', 'Version {version}'),
   'aboutAuthor': ('Autor', 'Author'),
   'aboutLicense': ('Licencia', 'License'),

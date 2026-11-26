@@ -258,6 +258,9 @@ class AppController extends ChangeNotifier {
         '${text(lastCommand!)} · ${text('percent', lastValues)}',
     'color' => '${text('color')} · ${lastValues['hex']}',
     'chipConfig' => '${lastValues['order']} · ${lastValues['pixels']} LEDs',
+    'effectNamed' => text('effectNamed', {
+      ...lastValues, 'name': displayEffectName(lastValues['id']),
+    }),
     final key => text(key, lastValues),
   };
   String text(String key, [Map<String, Object?> values = const {}]) =>
@@ -770,8 +773,10 @@ class AppController extends ChangeNotifier {
     return sent;
   }
 
+  String? displayEffectName(Object? id) => effectName(id, language: language);
+
   String shortcutLabel(Fields item) => switch (item['kind']) {
-    'effect' => effectName(item['effect'] as int) ?? text('effect'),
+    'effect' => displayEffectName(item['effect']) ?? text('effect'),
     'scene' => text(item['preset'] as String),
     'sequence' => _sequence(item['id'])?['name'] as String? ?? text('myScenes'),
     _ => item['name'] == null
@@ -788,7 +793,7 @@ class AppController extends ChangeNotifier {
       });
 
   Future<bool> _sendEffect(int id, String label) => _send(wire.effect(id), label,
-      key: 'effect', values: {'id': id, 'name': effectName(id)}, onSent: () {
+      key: 'effect', values: {'id': id}, onSent: () {
         _sentEffect = id;
         sentColor = null;
       });
