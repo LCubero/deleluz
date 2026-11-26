@@ -458,4 +458,35 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  for (final (width, scale, language) in const [(320.0, 1.0, 'es'), (320.0, 1.3, 'es'),
+      (320.0, 1.0, 'en'), (412.0, 1.0, 'es'), (412.0, 1.3, 'en')]) {
+    testWidgets('scene tabs keep labels and heights stable at $width dp x$scale $language', (tester) async {
+      await start(tester, size: Size(width, 915), scale: scale);
+      c.setLanguage(language);
+      await tester.pumpAndSettle();
+      const ids = ['included', 'mine', 'music'];
+      final targets = find.descendant(of: find.byType(GlowSegments<String>),
+        matching: find.byType(GlowSelectionTarget));
+      Map<String, Rect> labels() => {for (final id in ids) id: tester.getRect(key('scenes-$id'))};
+      List<double> heights() => [for (var i = 0; i < 3; i++) tester.getSize(targets.at(i)).height];
+      final first = labels();
+      for (final id in ids) {
+        await tap(tester, 'scenes-$id');
+        final checks = find.descendant(of: find.byType(GlowSegments<String>),
+          matching: find.byKey(GlowSelection.markerKey));
+        expect(checks, findsOneWidget, reason: 'one visible check for $id');
+        final now = labels();
+        for (final other in ids) {
+          expect(now[other], first[other], reason: '$other label moved when $id selected');
+        }
+        final h = heights();
+        expect(h.toSet().length, 1, reason: 'segment heights differ when $id selected: $h');
+        final check = tester.getRect(checks);
+        final target = tester.getRect(targets.at(ids.indexOf(id)));
+        expect(check.center.dy, closeTo(target.center.dy, 1), reason: 'check centered vertically');
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

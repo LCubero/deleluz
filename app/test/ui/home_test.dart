@@ -236,8 +236,8 @@ void main() {
     final labelTop = tester.getTopLeft(selected).dy;
     expect(tester.getTopLeft(check).dy, lessThan(tester.getBottomLeft(selected).dy));
     expect(tester.getBottomLeft(check).dy, greaterThan(labelTop));
-    // Both labels use the same text metrics, so their first line tops align with their baselines.
-    expect(labelTop, closeTo(tester.getTopLeft(other).dy, 1));
+    // Segments share one height and center their labels, even when one label wraps.
+    expect(tester.getCenter(selected).dy, closeTo(tester.getCenter(other).dy, 1));
   });
 
   testWidgets('navigation shows a highlight without a check', (tester) async {

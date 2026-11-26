@@ -511,23 +511,23 @@ class GlowSegments<T> extends StatelessWidget {
   Widget build(BuildContext context) => Material(color: glowGlass,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14),
       side: const BorderSide(color: glowLine)),
-    child: Padding(padding: const EdgeInsets.all(4), child: Row(
-      crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+    // Equal-height segments; every segment reserves the check slot so labels never move or rewrap.
+    child: Padding(padding: const EdgeInsets.all(4), child: IntrinsicHeight(child: Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       for (final segment in segments) Expanded(child: GlowSelectionTarget(
         radius: 10, clear: true, selected: segment.value == selected,
         onTap: segment.enabled ? () => onSelected(segment.value) : null,
         child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48),
           child: Center(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-            child: Row(mainAxisSize: MainAxisSize.min, spacing: 4,
-              crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-              if (segment.value == selected) GlowSelection.check(),
+            child: Row(mainAxisSize: MainAxisSize.min, spacing: 4, children: [
+              segment.value == selected ? GlowSelection.check() : const SizedBox.square(dimension: 18),
               Flexible(child: DefaultTextStyle.merge(textAlign: TextAlign.center,
                 style: TextStyle(fontSize: segments.length == 3 ? 14 : 15, fontWeight: FontWeight.w600,
                   color: segment.value == selected ? glowInk : glowMuted),
                 child: segment.label ?? const SizedBox.shrink())),
             ])))),
       )),
-    ])));
+    ]))));
 }
 
 class ConnectionChip extends StatelessWidget {
