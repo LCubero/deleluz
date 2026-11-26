@@ -608,4 +608,13 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('my scenes note keeps a 12 dp gap above the cards', (tester) async {
+    await start(tester, savedScenes: legacyScene);
+    await tap(tester, 'scenes-mine');
+    final note = find.text(c.text('mineNeedsAppNote'));
+    final noteBox = find.ancestor(of: note, matching: find.byType(DecoratedBox)).first;
+    expect(tester.getTopLeft(key('scene-play-1')).dy - tester.getBottomLeft(noteBox).dy,
+      closeTo(12, 0.5));
+  });
 }
