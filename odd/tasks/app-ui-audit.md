@@ -46,7 +46,7 @@ Branch `feat/ui-polish-2`. Standard: `design/system.md` and the `deleluz-design-
 - T11 [S1, F17] Verify F17 is real; if so, no visible empty gap when nothing is playing, without layout jumps (follow the design rules). Route: gentle-ai-worker. Commit: see L30
 - T12 [L38] Release prep 1.2.0+2015: version bump, CHANGELOG 1.2.0, README/app README install links and "what's new", current-state. Route: gentle-ai-worker. Commit: 0681e07
 - T13 [L38] Re-capture screens changed since T21 (About shows the version; effects note/gap) and re-record the showreel on the owner phone (announced list). Route: gentle-ai-worker. Commit: see L42
-- T14 [L38] Build universal + per-ABI APKs, tag v1.2.0, GitHub release, cleanup (merged branch, untracked shots, temp builds). Route: inline. Commit: -
+- T14 [L38] Build universal + per-ABI APKs, tag v1.2.0, GitHub release, cleanup (merged branch, untracked shots, temp builds). Route: inline. Commit: tag v1.2.0
 
 ## Log
 
@@ -101,3 +101,4 @@ no voy a conectar la tira aun, hasta que el app esté perffecta visualmente"
 - L40 (owner, 2026-11-26): "dale" -> T13 approved as one session on the Note10 Lite: cyan (with app power-on/brightness prep if needed), app AUTO ~20 s then stop, Ciclo automático, timer started and cancelled; reconnect allowed. Release APK 1.2.0+2015 installed over.
 - L41 (owner, 2026-11-26): "mae tenes el celualñr conectado adb pordes hacer todo" -> the parent/workers may operate the Note10 Lite over adb as needed for T13 (e.g. turn Bluetooth on), still limited to the L40 strip command list.
 - L42 (T13, 2026-11-26): worker mwy1ch6n-l-el4a reconnected "Sala" and ran exactly the L40 list in both passes (cyan, app AUTO ~10 s / ~17 s then stopped and verified, Ciclo automático from Escenas > Incluidas, 15 min timer cancelled). 13 PNG 540x1095 re-captured (06-musica unchanged), showreel.webp 28 frames 36.15 s 373 KB. Parent review: 08-configuracion and 09-acerca-de were swapped by the worker; parent swapped them back (09 shows About with "Versión 1.2.0").
+- L43 (T14, 2026-11-26): tag v1.2.0 at 8fd59f6 pushed; GitHub release "DeleLuz 1.2.0" with DeleLuz-1.2.0.apk (53,065,787 B), arm64-v8a, armeabi-v7a, x86_64 APKs; notes from CHANGELOG. Cleanup: merged branch feat/ui-polish-2 deleted locally and on origin; untracked odd/app-ui-audit/ evidence and temp APKs removed.
