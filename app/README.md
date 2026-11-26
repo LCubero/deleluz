@@ -36,6 +36,7 @@ One strip connected at a time; several can be saved, each with an alias that sta
 - Shortcuts are reordered from the long-press menu, not by dragging.
 - No per-LED control is known for this controller.
 - No automatic update notice: install a newer APK over the old one.
+- Known phone that cannot connect: Samsung Galaxy A73 5G (SM-A736B, Android 14). Its Bluetooth always opens LE connections the "extended" way and the LEDDMX-03 never answers that, so the vendor app fails too. Android apps cannot change this. A Galaxy Note10 Lite (Android 13) connects normally. Evidence: [`../odd/tasks/app-ui-audit.md`](../odd/tasks/app-ui-audit.md) Log L32-L36.
 
 ## Privacy and permissions
 
