@@ -218,8 +218,8 @@ String? effectName(Object? id, {String language = 'en'}) =>
     : null;
 
 const _spanishOverrides = {
-  1: 'Sueño hacia adelante',
-  2: 'Sueño hacia atrás',
+  1: 'Sueño directo',
+  2: 'Sueño inverso',
   80: 'Estrobo blanco',
   // The controller catalog repeats these labels (or only changes casing).
   // Distinguish the IDs without assuming how the animations differ.

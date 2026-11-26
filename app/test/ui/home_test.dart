@@ -210,13 +210,13 @@ void main() {
       }
       expect(await sent, isTrue);
       await tester.pumpAndSettle();
-      final name = language == 'es' ? 'Efecto 1: Sueño hacia adelante' : 'Effect 1: Forward Dreaming';
+      final name = language == 'es' ? 'Efecto 1: Sueño directo' : 'Effect 1: Forward Dreaming';
       expect(find.text('$prefix $name'), findsOneWidget);
       expect(tester.getRect(card), before);
       c.setLanguage(language == 'es' ? 'en' : 'es');
       await tester.pumpAndSettle();
       expect(find.text(language == 'es' ? 'Last command sent: Effect 1: Forward Dreaming'
-        : 'Último comando enviado: Efecto 1: Sueño hacia adelante'), findsOneWidget);
+        : 'Último comando enviado: Efecto 1: Sueño directo'), findsOneWidget);
     });
   }
 

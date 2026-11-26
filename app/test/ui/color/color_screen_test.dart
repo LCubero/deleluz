@@ -209,7 +209,7 @@ void main() {
       await tester.ensureVisible(keyed('app-auto-toggle'));
       await tester.tap(keyed('app-auto-toggle'));
       await flush(tester);
-      expect(tester.widget<Text>(keyed('app-auto-current')).data, '01 · Sueño hacia adelante');
+      expect(tester.widget<Text>(keyed('app-auto-current')).data, '01 · Sueño directo');
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       final duration = keyed('app-auto-${controller.appAutoSeconds}');
       final disabled = tester.widget<ChoiceChip>(duration);
@@ -250,7 +250,7 @@ void main() {
     await tester.ensureVisible(search);
     await tester.enterText(search, 'FÓRWARD DREAMING');
     await tester.pumpAndSettle();
-    expect(find.text('01 · Sueño hacia adelante'), findsOneWidget);
+    expect(find.text('01 · Sueño directo'), findsOneWidget);
     expect(keyed('effect-row-2'), findsNothing);
     await tester.enterText(search, '210');
     await tester.pumpAndSettle();
@@ -285,7 +285,7 @@ void main() {
     final before = tester.getRect(catalog);
     await tester.tap(keyed('effect-row-1'));
     await flush(tester);
-    final label = find.text(controller.text('manualEffectPlaying', {'id': '01', 'name': 'Sueño hacia adelante'}));
+    final label = find.text(controller.text('manualEffectPlaying', {'id': '01', 'name': 'Sueño directo'}));
     expect(label, findsOneWidget);
     expect(tester.getRect(catalog), before);
     controller.setPower(false);
@@ -364,11 +364,11 @@ void main() {
     await start(tester, store: store, size: const Size(320, 915), scale: 1.5);
     await tap(tester, 'color-effects');
     final search = keyed('effect-search');
-    for (final query in ['sueno hacia adelante', 'Forward Dreaming']) {
+    for (final query in ['sueno directo', 'Forward Dreaming']) {
       await tester.enterText(search, query);
       await tester.pumpAndSettle();
-      expect(find.text('01 · Sueño hacia adelante'), findsOneWidget);
-      expect(find.byTooltip('Favorito: Sueño hacia adelante'), findsOneWidget);
+      expect(find.text('01 · Sueño directo'), findsOneWidget);
+      expect(find.byTooltip('Favorito: Sueño directo'), findsOneWidget);
       expect(find.text('Favoritos'), findsNWidgets(2));
     }
     controller.setLanguage('en');
@@ -382,7 +382,7 @@ void main() {
     final store = Store();
     await start(tester, store: store);
     await tap(tester, 'color-effects');
-    final star = find.byTooltip('Favorito: Sueño hacia atrás');
+    final star = find.byTooltip('Favorito: Sueño inverso');
     await tester.ensureVisible(keyed('effect-search'));
     await tester.pumpAndSettle();
     expect(tester.getSize(star), const Size(48, 48));
