@@ -99,6 +99,7 @@ class Link {
 
   Future<void> _connect(Strip target, LinkStatus fallback) async {
     if (_disposed || status == LinkStatus.connecting || (ready && strip?.id == target.id)) return;
+    final healthyId = ready ? _ownedId : null;
     final generation = ++_generation;
     final previous = _opening;
     final drained = Completer<void>();
@@ -110,7 +111,18 @@ class Link {
       if (previous != null) await previous;
       if (_releasing != null) await _waitForRelease();
       if (generation != _generation) return;
-      if (_ownedId != null) await _release();
+      if (_ownedId != null) {
+        try {
+          await _release();
+        } catch (error) {
+          // A rejected switch can keep the old session only if it was healthy
+          // and the transport has not reported loss. A timeout is ambiguous.
+          if (generation == _generation && healthyId != null && error is! TimeoutException) {
+            _set(_ownedId == healthyId ? LinkStatus.connected : LinkStatus.lost);
+          }
+          rethrow;
+        }
+      }
       if (generation != _generation) return;
       strip = target;
       await _open(generation, fallback);

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:deleluz/app_controller.dart';
-import 'package:deleluz/link.dart' show LinkStatus;
+import 'package:deleluz/link.dart' show LinkStatus, Strip;
 import 'package:deleluz/model/models.dart' show Models;
 import 'package:deleluz/protocol.dart' as wire;
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +17,11 @@ class DroppingReleaseBle extends FakeBle {
     await Future<void>.value();
     throw StateError('Release failed after loss');
   }
+}
+
+class RejectingReleaseBle extends FakeBle {
+  @override
+  Future<void> disconnect(String id) => Future<void>.error(StateError('Release rejected'));
 }
 
 class StalledReleaseBle extends FakeBle {
@@ -128,6 +133,34 @@ void main() {
     expect(controller.link.status, LinkStatus.idle);
     expect(releasing.connections, [FakeBle.strip.id]);
   });
+
+  for (final (transport, expected) in <(FakeBle Function(), LinkStatus)>[
+    (RejectingReleaseBle.new, LinkStatus.connected),
+    (DroppingReleaseBle.new, LinkStatus.lost),
+    (StalledReleaseBle.new, LinkStatus.idle),
+  ]) {
+    testWidgets('failed switch reports connectFailed and leaves ${expected.name}', (tester) async {
+      final releasing = transport();
+      final controller = AppController(releasing, Store(), checkAccess: (_) async => null);
+      addTearDown(releasing.changes.close);
+      addTearDown(controller.dispose);
+      await controller.connect(FakeBle.strip);
+      final failures = <String>[];
+      final switching = controller.connect(const Strip('B', 'other'), onFailure: failures.add);
+      await tester.pump();
+      if (releasing is StalledReleaseBle) {
+        await tester.pump(const Duration(seconds: 2));
+        releasing.release.complete();
+        releasing.changes.add((FakeBle.strip.id, false));
+      }
+      await switching;
+      await tester.pump();
+      expect(failures, ['connectFailed']);
+      expect(controller.link.status, expected);
+      expect(controller.link.strip?.id, FakeBle.strip.id);
+      expect(releasing.connections, [FakeBle.strip.id]);
+    });
+  }
 
   for (final forget in [false, true]) {
     testWidgets('G2 late loss after ${forget ? 'forget' : 'disconnect'} timeout does not recover', (tester) async {

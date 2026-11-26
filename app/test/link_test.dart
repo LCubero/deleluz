@@ -227,6 +227,39 @@ void main() {
     expect(ble.written, ['A:7']);
   });
 
+  test('connecting to the healthy current strip keeps its session ready', () async {
+    const a = Strip('A', 'x');
+    await link.connect(a);
+    ble.failDisconnect = true;
+    await link.connect(const Strip('A', 'same id'));
+    expect(link.ready, isTrue);
+    expect(ble.connectCalls, 1);
+    expect(ble.disconnected, isEmpty);
+    expect(saved, ['A']);
+  });
+
+  testWidgets('same-strip connect after a write timeout waits for release', (tester) async {
+    const a = Strip('A', 'x');
+    await link.connect(a);
+    final writeGate = ble.writeGate = Completer<void>();
+    final releaseGate = ble.disconnectGate = Completer<void>();
+    final failed = expectLater(link.write(Uint8List.fromList([1])), throwsA(isA<TimeoutException>()));
+    await tester.pump(const Duration(seconds: 2));
+    await failed;
+    expect(link.status, LinkStatus.lost);
+    final reopening = link.connect(a);
+    await tester.pump();
+    expect(ble.connectCalls, 1);
+    expect(link.ready, isFalse);
+    releaseGate.complete();
+    await reopening;
+    expect(ble.disconnected, ['A']);
+    expect(ble.open, {'A'});
+    expect(ble.connectCalls, 2);
+    expect(link.ready, isTrue);
+    writeGate.complete();
+  });
+
   test('switching strips releases the previous one first', () async {
     await link.connect(const Strip('A', 'x'));
     await link.connect(const Strip('B', 'y'));
@@ -241,10 +274,14 @@ void main() {
       await link.connect(a);
       ble.failDisconnect = true;
       await expectLater(switching ? link.connect(b) : link.disconnect(), throwsStateError);
-      expect(link.status, LinkStatus.idle);
+      expect(link.status, switching ? LinkStatus.connected : LinkStatus.idle);
       expect(link.strip, a);
       expect(ble.open, {'A'});
       expect(ble.connectCalls, 1);
+      if (switching) {
+        await link.write(Uint8List.fromList([7]));
+        expect(ble.written, ['A:7']);
+      }
       ble.failDisconnect = false;
       await link.connect(b);
       expect(link.status, LinkStatus.connected);
