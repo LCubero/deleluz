@@ -136,7 +136,10 @@ class _TimerSheetState extends State<TimerSheet> {
                     child: SwitchListTile(title: Text(c.text('fade')), value: _fade,
                       onChanged: (value) => setState(() => _fade = value))),
                   const SizedBox(height: 8),
-                  if (!c.ready) Notice(c.text('connectFirst'), kind: NoticeKind.warning),
+                  if (!c.ready) ...[
+                    Notice(c.text('connectFirst'), kind: NoticeKind.warning),
+                    const SizedBox(height: 8),
+                  ],
                   GlowPrimaryButton(onPressed: c.canSend ? _start : null, label: Text(c.text('startTimer'))),
                 ],
                 const SizedBox(height: 8),

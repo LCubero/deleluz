@@ -7,9 +7,10 @@ import 'glow_glass.dart';
 /// Shared catalog; the caller decides what selecting an effect does.
 class EffectList extends StatefulWidget {
   const EffectList({super.key, required this.favorites, required this.text,
-    required this.onFavorite, this.selected, this.onSelected});
+    required this.onFavorite, required this.language, this.selected, this.onSelected});
 
   final Set<int> favorites;
+  final String language;
   final String Function(String, [Map<String, Object?>]) text;
   final ValueChanged<int> onFavorite;
   final int? selected;
@@ -32,7 +33,9 @@ class _EffectListState extends State<EffectList> {
   };
   static String _fold(String value) => _accents.entries.fold(value.toLowerCase(),
     (text, accent) => text.replaceAll(accent.key, accent.value));
-  static final _names = effectNames.map(_fold).toList();
+  static final _english = effectNames.map(_fold).toList();
+  static final _spanish = List.generate(effectNames.length,
+    (index) => _fold(effectName(index + 1, language: 'es')!));
   static String _number(int id) => '$id'.padLeft(2, '0');
 
   @override
@@ -45,8 +48,9 @@ class _EffectListState extends State<EffectList> {
   Widget build(BuildContext context) {
     final starred = <int>[];
     final others = <int>[];
-    for (var id = 1; id <= _names.length; id++) {
-      if (_names[id - 1].contains(_query) || _number(id).contains(_query)) {
+    for (var id = 1; id <= _english.length; id++) {
+      if (_english[id - 1].contains(_query) || _number(id).contains(_query) ||
+          (widget.language == 'es' && _spanish[id - 1].contains(_query))) {
         (widget.favorites.contains(id) ? starred : others).add(id);
       }
     }
@@ -76,7 +80,7 @@ class _EffectListState extends State<EffectList> {
                   child: Semantics(header: true, child: Text(widget.text(entry), style: style.titleSmall)));
               }
               final id = entry as int;
-              final name = effectNames[id - 1];
+              final name = effectName(id, language: widget.language)!;
               final favorite = widget.favorites.contains(id);
               final selected = widget.selected == id;
               return GlowSelectionRow(selected: selected, child: ListTile(

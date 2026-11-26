@@ -104,6 +104,161 @@ void main() {
     return controller;
   }
 
+  for (final (width, scale) in [(320.0, 1.3), (412.0, 1.0)]) {
+    for (final language in ['es', 'en']) {
+      final compact = width == 320;
+      final configuration = '$width dp ×$scale $language';
+      Future<AppController> auditStart(WidgetTester tester) async {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = Size(width, 915);
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.view.reset);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final c = await start(tester);
+        c.setLanguage(language);
+        await tester.pumpAndSettle();
+        return c;
+      }
+
+      Future<void> activate(WidgetTester tester, Finder target) async {
+        await tester.ensureVisible(target);
+        await tester.tap(target);
+        await tester.pumpAndSettle();
+      }
+
+      Finder notice(String text) => find.ancestor(of: find.text(text), matching: find.byType(Notice));
+      Finder key(String value) => find.byKey(Key(value));
+
+      void expectWholeWords(WidgetTester tester, Finder label) {
+        final paragraph = tester.renderObject<RenderParagraph>(label);
+        for (final word in RegExp(r'\S+').allMatches(paragraph.text.toPlainText())) {
+          final boxes = paragraph.getBoxesForSelection(TextSelection(
+            baseOffset: word.start, extentOffset: word.end));
+          expect(boxes.map((box) => box.top).toSet(), hasLength(1), reason: word.group(0));
+        }
+      }
+
+      testWidgets('T9 F9 Home does not squeeze the subtitle ($configuration)', (tester) async {
+        final c = await auditStart(tester);
+        final subtitle = tester.getRect(find.text(c.text('controller')));
+        final pill = tester.getRect(find.byType(ConnectionChip));
+        expect(pill.top >= subtitle.bottom, compact);
+        if (compact) expectWholeWords(tester, find.text(c.text('controller')));
+      });
+
+      testWidgets('T9 F9 scene tabs and cards adapt ($configuration)', (tester) async {
+        final c = await auditStart(tester);
+        await activate(tester, find.text(c.text('scenes')).last);
+        await activate(tester, key('scenes-included'));
+        final first = tester.getRect(key('scenes-included'));
+        final second = tester.getRect(key('scenes-mine'));
+        expect(second.top >= first.bottom, compact);
+        if (compact) {
+          expectWholeWords(tester, key('scenes-included'));
+          expectWholeWords(tester, key('scenes-mine'));
+        }
+        // One grid row: a strip effect beside the first app-driven scene.
+        final cards = [key('included-effect-2'), key('included-christmas-moving')];
+        if (cards.last.evaluate().isEmpty) {
+          await tester.scrollUntilVisible(cards.last, 100);
+          await tester.pumpAndSettle();
+        }
+        final a = tester.getRect(cards.first);
+        final b = tester.getRect(cards.last);
+        if (compact) expectWholeWords(tester, find.text(c.text('christmas-moving')));
+        expect(b.top >= a.bottom, compact);
+        expect(a.width, closeTo(b.width, .01));
+        if (!compact) {
+          Rect part(int index, Finder finder) => tester.getRect(
+            find.descendant(of: cards[index], matching: finder));
+          expect(a.bottom, b.bottom);
+          expect(part(0, find.byType(GlowStrip)).top, part(1, find.byType(GlowStrip)).top);
+          expect(part(0, key('scene-runtime-tag')).bottom, part(1, key('scene-runtime-tag')).bottom);
+        }
+      });
+
+      testWidgets('T9 F9 repository label has room ($configuration)', (tester) async {
+        final c = await auditStart(tester);
+        await activate(tester, find.text(c.text('settings')).last);
+        await activate(tester, key('settings-about'));
+        final label = tester.getRect(find.text(c.text('aboutRepository')));
+        final copy = tester.getRect(find.byIcon(Icons.copy));
+        expect(copy.top >= label.bottom, compact);
+        if (compact) expectWholeWords(tester, find.text(c.text('aboutRepository')));
+      });
+
+      testWidgets('T9 F10 tallest tile sets row height ($configuration)', (tester) async {
+        await auditStart(tester);
+        await tester.pumpWidget(MaterialApp(theme: glowTheme(), home: const Scaffold(body: Align(
+          alignment: Alignment.topCenter, child: GlowGrid(columns: 2, children: [
+            GlassCard(key: Key('short-card'), child: Text('Short')),
+            GlassCard(key: Key('tall-card'), child: Text('Much\nmore\ncontent')),
+          ]),
+        ))));
+        expect(tester.getRect(key('short-card')).bottom, tester.getRect(key('tall-card')).bottom);
+      });
+
+      testWidgets('T9 F11 disconnected catalog follows the cycle control ($configuration)', (tester) async {
+        final c = await auditStart(tester);
+        await activate(tester, find.text(c.text('color')).last);
+        await activate(tester, key('color-effects'));
+        final catalog = tester.getRect(find.text(c.text('effectCatalog')));
+        expect(catalog.top - tester.getRect(key('effect-auto')).bottom, lessThanOrEqualTo(16));
+      });
+
+      testWidgets('T9 F11 effect search label fits ($configuration)', (tester) async {
+        final c = await auditStart(tester);
+        await activate(tester, find.text(c.text('color')).last);
+        await activate(tester, key('color-effects'));
+        final label = find.text(c.text('effectSearch'));
+        final paragraph = tester.renderObject<RenderParagraph>(label);
+        final painter = TextPainter(text: paragraph.text, textDirection: TextDirection.ltr,
+          textScaler: paragraph.textScaler)..layout();
+        final width = painter.width;
+        painter.dispose();
+        expect(width, lessThanOrEqualTo(paragraph.size.width));
+      });
+
+      testWidgets('T9 F12 expanded quick actions header is inset and rounded ($configuration)', (tester) async {
+        final c = await auditStart(tester);
+        final title = find.text(c.text('quickActions'));
+        await activate(tester, title);
+        final tiles = find.byType(GlowGrid);
+        expect(tester.getTopLeft(title).dx - tester.getTopLeft(tiles).dx, glassInset);
+        final ink = tester.widget<InkWell>(find.ancestor(of: title, matching: find.byType(InkWell)).first);
+        expect(ink.borderRadius, BorderRadius.circular(16));
+      });
+
+      testWidgets('T9 F13 timer handle shares the surface ($configuration)', (tester) async {
+        final c = await auditStart(tester);
+        await activate(tester, find.byTooltip(c.text('offTimer')));
+        final surface = tester.getRect(key('glow-sheet'));
+        expect(surface.top, tester.getTopLeft(find.byType(BottomSheet)).dy);
+        final handle = tester.getRect(key('glow-sheet-handle'));
+        expect(surface.contains(handle.center), isTrue);
+        expect(handle.bottom, lessThan(tester.getTopLeft(find.text(c.text('offTimer'))).dy));
+        await tester.fling(key('glow-sheet-handle'), const Offset(0, 180), 1000);
+        await tester.pumpAndSettle();
+        expect(key('glow-sheet'), findsNothing);
+      });
+
+      testWidgets('T9 F13 timer notices have equal button gaps ($configuration)', (tester) async {
+        final c = await auditStart(tester);
+        await activate(tester, find.byTooltip(c.text('offTimer')));
+        final start = tester.getRect(find.byType(GlowPrimaryButton));
+        expect(start.top - tester.getRect(notice(c.text('connectFirst'))).bottom, 8);
+        expect(tester.getRect(notice(c.text('timerNote'))).top - start.bottom, 8);
+      });
+
+      testWidgets('T9 F14 no blank saved-strips section ($configuration)', (tester) async {
+        final c = await auditStart(tester);
+        await activate(tester, find.text(c.text('changeStrip')));
+        final nearby = find.text(c.text('newNearbyStrips').toUpperCase());
+        expect(tester.getTopLeft(nearby).dy - tester.getBottomLeft(notice(c.text('oneStrip'))).dy, 12);
+      });
+    }
+  }
+
   void useOwnerPhoneView(WidgetTester tester) {
     const density = 2.625;
     tester.view.devicePixelRatio = density;
@@ -165,6 +320,24 @@ void main() {
     }
   }
 
+  testWidgets('audit: Home countdown does not move power', (tester) async {
+    useOwnerPhoneView(tester);
+    final c = await start(tester);
+    await c.connect(FakeBle.strip);
+    await tester.pumpAndSettle();
+    final power = find.byKey(const Key('power'));
+    final before = tester.getRect(power);
+    c.startTimer(60, fade: false);
+    await tester.pump();
+    final countdown = find.textContaining(c.text('offIn', {'time': ''}));
+    expect(countdown, findsOneWidget);
+    expect(tester.getRect(power), before);
+    c.cancelTimer();
+    await tester.pump();
+    expect(countdown, findsNothing);
+    expect(tester.getRect(power), before);
+  });
+
   testWidgets('Inicio fits the whole brightness card on the owner phone', (tester) async {
     useOwnerPhoneView(tester);
     final c = await start(tester);
@@ -192,8 +365,13 @@ void main() {
       }
       expect(await sent, isTrue);
       await tester.pumpAndSettle();
-      expect(find.textContaining(prefix), findsOneWidget);
+      final name = language == 'es' ? 'Efecto 1: Sueño directo' : 'Effect 1: Forward Dreaming';
+      expect(find.text('$prefix $name'), findsOneWidget);
       expect(tester.getRect(card), before);
+      c.setLanguage(language == 'es' ? 'en' : 'es');
+      await tester.pumpAndSettle();
+      expect(find.text(language == 'es' ? 'Last command sent: Effect 1: Forward Dreaming'
+        : 'Último comando enviado: Efecto 1: Sueño directo'), findsOneWidget);
     });
   }
 
@@ -236,8 +414,8 @@ void main() {
     final labelTop = tester.getTopLeft(selected).dy;
     expect(tester.getTopLeft(check).dy, lessThan(tester.getBottomLeft(selected).dy));
     expect(tester.getBottomLeft(check).dy, greaterThan(labelTop));
-    // Both labels use the same text metrics, so their first line tops align with their baselines.
-    expect(labelTop, closeTo(tester.getTopLeft(other).dy, 1));
+    // Segments share one height and center their labels, even when one label wraps.
+    expect(tester.getCenter(selected).dy, closeTo(tester.getCenter(other).dy, 1));
   });
 
   testWidgets('navigation shows a highlight without a check', (tester) async {
@@ -493,7 +671,7 @@ void main() {
   });
 
   for (final size in [const Size(320, 640), const Size(412, 915)]) {
-    testWidgets('command status reserves two lines and wraps long readouts at $size', (tester) async {
+    testWidgets('command status reserves space and wraps long readouts at $size', (tester) async {
       await tester.binding.setSurfaceSize(size);
       tester.platformDispatcher.textScaleFactorTestValue = 1.5;
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -849,7 +1027,11 @@ void main() {
       final color = find.byKey(const Key('quick-type-color'));
       await tap(add);
       expect(first, findsOneWidget);
+      final header = find.descendant(of: find.byKey(const Key('glow-sheet')),
+        matching: find.byWidgetPredicate((widget) => widget is Semantics && widget.properties.header == true));
+      final titleX = tester.getTopLeft(header).dx;
       await tap(color);
+      expect(tester.getTopLeft(header).dx, titleX);
       expect(second, findsOneWidget);
       await tap(find.byTooltip('Volver a los tipos'));
       expect(first, findsOneWidget);
@@ -1136,6 +1318,8 @@ void main() {
     final row = find.byKey(const ValueKey('one'));
     Finder within(Finder child) => find.descendant(of: row, matching: child);
     expect(tester.getSize(within(find.byType(Material)).first).height, lessThanOrEqualTo(104)); // Larger icons and pill (L34) with 48 dp targets; first version was 141 dp.
+    expect(tester.getSize(within(find.widgetWithText(FilledButton, 'Conectar'))).shortestSide,
+      greaterThanOrEqualTo(48));
     final actionY = tester.getCenter(within(find.text('Conectar'))).dy;
     for (final label in ['Renombrar', 'Olvidar']) {
       final icon = within(find.byTooltip(label));
@@ -1550,6 +1734,11 @@ void main() {
     final c = await start(tester);
     await tapTab(tester, 'Escenas');
     await tapKey(tester, 'scenes-included');
+    await tester.scrollUntilVisible(find.byKey(const Key('included-police')), 100,
+      scrollable: find.ancestor(of: find.byKey(const Key('scenes-included')),
+        matching: find.byType(Scrollable)).first);
+    await tester.ensureVisible(find.byKey(const Key('included-police')));
+    await tester.pumpAndSettle();
     await tester.longPress(find.byKey(const Key('included-police')));
     await tester.pumpAndSettle();
     final target = sliderLabel(c, 'stepInterval');

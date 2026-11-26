@@ -209,7 +209,7 @@ void main() {
       await tester.ensureVisible(keyed('app-auto-toggle'));
       await tester.tap(keyed('app-auto-toggle'));
       await flush(tester);
-      expect(tester.widget<Text>(keyed('app-auto-current')).data, '01 · ${effectNames.first}');
+      expect(tester.widget<Text>(keyed('app-auto-current')).data, '01 · Sueño directo');
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       final duration = keyed('app-auto-${controller.appAutoSeconds}');
       final disabled = tester.widget<ChoiceChip>(duration);
@@ -250,12 +250,12 @@ void main() {
     await tester.ensureVisible(search);
     await tester.enterText(search, 'FÓRWARD DREAMING');
     await tester.pumpAndSettle();
-    expect(find.text('01 · ${effectNames.first}'), findsOneWidget);
-    expect(find.text('02 · ${effectNames[1]}'), findsNothing);
+    expect(find.text('01 · Sueño directo'), findsOneWidget);
+    expect(keyed('effect-row-2'), findsNothing);
     await tester.enterText(search, '210');
     await tester.pumpAndSettle();
-    expect(find.text('210 · ${effectNames.last}'), findsOneWidget);
-    expect(find.text('01 · ${effectNames.first}'), findsNothing);
+    expect(find.text('210 · Barrido de cierre cian / violeta'), findsOneWidget);
+    expect(keyed('effect-row-1'), findsNothing);
     expect(ble.writes, isEmpty);
     await tap(tester, 'effect-auto');
     await flush(tester);
@@ -276,6 +276,46 @@ void main() {
     expect(tester.widget<ListTile>(keyed('effect-row-210')).selected, isTrue);
   });
 
+  for (final (width, scale, language) in [
+    (412.0, 1.0, 'es'), (320.0, 1.0, 'es'),
+    (412.0, 1.5, 'en'), (320.0, 1.5, 'es'),
+  ]) {
+    testWidgets('audit: idle catalog has no empty status gap at $width dp ($scale, $language)', (tester) async {
+      await start(tester, connected: true, size: Size(width, 915), scale: scale);
+      controller.setLanguage(language);
+      await tester.pump();
+      await tap(tester, 'color-effects');
+      expect(controller.canSend, isTrue);
+      expect(controller.hasActiveEffect, isFalse);
+      final catalog = find.text(controller.text('effectCatalog'));
+      final cycleBottom = tester.getRect(keyed('effect-auto')).bottom;
+      final before = tester.getRect(catalog);
+      final idle = find.text(controller.text('effectRange'));
+      final idleGap = idle.evaluate().isEmpty
+          ? before.top - cycleBottom
+          : tester.getRect(idle).top - cycleBottom;
+      expect(idleGap, lessThanOrEqualTo(12), reason: 'Blank space below Ciclo de la tira');
+      expect(idle, findsOneWidget);
+      if (scale == 1) {
+        // Allow the second reserved line plus the 8 dp section spacing.
+        expect(before.top - tester.getRect(idle).bottom, lessThanOrEqualTo(27));
+      }
+      await tester.tap(keyed('effect-row-1'));
+      await flush(tester);
+      final label = find.text(controller.text('manualEffectPlaying', {
+        'id': '01', 'name': controller.displayEffectName(1),
+      }));
+      expect(label, findsOneWidget);
+      expect(idle, findsNothing);
+      expect(tester.getRect(catalog), before);
+      controller.setPower(false);
+      await flush(tester);
+      expect(label, findsNothing);
+      expect(idle, findsOneWidget);
+      expect(tester.getRect(catalog), before);
+    });
+  }
+
   for (final (language, width, prefix) in [('es', 320.0, 'En la tira'), ('en', 412.0, 'On the strip')]) {
     testWidgets('Searching preserves the manual now-playing label and BLE writes ($language)', (tester) async {
       await start(tester, connected: true, size: Size(width, 915), scale: 1.5);
@@ -283,7 +323,8 @@ void main() {
       await tester.pump();
       await tap(tester, 'color-effects');
       final search = keyed('effect-search');
-      final label = find.text('$prefix: 210 · ${effectNames.last}');
+      final name = language == 'es' ? 'Barrido de cierre cian / violeta' : effectNames.last;
+      final label = find.text('$prefix: 210 · $name');
       expect(label, findsNothing);
       await tester.enterText(search, '210');
       await tester.pumpAndSettle();
@@ -311,11 +352,59 @@ void main() {
     });
   }
 
+  testWidgets('all catalog rows have distinct Spanish names and unchanged English names', (tester) async {
+    await start(tester, size: const Size(320, 915), scale: 1.5);
+    await tap(tester, 'color-effects');
+    final search = keyed('effect-search');
+    final spanish = <String>{};
+    final untranslated = RegExp(r'\b(forward|backward|RD|GN|BU|YE|CN|VT|WH|BK)\b', caseSensitive: false);
+    for (final language in ['es', 'en']) {
+      controller.setLanguage(language);
+      await tester.pump();
+      for (var id = 1; id <= effectNames.length; id++) {
+        final number = '$id'.padLeft(2, '0');
+        await tester.enterText(search, number);
+        await tester.pump();
+        final prefix = '$number · ';
+        final title = find.descendant(of: keyed('effect-row-$id'), matching: find.textContaining(prefix));
+        final name = tester.widget<Text>(title).data!.substring(prefix.length);
+        if (language == 'es') {
+          expect(name.trim(), isNotEmpty, reason: 'effect $id');
+          expect(untranslated.hasMatch(name), isFalse, reason: 'effect $id: $name');
+          expect(spanish.add(name), isTrue, reason: 'effect $id: $name');
+        } else {
+          expect(name, effectNames[id - 1], reason: 'effect $id');
+        }
+      }
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('legacy favorite displays and searches in both languages', (tester) async {
+    final store = Store();
+    store.values['deleluz.app.effectFavorites'] = '[1]';
+    await start(tester, store: store, size: const Size(320, 915), scale: 1.5);
+    await tap(tester, 'color-effects');
+    final search = keyed('effect-search');
+    for (final query in ['sueno directo', 'Forward Dreaming']) {
+      await tester.enterText(search, query);
+      await tester.pumpAndSettle();
+      expect(find.text('01 · Sueño directo'), findsOneWidget);
+      expect(find.byTooltip('Favorito: Sueño directo'), findsOneWidget);
+      expect(find.text('Favoritos'), findsNWidgets(2));
+    }
+    controller.setLanguage('en');
+    await tester.pumpAndSettle();
+    expect(find.text('01 · Forward Dreaming'), findsOneWidget);
+    expect(store.values['deleluz.app.effectFavorites'], '[1]');
+    expect(ble.writes, isEmpty);
+  });
+
   testWidgets('effect favorites move, reload, and unstar without sending', (tester) async {
     final store = Store();
     await start(tester, store: store);
     await tap(tester, 'color-effects');
-    final star = find.byTooltip('Favorito: ${effectNames[1]}');
+    final star = find.byTooltip('Favorito: Sueño inverso');
     await tester.ensureVisible(keyed('effect-search'));
     await tester.pumpAndSettle();
     expect(tester.getSize(star), const Size(48, 48));

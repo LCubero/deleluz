@@ -236,17 +236,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Center(child: ShaderMask(
       blendMode: BlendMode.srcIn,
       shaderCallback: (bounds) => const LinearGradient(colors: [glowViolet, glowPink]).createShader(bounds),
-      child: Text('¡Dele, enciéndala, mae!', textAlign: TextAlign.center, style: theme.titleMedium),
+      child: Text(_text('aboutTagline'), textAlign: TextAlign.center, style: theme.titleMedium),
     )),
   ]);
 
   Widget _aboutRow(String key, String value, {bool copy = false}) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Row(crossAxisAlignment: CrossAxisAlignment.start, spacing: 8, children: [
-      Expanded(flex: 2, child: Text(_text(key))),
-      Expanded(flex: 3, child: Text(value)),
-      SizedBox(width: 18, child: copy ? const Icon(Icons.copy, size: 18) : null),
-    ]),
+    child: copy && glowCompactLayout(context)
+      ? Column(crossAxisAlignment: CrossAxisAlignment.start, spacing: 8, children: [
+          Text(_text(key)),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, spacing: 8, children: [
+            Expanded(child: Text(value)),
+            const Icon(Icons.copy, size: 18),
+          ]),
+        ])
+      : Row(crossAxisAlignment: CrossAxisAlignment.start, spacing: 8, children: [
+          Expanded(flex: 2, child: Text(_text(key))),
+          Expanded(flex: 3, child: Text(value)),
+          SizedBox(width: 18, child: copy ? const Icon(Icons.copy, size: 18) : null),
+        ]),
   );
 
   Widget _stripsRow() {

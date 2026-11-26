@@ -1,0 +1,92 @@
+# App UI audit (Android, before T21 screenshots)
+
+Visual and UX audit of the Android app (`app/`) before the 1.1.0 screenshots (app-polish T21). Android only; no strip or phone test until the owner says the app is visually right.
+Branch `feat/ui-polish-2`. Standard: `design/system.md` and the `deleluz-design-rules` skill.
+
+## Specs
+
+- S1 (general audit): "antes hay que revisar la ui o uix o lo que sea, la interfeaz en generaral, que no tenga consas mal puestas, que se vea alineado congrueste, etc tyodo lo que debes investigar y anotar de front end."
+- S2 (skill): "actualizar la skill"
+- S3 (scope): "revisar el app siempre en el app de momento."
+- S4 (scene tabs check): "hay cosas como el check de las tabs de escenas, (incuidas, mis escenas, musica) que salen mal"
+- S5 (app-driven scenes): "ademas esas escenas no son del todas incluida, hay que avisar cuales funcionan solo con el el app abierta y conectada."
+- S6 (no strip yet): "no voy a conectar la tira aun, hasta que el app esté perffecta visualmente"
+
+## Findings (audit L2)
+
+- F1 Scene tabs: the check is inserted only in the selected segment (`glow_glass.dart` GlowSegments), so the label shifts, may wrap only when selected, and segments can differ in height. (S4)
+- F2 Scenes "Incluidas": six presets (Navidad en movimiento, Brillo navideño, Policía, Sirena, Rasta, Destellos) are app-driven timers (need the app open and connected); Ciclo automático, Forward/Backward Dreaming are strip effects. Cards do not say which; the preview note omits "connected"; quick actions scene picker says nothing. (S5)
+- F3 Selection: Music cards never show selected; Scenes "Nueva escena"/"Aplicar"/"Guardar" use plain FilledButton instead of the gradient primary button. (S1)
+- F4 Layout shift: Scenes error above tabs, Scenes last-sent, Home counter, Color active-effect name are inserted without reserved space. (S1)
+- F5 Strip selector action buttons: min 34 dp + shrinkWrap, below 48 dp. (S1)
+- F6 Quick actions header: Back button removed on step 1 without reserving width, title moves. Scene preview uses a local strip bar instead of GlowStrip. (S1)
+- F7 Localization: About tagline fixed in Spanish; effect names shown in English in Spanish locale. (S1)
+- F8 Standard drift: system.md still lists white border and 44 dp for segments; slider overlay 22 vs 24 in code; no rule for reserved check space, runtime labels, truncation exceptions. (S2)
+- F9 Mid-word breaks at narrow width + large text (320 dp x1.3): scene tabs ("Incluid/as", "Mis/escena/s"), first Incluidas card ("movimient/o"), Home strip subtitle squeezed by the status pill ("Controlado/r de tira/LED"), Settings About ("Repositor/io"). Shots: odd/app-ui-audit/shots/320-es-large/. (S1)
+- F10 Cards in the same GlowGrid row have different heights (Incluidas first row at 320 large): swatch, tag and bottom edge misaligned. (S1)
+- F11 Effect search hint ellipsized at 320 dp; at large text the gap between the disabled strip-cycle button and the catalog pushes the first result below the fold. (S1)
+- F12 Quick actions expanded header: square-edged tint band with the label flush left, unlike the rounded inset tiles below (412-es/rapidas.png). (S1)
+- F13 Timer sheet: abrupt seam between the drag-handle area and the purple gradient; the connection warning touches the disabled Start button (412-en/temporizador.png). (S1)
+- F14 Strip selector with zero saved strips leaves a conspicuous blank gap before nearby results (320-es-large/elegir-tira.png). (S1)
+- F15 Incluidas (and Mis escenas) cards never show which scene/effect is playing, while Musica cards do (phone strip test, shots/phone-strip/2-navidad.png vs 3-musica.png). (S1)
+- F17 Color > Efectos integrados, connected: empty reserved status slot between "Ciclo de la tira" and "Catálogo" when nothing is playing (docs/app-screens/04-efectos.png). (S1)
+
+## Tasks
+
+- T1 [S4, F1] Scene tabs: reserve check space in every segment, equal height, stable label; widget test. Route: inline. Commit: fcf6938
+- T2 [S5, F2] Runtime tag on scene cards ("Necesita la app" / "En la tira") plus legend; notes in Mis escenas and quick-action scene pickers; test. Route: inline. Commit: b662d78
+- T3 [S1, F3] Selection and primary buttons consistent (Music selected, gradient primary). Route: gentle-ai-worker. Commit: 10c30cc
+- T4 [S1, F4] Reserve space for changing status/notice text (Scenes, Home, Color). Route: gentle-ai-worker. Commit: 10c30cc
+- T5 [S1, F5, F6] 48 dp targets in strip selector; quick actions header alignment; preview uses GlowStrip. Route: gentle-ai-worker. Commit: 10c30cc
+- T6 [S1, F7, L5] Localize About tagline; translate effect names to Spanish in the Spanish locale. Route: gentle-ai-worker. Commit: see L9
+- T7 [S2, F8] Update `deleluz-design-rules` skill (canonical + runtime copies, `check.py`) and `design/system.md`. Route: inline. Commit: 30dcf9a
+- T8 [S1, S3, S6] Full UI test suite + emulator or simulated screenshots at 320/412 dp, ES/EN, large text; no strip. Route: inline. Commit: -
+- T9 [S1, F9-F14] Fix the emulator-audit defects: no mid-word breaks (compact layout when a word cannot fit), equal row heights in GlowGrid, search hint and catalog gap, quick actions header, timer sheet seam and spacing, strip selector gap; tests + re-capture. Route: gentle-ai-worker. Commit: see L12
+- T10 [S1, F15] Mark the last successfully sent Incluidas preset/effect and Mis escenas scene as selected (cyan tint + border + check), like Musica; session state only. Route: gentle-ai-worker. Commit: see L20
+- T11 [S1, F17] Verify F17 is real; if so, no visible empty gap when nothing is playing, without layout jumps (follow the design rules). Route: gentle-ai-worker. Commit: see L30
+
+## Log
+
+- L1 (owner, 2026-11-26): "antes hay que revisar la ui o uix o lo que sea, la interfeaz en generaral, que no tenga consas mal puestas, que se vea alineado congrueste, etc tyodo lo que debes investigar y anotar de front end.
+
+actualizar la skill
+revisar el app
+siempre en el app de momento.
+
+
+hay cosas como el check de las tabs de escenas, (incuidas, mis escenas, musica) que salen mal, ademas esas escenas no son del todas incluida, hay que avisar cuales funcionan solo con el el app abierta y conectada.
+
+
+no voy a conectar la tira aun, hasta que el app esté perffecta visualmente"
+- L2 (audit, 2026-11-26): read-only explorer audit; findings F1-F8 above, evidence in code paths cited per finding. Not observed at runtime yet.
+- L3 (T1, 2026-11-26): RED observed: selecting a scene tab moved its label 22 dp and at 320 dp wrapped "Incluidas" (40 -> 60 dp tall). Fix: every segment reserves the 18 dp check slot; equal-height segments; labels and check centered vertically. Changed pinned home_test rule "first line tops align" to "labels share one vertical center" (segments now equal height). Full suite 340 pass.
+- L4 (T2, 2026-11-26): RED observed (no tag). Every Incluidas card shows an icon + text tag: six presets "Necesita la app", Ciclo automático / Forward / Backward Dreaming "En la tira"; legend notice above the grid; Mis escenas cards tagged and a note when scenes exist; quick-action scene pickers show the same note; preview/editor hint now says "solo con la app abierta y la tira conectada". Test helper scrolls lazily built cards/tabs into view. Full suite 342 pass.
+- L5 (owner decision, 2026-11-26): effect names -> "Traducirlos al español" (Spanish names when the app is in Spanish, English when in English). Screenshots -> "Ambos" (emulator for sizes; owner's phone over USB for final confirmation, asking right before).
+- L6 (T3-T5, 2026-11-26): worker mwxs0ez3-2-ety0, RED then GREEN per rule. Music cards mark last sent voice mode (session only; failed send keeps previous). Scenes new/apply/save use GlowPrimaryButton. Scenes command-failure notice floats; shared GlowStatusSlot reserves height for last-sent, Home countdown, Color now-playing (RED shifts 101/18/89 dp). Strip selector actions >=48 dp (was 44); quick actions Back slot reserved (title shifted 48 dp); preview uses GlowStrip. Full suite 348 pass (parent rerun).
+- L7 (slice, 2026-11-26): review slice 1 = fcf6938..10c30cc (454 authored lines, T1-T5). T6 onward starts slice 2.
+- L8 (T7, 2026-11-26): design-rules skill 1.1 (canonical + .pi copy; check.py status current): selection never changes geometry, GlowStatusSlot, runtime tag, localized effect names with stored IDs, GlowPrimaryButton for primary actions, app-first review without strip. design/system.md: segments 48 dp + reserved check slot, overlay 24, removed stale white selected border, new rows status slots / runtime tag / sheet headers.
+- L9 (T6, 2026-11-26): worker mwxsovih-3-3ywb. RED 3 failing (Spanish search, About tagline in EN). All 210 effect names get unique Spanish labels via pattern + overrides (e.g. 01 Sueño hacia adelante, 03 Ciclo de 7 colores directo); English unchanged; search matches Spanish and English; IDs persisted unchanged (legacy favorite [1] loads). Full suite 350 pass (parent rerun).
+- L10 (owner, 2026-11-26): "decidelo tu, tu eres quien puede leer todo y el repo y toda la doc y asegurarte no? mientras leas, revises y te asegures, tu decidelo, revisa y recuerda sin sobreingenieria, exagerar o complicarlo, recuerda el alma y norte del proyecto". Decisions: no native review (assess not due, medium, UI-only with widget tests); one direction wording for all effects: "directo / inverso" (Sueño directo / Sueño inverso). Suite 350 pass.
+- L11 (T8, 2026-11-26): emulator audit (worker mwxthl2z-5-8c4y, emulator-5554 only; owner phone untouched): 50 PNGs in odd/app-ui-audit/shots/{412-es,320-es,320-es-large,412-en}. Confirmed fixed: tabs keep height/labels (S4), runtime tags and legend visible (S5), selection cues cyan tint+border+check. New findings F9-F14 -> T9. Not verified: connected playback, active music mode, running timer, populated strip rows, measured contrast.
+- L12 (T9, 2026-11-26): worker mwxtt4pi-6-785i. Shared compact rule: width / textScale < 300 dp (320 x1.3 -> stacked tabs, one-column scene cards, Home pill below subtitle, About label above URL); no font shrinking. GlowGrid rows share the tallest height, scene footers bottom-aligned. Search label "Buscar"/"Search"; disconnected catalog gap removed. Quick actions header radius 16 + glassInset. Timer handle on the sheet gradient; 8 dp between Start and notices. Empty saved-strips section omitted. RED per finding (e.g. card bottoms 61 vs 142 dp, catalog gap 162 dp, header inset 0). Full suite 390 pass (parent rerun). L13 slice: slice 2 = 30dcf9a..T9 commit.
+- L14 (re-capture, 2026-11-26): worker mwxua5ml-7-26ua re-captured 50 PNGs from APK 86f3aa9 on emulator-5554; F9-F14 all FIXED, no new defect; trade-off: compact layout shows fewer items above the fold at 320 x1.3 (scroll cue visible). Parent spot-checked contact-3. Pending: owner review, then owner phone check (L5).
+- L15 (owner, 2026-11-26): "hazlo sin la tira dale". Test build 1.1.0+2014 (release signer) installed over on the owner phone RF8N32E2SCP (1080x2400, 420 dpi); data kept. Worker mwxul2ul-8-tlh3 captured 11 PNGs in odd/app-ui-audit/shots/phone/ (no connect, no settings changed): no mid-word breaks, clipping or overlap; tabs and runtime tags correct. One defect: Mis escenas note touched the first card row -> fixed with a 12 dp gap (RED 0 dp). Suite 391 pass. Not verified: strip playback, active music mode, running timer, measured contrast.
+- L16 (owner, 2026-11-26): "lo veo bien, nada más me gustarias en escenas incluidas que pirmero aparezcan las de la tira y abajo las que necesita el app". Done: Incluidas lists Ciclo automático, Sueño directo, Sueño inverso first, then the six app-driven scenes; legend order matches. RED order test; two existing tests adjusted for the new positions (same-row pair and scrolling to Policía). Suite 392 pass.
+- L17 (owner, 2026-11-26): "listo" then "revisa de nuevo": strip test on owner phone. First connect failed ("No se pudo conectar."), second connected (Sala LEDDMX-03-03C1). Played Ciclo automatico, Navidad en movimiento, Musica Modo 1; owner confirmation of strip output pending. Finding F15 -> T10.
+- L18 (owner, 2026-11-26): "funciona di" -> strip confirmed: Ciclo automatico, Navidad en movimiento and Musica Modo 1 behave as expected.
+- L19 (owner, 2026-11-26): "ok y vuelve a recordar que antes de enviar cosas visuales me debes decir y esperar a que yo te diga xq no siempre estoy viendo". Rule: announce each visual strip command (what will be sent) and wait for the owner's go-ahead in that moment; connecting/retrying does not authorize playback. The L17 playback was sent without that announcement.
+- L20 (T10, 2026-11-26): worker mwxvk8sh-9-paji. One session-only selection across Incluidas, Mis escenas and Musica: last successfully started card shows cyan tint + border + check (reserved slot, rects unchanged); failed send keeps previous. Color/quick actions do not clear it (no source signal in the controller). RED at 320/412 (no check on Policia). Suite 394 pass (parent rerun).
+- L21 (owner, 2026-11-26): "ya estoy ahora si" -> connected, sent Policía only: card marked (shots/phone-strip/4-policia.png). "si y si dale" -> timer custom 0:10 (saved last choice, shortest) started: ring counting 0:06 with "Se apaga a las 12:35" (6-timer-running.png); after it ended the app shows the strip off (7-timer-done.png). Owner confirmation of the strip turning off pending.
+- L22 (owner, 2026-11-26): "si" -> the strip turned off when the 10 s timer ended. Strip test complete (connect, strip effect, app scene, music mode, selection mark, timer).
+- L23 (owner, 2026-11-26): "si dale" to the parent's announced T21 list as ONE session without per-step approval: 1 Color fijo cyan, 2 app AUTO ~20 s, 3 Escenas Ciclo automático, 4 timer started then cancelled before it ends, 5 showreel repeating those steps (~30-40 s). This satisfies L19 for exactly that list; anything outside it needs a new announcement.
+- L24 (owner, 2026-11-26): "ya la encendí sigue" -> owner powered the strip on himself and asked to continue the L23 session. If the app still sends its own power-on/brightness preparation before cyan, that is covered by this "sigue".
+- L25 (T21, 2026-11-26): worker mwxwe0hs-c-z1wo. Strip commands: captures pass = cyan (with power-on/brightness prep), app AUTO ~20 s, Ciclo automático, 15 min timer started+cancelled; showreel pass = cyan, app AUTO ~20 s, timer started+cancelled (Ciclo automático not re-sent; showreel reuses the first-pass frame). No power-off sent. 13 PNGs 540x1095 in docs/app-screens (new: 02b, 04b, 05b, 05c, 10; 06-musica unchanged), showreel.webp 32 frames 36.1 s 370 KB; README and app/README updated. Parent review found F16: Spanish effects note still said names are the manufacturer's -> now "Los nombres están traducidos de la app del fabricante." (suite 394). Screens 04/04b still show the old note until re-captured.
+- L26 (owner, 2026-11-26): "antes del push" -> re-capture 04-efectos and 04b-auto-app with the fixed note before pushing; approved strip command: app AUTO ~20 s then stop (owner need not watch). Build 2014 with 51ff85a reinstalled over on the phone.
+- L27 (parent decision, 2026-11-26): the L26 approval includes reconnecting and the app's own power-on/brightness preparation before AUTO (same as L24; the strip is already on, so it adds no new visual). 04-efectos must be re-taken connected for gallery consistency.
+- L28 (re-capture, 2026-11-26): worker mwxwz79c-e-gwty reconnected, ran app AUTO (with app prep) and stopped it; the first stop tap missed, so AUTO ran past the 20 s limit (reached at least effect 06) before stopping; app left on Inicio. 04-efectos (connected) and 04b-auto-app show the fixed note. Follow-up F17 (not fixed): connected Efectos tab keeps a visible empty reserved slot between "Ciclo de la tira" and "Catálogo".
+- L29 (owner, 2026-11-26): "arregla eso si es verdad, y tengo algo mas antes de main" -> T11; owner has more requests before merging to main.
+- L30 (T11, 2026-11-26): worker mwxx4z6s-f-a9ny. F17 real: 75 dp blank at 320 and 412 dp (idle GlowStatusSlot reserved 3 lines). Fix: idle slot shows the localized effect-range hint 8 dp below the cycle button; 2 lines reserved at default size; Catálogo moves 0 dp when playback starts/stops. Suite 397 pass (parent rerun).
+- L31 (re-capture, 2026-11-26): worker mwxxfx83-g-nfz1 re-took 04-efectos.png connected, no strip command sent; the former gap now shows "Número de efecto, del 1 al 210". App left on Inicio.
+- L32 (owner, 2026-11-26): "te acabo de conectar el dispositivo que no me dejó conectar a ninguna tira". Device: Samsung Galaxy A73 5G SM-A736B, Android 14 (SDK 34), BT on, location on, DeleLuz 1.1.0 (2013), BLUETOOTH_SCAN/CONNECT granted. F18: the app finds LEDDMX-03-03C1 but every connect fails ~0.3 s after the LE link starts: "btm_ble_read_remote_features_complete: Failed ... HCI_ERR_CONN_FAILED_ESTABLISHMENT" -> GATT status 133. Each tap already produces 4 status=133 callbacks (the app retries internally); 1 + 3 manual retries all failed. Retry hypothesis rejected. Logs: odd/app-ui-audit/shots/a73/logcat-*.txt (untracked). Open: is the strip free (other phone app closed)? does the vendor app connect on the A73? BT off/on?
+- L33 (owner, 2026-11-26): "mi reyu esta en las mismas consiciones que los otros celulares asi que es tema del celular del bluettoh de el app la forma como se conecta o algo no andes inventando o asumiendo, comprueba". Checks: (a) DeleLuz scanner stopped 18 s before connect (no concurrent own scan). (b) After owner BT off/on: same 4x status 133. (c) Experiment build (not committed, reverted) with UniversalBle.connect(autoConnect: true, 30 s): Android retried the LE link 132 times in 30 s, every one failed at "read remote features ... HCI_ERR_CONN_FAILED_ESTABLISHMENT". Conclusion (verified for DeleLuz direct and auto connect): the A73 never completes the LE link-layer setup with this strip; the failure is below the app's GATT calls. A73 restored to the committed build 2014. Open control: does any other app (vendor app or Chrome webapp) connect from the A73?
+- L34 (owner, 2026-11-26): "ya está" -> owner tried the vendor app (com.ledlamp) on the A73: logcat shows 5 connect attempts 13:42-13:43, every one fails identically ("read remote features ... HCI_ERR_CONN_FAILED_ESTABLISHMENT" -> status 133). Verified: the A73 cannot connect to this strip with any app; not a DeleLuz defect. F18 closed as device/strip incompatibility (no app change).

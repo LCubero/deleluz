@@ -73,8 +73,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('LCubero'), findsNothing);
       await tap(tester, find.text(title));
+      final tagline = language == 'es' ? '¡Dele, enciéndala, mae!' : 'Go on, light it up!';
       for (final text in [description, '$version 1.1.0', author, 'LCubero',
-        license, 'MIT', repository, 'github.com/LCubero/deleluz', '¡Dele, enciéndala, mae!']) {
+        license, 'MIT', repository, 'github.com/LCubero/deleluz', tagline]) {
         expect(find.text(text), findsOneWidget);
       }
       expect(find.byIcon(Icons.copy), findsOneWidget);
@@ -111,6 +112,13 @@ void main() {
       await tester.ensureVisible(tagline);
       await tester.pumpAndSettle();
       expect(tagline.hitTestable(), findsOneWidget);
+      controller.setLanguage('en');
+      await tester.pumpAndSettle();
+      final english = find.text('Go on, light it up!');
+      expect(tagline, findsNothing);
+      await tester.ensureVisible(english);
+      await tester.pumpAndSettle();
+      expect(english.hitTestable(), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }

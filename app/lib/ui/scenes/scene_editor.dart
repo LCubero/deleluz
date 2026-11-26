@@ -111,7 +111,7 @@ class _SceneEditorState extends State<SceneEditor> {
 
   Widget _row(int index, Fields step) {
     final rgb = step['rgb'] as List<int>?;
-    final label = rgb == null ? effectName(step['effect'] as int)! : rgbHex(rgb);
+    final label = rgb == null ? c.displayEffectName(step['effect'])! : rgbHex(rgb);
     final marker = rgb == null ? const Icon(Icons.auto_awesome) :
         Icon(Icons.circle, color: _rgb(rgb));
     return DragTarget<Fields>(key: ObjectKey(step),
@@ -216,8 +216,8 @@ class _SceneEditorState extends State<SceneEditor> {
         } : null, child: Text(c.text('playSequence'))),
         TextButton(key: const Key('scene-stop'), onPressed: widget.transport.previewing
           ? widget.transport.stopPreview : null, child: Text(c.text('stopSequence'))),
-        FilledButton(key: const Key('scene-save'), onPressed: _busy ? null : _save,
-          child: Text(c.text('saveSequence'))),
+        GlowPrimaryButton(key: const Key('scene-save'), onPressed: _busy ? null : _save,
+          label: Text(c.text('saveSequence'))),
       ])),
       ]))),
     ));
@@ -261,10 +261,11 @@ class _StepPickerState extends State<_StepPicker> {
           crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
           if (widget.effect) ...[
             ListenableBuilder(listenable: c, builder: (context, _) => EffectList(
-              favorites: c.effectFavorites, text: c.text, onFavorite: c.toggleEffectFavorite,
+              favorites: c.effectFavorites, text: c.text, language: c.language,
+               onFavorite: c.toggleEffectFavorite,
               selected: _effect, onSelected: (id) => setState(() => _effect = id))),
             if (_effect != null) Padding(padding: const EdgeInsets.only(top: 8),
-              child: Text(c.text('quickPreview', {'name': effectName(_effect!)!}))),
+              child: Text(c.text('quickPreview', {'name': c.displayEffectName(_effect)!}))),
           ] else
             SharedColorPicker(controller: c, rgb: _color,
               onChanged: (rgb, _) => setState(() => _color = rgb)),

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app_controller.dart';
-import '../../model/effects.dart';
 import '../../model/models.dart';
 import '../glow_glass.dart';
 import '../notice.dart';
@@ -21,7 +20,7 @@ class AppAutoCard extends StatelessWidget {
     final playing = c.appAutoPlaying;
     final hasFavorites = c.effectFavorites.isNotEmpty;
     final id = c.appAutoEffect;
-    final current = id == null ? null : '${'$id'.padLeft(2, '0')} · ${effectName(id)}';
+    final current = id == null ? null : '${'$id'.padLeft(2, '0')} · ${c.displayEffectName(id)}';
     final progress = c.appAutoProgress;
     return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Semantics(header: true, child: Text(c.text('appAuto'), style: style.titleMedium)),

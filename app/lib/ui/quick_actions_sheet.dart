@@ -69,36 +69,40 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           if (!compactEffect) ...[
             Row(children: [
-              if (kind != null) IconButton(tooltip: c.text('quickBack'),
-                onPressed: _back, icon: const Icon(Icons.arrow_back)),
+              SizedBox.square(dimension: 48, child: kind == null ? null :
+                IconButton(tooltip: c.text('quickBack'), onPressed: _back, icon: const Icon(Icons.arrow_back))),
               Expanded(child: Semantics(header: true, child: Text(c.text(kind?.label ??
                 (widget.replacing ? 'quickChangeTitle' : 'addShortcut')), style: style.titleLarge))),
               IconButton(tooltip: c.text('close'), icon: const Icon(Icons.close),
                 onPressed: () => Navigator.pop(context)),
             ]),
-            if (kind != QuickActionKind.sequence)
-              Text(c.text(kind == null ? 'quickStepType' : 'quickStepOption'), style: style.bodySmall),
+            if (kind != null && kind != QuickActionKind.sequence)
+              Text(c.text('quickStepOption'), style: style.bodySmall),
             const SizedBox(height: 8),
           ],
           Flexible(key: const ValueKey('quick-picker-body'), child: ScrollHint(key: ValueKey(kind), shrinkWrap: true,
             showHint: !compactEffect, child: SingleChildScrollView(child: switch (kind) {
             null => LayoutBuilder(builder: (context, constraints) {
               final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
-              return GlowGrid(columns: scale >= 1.5 && constraints.maxWidth < 220 * scale ? 1 : 2, children: [
-              for (final type in QuickActionKind.values)
-                GlowTile(key: Key('quick-type-${type.name}'), minHeight: 104,
-                  onTap: () => setState(() => _kind = type),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, spacing: 4, children: [
-                    Icon(type.icon, color: glowLink),
-                    Text(c.text(type.label), style: style.titleMedium),
-                    Text(c.text(type.hint), style: style.bodySmall),
-                  ])),
+              return Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
+                Text(c.text('quickStepType'), style: style.bodySmall),
+                GlowGrid(columns: scale >= 1.5 && constraints.maxWidth < 220 * scale ? 1 : 2, children: [
+                  for (final type in QuickActionKind.values)
+                    GlowTile(key: Key('quick-type-${type.name}'), minHeight: 104,
+                      onTap: () => setState(() => _kind = type),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, spacing: 4, children: [
+                        Icon(type.icon, color: glowLink),
+                        Text(c.text(type.label), style: style.titleMedium),
+                        Text(c.text(type.hint), style: style.bodySmall),
+                      ])),
+                ]),
               ]);
             }),
             QuickActionKind.color => _colors(rgb!),
             QuickActionKind.effect => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               ListenableBuilder(listenable: c, builder: (context, _) =>
-                EffectList(favorites: c.effectFavorites, text: c.text, onFavorite: c.toggleEffectFavorite,
+                EffectList(favorites: c.effectFavorites, text: c.text, language: c.language,
+                   onFavorite: c.toggleEffectFavorite,
                   selected: selected?['effect'] as int?,
                   onSelected: (id) => _select({'kind': 'effect', 'effect': id}))),
               if (compactEffect) confirm,
@@ -139,13 +143,16 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
               if (mounted) setState(() {});
             }),
         ],
+        if (scenes.isNotEmpty) Notice(c.text('mineNeedsAppNote')),
         for (final scene in scenes) _sceneCard(scene),
-      ] else
+      ] else ...[
+        Notice(c.text('foregroundPlaybackHint'), key: const Key('quick-scenes-needs-app')),
         for (final preset in homePresets.keys)
           GlowTile(key: Key('quick-scene-$preset'), minHeight: 48,
             selected: _selected?['preset'] == preset,
             onTap: () => _select({'kind': 'scene', 'preset': preset}),
             child: Text(c.text(preset))),
+      ],
     ]);
   }
 

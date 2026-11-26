@@ -212,7 +212,86 @@ const effectNames = [
   'Close Curtain Swab CN/VT',
 ];
 
-String? effectName(Object? id) =>
+String? effectName(Object? id, {String language = 'en'}) =>
     id is num && id >= 1 && id <= effectNames.length && id == id.truncate()
-    ? effectNames[id.toInt() - 1]
+    ? (language == 'es' ? _spanishNames : effectNames)[id.toInt() - 1]
     : null;
+
+const _spanishOverrides = {
+  1: 'Sueño directo',
+  2: 'Sueño inverso',
+  80: 'Estrobo blanco',
+  // The controller catalog repeats these labels (or only changes casing).
+  // Distinguish the IDs without assuming how the animations differ.
+  153: 'Cierre de 7 colores (2)',
+  154: 'Apertura de 7 colores (2)',
+  198: 'Barrido cian directo (2)',
+  200: 'Barrido violeta directo (2)',
+  202: 'Barrido blanco directo (2)',
+};
+
+const _motion = {
+  'TRAILING': 'Estela',
+  'STREAMING': 'Corriente',
+  'FOLLOW SPOT': 'Foco móvil',
+  'FLUTTER': 'Aleteo',
+  'HORSE RACE': 'Galope',
+  'RUN': 'Carrera',
+  'FLOW': 'Flujo',
+  'SWAB': 'Barrido',
+};
+
+const _colors = {
+  'RD': 'rojo', 'GN': 'verde', 'BU': 'azul', 'YE': 'amarillo',
+  'CN': 'cian', 'VT': 'violeta', 'WH': 'blanco', 'BK': 'negro',
+};
+
+final _spanishNames = List.generate(effectNames.length, (index) =>
+    _spanishOverrides[index + 1] ?? _translateEffect(effectNames[index]));
+
+String _translateEffect(String name) {
+  var rest = name.toUpperCase();
+  var suffix = '';
+  var title = '';
+  for (final (prefix, direction) in [('FORWARD ', 'directo'), ('BACKWARD ', 'inverso')]) {
+    if (rest.startsWith(prefix)) {
+      rest = rest.substring(prefix.length);
+      for (final entry in _motion.entries) {
+        if (rest.startsWith('${entry.key} ')) {
+          title = entry.value;
+          rest = rest.substring(entry.key.length + 1);
+          break;
+        }
+      }
+      if (title.isEmpty) title = 'Ciclo';
+      final feminine = const {'Estela', 'Corriente', 'Carrera'}.contains(title);
+      suffix = ' ${feminine ? '${direction.substring(0, direction.length - 1)}a' : direction}';
+      break;
+    }
+  }
+  if (title.isEmpty) {
+    for (final (prefix, label) in [
+      ('OPEN CURTAIN SWAB ', 'Barrido de apertura'),
+      ('CLOSE CURTAIN SWAB ', 'Barrido de cierre'),
+      ('OPEN CURTAIN ', 'Apertura'),
+      ('CLOSE CURTAIN ', 'Cierre'),
+      ('HOP ', 'Saltos'),
+    ]) {
+      if (rest.startsWith(prefix)) {
+        title = label;
+        rest = rest.substring(prefix.length);
+        break;
+      }
+    }
+  }
+  final palette = rest.split(' ON ');
+  final foreground = palette.first;
+  final shades = switch (foreground) {
+    '7 COLORS' || '7 COLOR' => 'de 7 colores',
+    _ when foreground.startsWith('6 COLORS ') =>
+      'de 6 colores (${_colors[foreground.substring('6 COLORS '.length)]!})',
+    _ => foreground.split('/').map((code) => _colors[code]!).join(' / '),
+  };
+  final background = palette.length == 2 ? ' sobre ${_colors[palette.last]!}' : '';
+  return '$title $shades$suffix$background';
+}

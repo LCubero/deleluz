@@ -53,8 +53,11 @@ class _HomeScreenState extends State<HomeScreen> {
           style: IconButton.styleFrom(fixedSize: const Size.square(48), padding: EdgeInsets.zero),
           onPressed: off ? null : () => TimerSheet.open(context, c))),
       ]),
-      if (c.remaining case final seconds?)
-        Text(c.text('offIn', {'time': formatRemaining(seconds)}), style: style.bodySmall),
+      GlowStatusSlot(lines: MediaQuery.textScalerOf(context).scale(13) > 16 ? 2 : 1,
+        text: switch (c.remaining) {
+        final seconds? => c.text('offIn', {'time': formatRemaining(seconds)}),
+        null => null,
+      }),
       const SizedBox(height: 12),
       if (off) ...[
         BluetoothCard(controller: c),
@@ -85,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       const SizedBox(height: 6),
       ConstrainedBox(constraints: BoxConstraints(
-        minHeight: 2 * MediaQuery.textScalerOf(context).scale(13) * 1.4),
+        minHeight: 3 * MediaQuery.textScalerOf(context).scale(13) * 1.4),
         child: Text(last == null ? c.text('noCommand') : c.text('lastSent', {'command': last}),
           textAlign: TextAlign.center, style: style.bodySmall,
           strutStyle: const StrutStyle(fontSize: 13, height: 1.4, forceStrutHeight: true))),
@@ -99,15 +102,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _quick(BuildContext context) {
     final count = c.shortcuts.length + (c.shortcuts.length < maxShortcuts ? 1 : 0);
     return Column(children: [
-      Semantics(button: true, expanded: _quickOpen, child: InkWell(
+      Semantics(button: true, expanded: _quickOpen, child: Material(
+        color: _quickOpen ? glowGlass : Colors.transparent,
+        borderRadius: BorderRadius.circular(16), child: InkWell(
+        borderRadius: BorderRadius.circular(16),
         onTap: () => setState(() => _quickOpen = !_quickOpen),
-        child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48), child: Row(spacing: 8, children: [
+        child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48), child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: glassInset), child: Row(spacing: 8, children: [
           Expanded(child: Text(c.text('quickActions'), style: const TextStyle(
             color: glowMuted, fontSize: 16, fontWeight: FontWeight.w600))),
           RotatedBox(quarterTurns: _quickOpen ? 1 : 0,
             child: const GlowIcon(GlowGlyph.chevron, color: glowMuted, size: 18)),
-        ])),
-      )),
+        ]))),
+      ))),
       if (_quickOpen) ...[
         const SizedBox(height: 10),
         GlowGrid(columns: count == 1 ? 1 : 2, children: [
@@ -143,7 +150,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Flexible(child: Text(c.text(kind.label), style: Theme.of(context).textTheme.bodySmall)),
         ]),
         Text(c.shortcutLabel(item), key: const Key('shortcut-display-name'),
-          maxLines: 2, overflow: TextOverflow.ellipsis,
+          maxLines: kind == QuickActionKind.effect ? null : 2,
+          overflow: kind == QuickActionKind.effect ? null : TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
       ],
     ));
@@ -205,7 +213,12 @@ class _HomeScreenState extends State<HomeScreen> {
     ]);
     final card = GlassCard(onTap: chooseStrip, child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: [
-      LayoutBuilder(builder: (context, constraints) => Row(spacing: 12,
+      if (glowCompactLayout(context))
+        Column(crossAxisAlignment: CrossAxisAlignment.start, spacing: 8, children: [
+          name,
+          ConnectionChip(controller: c, status: status),
+        ])
+      else LayoutBuilder(builder: (context, constraints) => Row(spacing: 12,
         crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(child: name),
           // Give the status room before wrapping it, without crowding out the name.

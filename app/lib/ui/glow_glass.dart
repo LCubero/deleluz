@@ -92,6 +92,26 @@ class GlowPrimaryButton extends StatelessWidget {
   }
 }
 
+/// Keeps changing status text in a stable space. Long text still wraps and can scroll.
+class GlowStatusSlot extends StatelessWidget {
+  const GlowStatusSlot({super.key, this.text, required this.lines, this.textAlign,
+    this.live = false});
+  final String? text;
+  final int lines;
+  final TextAlign? textAlign;
+  final bool live;
+
+  @override
+  Widget build(BuildContext context) {
+    final height = lines * MediaQuery.textScalerOf(context).scale(13) * 1.4;
+    final label = text == null ? null : Semantics(liveRegion: live, child: Text(text!, textAlign: textAlign,
+      style: Theme.of(context).textTheme.bodySmall,
+      strutStyle: const StrutStyle(fontSize: 13, height: 1.4, forceStrutHeight: true)));
+    return SizedBox(height: height.ceilToDouble(),
+      child: label == null ? null : SingleChildScrollView(primary: false, child: label));
+  }
+}
+
 const glassInset = 16.0;
 const glowScreenPadding = EdgeInsets.fromLTRB(18, 16, 18, 18);
 
@@ -246,6 +266,10 @@ class GlassCard extends StatelessWidget {
   }
 }
 
+// Treat larger type like a narrower viewport without changing the font size.
+bool glowCompactLayout(BuildContext context) =>
+  MediaQuery.sizeOf(context).width / MediaQuery.textScalerOf(context).scale(1) < 300;
+
 class GlowGrid extends StatelessWidget {
   const GlowGrid({super.key, required this.columns, required this.children});
   final int columns;
@@ -254,10 +278,10 @@ class GlowGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Column(spacing: 10, children: [
     for (var start = 0; start < children.length; start += columns)
-      Row(crossAxisAlignment: CrossAxisAlignment.start, spacing: 10, children: [
+      IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 10, children: [
         for (var i = start; i < start + columns; i++)
           Expanded(child: i < children.length ? children[i] : const SizedBox.shrink()),
-      ]),
+      ])),
   ]);
 }
 
@@ -508,26 +532,33 @@ class GlowSegments<T> extends StatelessWidget {
   final ValueChanged<T> onSelected;
 
   @override
-  Widget build(BuildContext context) => Material(color: glowGlass,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14),
-      side: const BorderSide(color: glowLine)),
-    child: Padding(padding: const EdgeInsets.all(4), child: Row(
-      crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-      for (final segment in segments) Expanded(child: GlowSelectionTarget(
+  Widget build(BuildContext context) {
+    final items = [
+      for (final segment in segments) GlowSelectionTarget(
         radius: 10, clear: true, selected: segment.value == selected,
         onTap: segment.enabled ? () => onSelected(segment.value) : null,
         child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48),
           child: Center(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-            child: Row(mainAxisSize: MainAxisSize.min, spacing: 4,
-              crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-              if (segment.value == selected) GlowSelection.check(),
+            child: Row(mainAxisSize: MainAxisSize.min, spacing: 4, children: [
+              segment.value == selected ? GlowSelection.check() : const SizedBox.square(dimension: 18),
               Flexible(child: DefaultTextStyle.merge(textAlign: TextAlign.center,
                 style: TextStyle(fontSize: segments.length == 3 ? 14 : 15, fontWeight: FontWeight.w600,
                   color: segment.value == selected ? glowInk : glowMuted),
                 child: segment.label ?? const SizedBox.shrink())),
             ])))),
-      )),
-    ])));
+      ),
+    ];
+    // Every segment reserves the check slot so selection never moves or rewraps labels.
+    return Material(color: glowGlass,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: glowLine)),
+      child: Padding(padding: const EdgeInsets.all(4),
+        child: glowCompactLayout(context)
+          ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: items)
+          : IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [for (final item in items) Expanded(child: item)]))),
+    );
+  }
 }
 
 class ConnectionChip extends StatelessWidget {

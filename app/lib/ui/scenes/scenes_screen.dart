@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app_controller.dart';
-import '../../model/effects.dart';
 import '../../model/models.dart';
 import '../../protocol.dart' as wire;
 import '../glow_glass.dart';
@@ -36,8 +35,32 @@ class ScenesScreen extends StatefulWidget {
 
 class _ScenesScreenState extends State<ScenesScreen> {
   AppController get c => widget.controller;
-  late SceneTransport _transport = SceneTransport(c);
+  late SceneTransport _transport;
   String _panel = 'mine';
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _bindTransport();
+  }
+
+  void _bindTransport() {
+    _transport = SceneTransport(c)..addListener(_noticeFailure);
+    _failed = _transport.failed;
+  }
+
+  void _noticeFailure() {
+    final show = !_failed && _transport.failed && widget.active;
+    _failed = _transport.failed;
+    if (!show) return;
+    // Dialogs own their existing inline feedback; the screen uses a floating notice.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && widget.active && _transport.failed && ModalRoute.of(context)?.isCurrent == true) {
+        showGlowNotice(context, c.text('commandFailed'), kind: NoticeKind.error);
+      }
+    });
+  }
 
   @override
   void didUpdateWidget(ScenesScreen oldWidget) {
@@ -45,7 +68,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
     if (!oldWidget.active && widget.active) _panel = 'mine';
     if (oldWidget.controller != c) {
       _transport.dispose();
-      _transport = SceneTransport(c);
+      _bindTransport();
     }
   }
 
@@ -65,8 +88,6 @@ class _ScenesScreenState extends State<ScenesScreen> {
         padding: glowScreenPadding,
         children: [
           GlowHeader(title: c.text('scenes'), controller: c),
-          if (_transport.failed)
-            Notice(c.text('commandFailed'), kind: NoticeKind.error, live: true),
           const SizedBox(height: 12),
           GlowSegments<String>(selected: _panel,
             onSelected: (panel) => setState(() => _panel = panel), segments: [
@@ -79,7 +100,8 @@ class _ScenesScreenState extends State<ScenesScreen> {
           ...switch (_panel) {
             'mine' => _mine(),
             'music' => [_music()],
-            _ => [GlowGrid(columns: 2, children: _included())],
+            _ => [Notice(c.text('needsAppLegend')), const SizedBox(height: 12),
+              GlowGrid(columns: glowCompactLayout(context) ? 1 : 2, children: _included())],
           },
         ],
       ));
@@ -87,23 +109,26 @@ class _ScenesScreenState extends State<ScenesScreen> {
   );
 
   List<Widget> _included() => [
-    for (final entry in homePresets.entries)
-      _card('included-${entry.key}', c.text(entry.key), presetPreviewColors(entry.key),
-        () => _applyPreset(entry.key),
-        () => _preview(c.text(entry.key), entry.value.colors, entry.value.interval, (interval) {
-          _transport.useShared({'kind': 'scene', 'preset': entry.key, 'interval': interval});
-        }, preset: entry.key)),
+    // Strip effects first; app-driven scenes below (owner L16).
     for (final id in const [wire.autoEffect, 1, 2])
       _card('included-effect-$id', _effectName(id), glowEffectColors,
         () => _applyEffect(id),
-        () => _preview(_effectName(id), glowEffectColors, 650, (_) => _applyEffect(id), effect: id)),
+        () => _preview(_effectName(id), glowEffectColors, 650, (_) => _applyEffect(id), effect: id),
+        needsApp: false),
+    for (final entry in homePresets.entries)
+      _card('included-${entry.key}', c.text(entry.key), presetPreviewColors(entry.key),
+        () => _applyPreset(entry.key),
+        () => _preview(c.text(entry.key), entry.value.colors, entry.value.interval,
+          (interval) => _applyPreset(entry.key, interval: interval), preset: entry.key), needsApp: true),
   ];
 
-  String _effectName(int id) => id == wire.autoEffect ? c.text('autoCycle') : effectNames[id - 1];
+  String _effectName(int id) => id == wire.autoEffect ? c.text('autoCycle') : c.displayEffectName(id)!;
 
-  void _applyPreset(String preset) {
+  void _applyPreset(String preset, {int? interval}) {
     if (!_transport.ready) return _connectFirst();
-    _transport.useShared({'kind': 'scene', 'preset': preset});
+    _transport.playShortcut('included-$preset', {
+      'kind': 'scene', 'preset': preset, if (interval != null) 'interval': interval,
+    }, {'rgb': homePresets[preset]!.colors.first});
   }
 
   void _applyEffect(int effect) {
@@ -126,20 +151,22 @@ class _ScenesScreenState extends State<ScenesScreen> {
   List<Widget> _mine() {
     final items = c.models.loadSequences();
     return [
-      Align(alignment: Alignment.center, child: FilledButton.icon(key: const Key('scene-new'),
+      Align(alignment: Alignment.center, child: GlowPrimaryButton(key: const Key('scene-new'),
         icon: const Icon(Icons.add), label: Text(c.text('newSequence')),
         onPressed: items.length < maxSequences ? () => _edit(null) : null)),
       const SizedBox(height: 12),
-      if (items.isEmpty) Notice(c.text('sequencesEmpty')),
+      if (items.isEmpty) Notice(c.text('sequencesEmpty')) else Notice(c.text('mineNeedsAppNote')),
       if (items.length >= maxSequences)
         Notice(c.text('scenesLimit', {'max': maxSequences}), kind: NoticeKind.warning),
-      GlowGrid(columns: 2, children: [
+      const SizedBox(height: 12),
+      GlowGrid(columns: glowCompactLayout(context) ? 1 : 2, children: [
         for (final item in items)
           _card('scene-play-${item['id']}', item['name'] as String, item['colors'] as List<List<int>>,
             () {
               if (!_transport.ready) return _connectFirst();
-              _transport.useShared({'kind': 'sequence', 'id': item['id']});
-            }, () => _edit(item), userName: true,
+              _transport.playShortcut('scene-play-${item['id']}',
+                {'kind': 'sequence', 'id': item['id']}, sceneSteps(item).first);
+            }, () => _edit(item), userName: true, needsApp: true,
             trailing: IconButton(key: Key('scene-edit-${item['id']}'),
               tooltip: c.text('renameSequence'), icon: const Icon(Icons.edit_outlined),
               onPressed: () => _edit(item))),
@@ -156,17 +183,32 @@ class _ScenesScreenState extends State<ScenesScreen> {
   }
 
   Widget _card(String key, String title, List<List<int>> colors, VoidCallback tap,
-      VoidCallback hold, {Widget? trailing, bool userName = false}) => GlowTile(key: Key(key),
-    onTap: tap, onLongPress: hold, inset: glassInset + 1, minHeight: 92,
-    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
-      ConstrainedBox(constraints: BoxConstraints(minHeight: MediaQuery.textScalerOf(context).scale(15) * 2.6),
-        child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(height: 1.3),
-          key: userName ? const Key('scene-display-name') : null,
-          maxLines: userName ? 2 : null, overflow: userName ? TextOverflow.ellipsis : null)),
-      GlowStrip(colors: colors, dotted: false),
-      if (trailing != null) Align(alignment: AlignmentDirectional.centerEnd, child: trailing),
-    ]),
-  );
+      VoidCallback hold, {Widget? trailing, bool userName = false, required bool needsApp}) {
+    final selected = _transport.isSelected(key);
+    return GlowSelectionTarget(key: Key(key), selected: selected, onTap: tap, onLongPress: hold,
+      child: Container(constraints: const BoxConstraints(minHeight: 92),
+        padding: const EdgeInsets.all(glassInset + 1),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween, spacing: 8, children: [
+          // Reserve the check beside the title; the aligned footer keeps its full width.
+          ConstrainedBox(constraints: BoxConstraints(minHeight: MediaQuery.textScalerOf(context).scale(15) * 2.6),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, spacing: 8, children: [
+              Expanded(child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(height: 1.3),
+                key: userName ? const Key('scene-display-name') : null,
+                maxLines: userName ? 2 : null, overflow: userName ? TextOverflow.ellipsis : null)),
+              if (selected) GlowSelection.check() else const SizedBox.square(dimension: 18),
+            ])),
+          Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
+            GlowStrip(colors: colors, dotted: false),
+            Row(children: [
+              Expanded(child: _RuntimeTag(text: c.text(needsApp ? 'needsApp' : 'onStrip'), needsApp: needsApp)),
+              ?trailing,
+            ]),
+          ]),
+        ]),
+      ),
+    );
+  }
 
   Widget _music() => SliderZone(child: GlassCard(
     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -174,12 +216,13 @@ class _ScenesScreenState extends State<ScenesScreen> {
     const SizedBox(height: 8),
     Notice(c.text('musicHint')),
     const SizedBox(height: 12),
-    GlowGrid(columns: 2, children: [
+    GlowGrid(columns: glowCompactLayout(context) ? 1 : 2, children: [
       for (var mode = 1; mode <= 4; mode++)
-        GlowTile(key: Key('scene-voice-$mode'), onTap: () {
+        GlowTile(key: Key('scene-voice-$mode'), selected: _transport.isSelected('scene-voice-$mode'), onTap: () {
           if (!_transport.ready) return _connectFirst();
           unawaited(_transport.playVoice(mode));
-        }, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
+        }, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween, spacing: 8, children: [
           Text('${c.text('voiceModeWord')} $mode', style: Theme.of(context).textTheme.titleMedium),
           GlowStrip(colors: _voiceColors[mode - 1], dotted: false),
         ])),
@@ -192,6 +235,20 @@ class _ScenesScreenState extends State<ScenesScreen> {
   ));
 }
 
+/// Icon plus text, so the runtime difference never relies on color alone.
+class _RuntimeTag extends StatelessWidget {
+  const _RuntimeTag({required this.text, required this.needsApp});
+  final String text;
+  final bool needsApp;
+
+  @override
+  Widget build(BuildContext context) => Row(spacing: 6, children: [
+    Icon(needsApp ? Icons.phone_android : Icons.memory, size: 16, color: glowMuted),
+    Flexible(child: Text(text, key: const Key('scene-runtime-tag'),
+      style: Theme.of(context).textTheme.bodySmall)),
+  ]);
+}
+
 class _LastSent extends StatelessWidget {
   const _LastSent({required this.transport});
   final SceneTransport transport;
@@ -200,8 +257,10 @@ class _LastSent extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = transport.controller;
     final command = c.lastSentLabel;
-    return Text(command == null ? c.text('noCommand') : c.text('lastSent', {'command': command}),
-      textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall);
+    final scaled = MediaQuery.textScalerOf(context).scale(13);
+    return GlowStatusSlot(lines: scaled > 16 ? 5 : 3,
+      text: command == null ? c.text('noCommand') : c.text('lastSent', {'command': command}),
+      textAlign: TextAlign.center);
   }
 }
 
@@ -292,8 +351,7 @@ class _IncludedPreviewState extends State<_IncludedPreview> with WidgetsBindingO
         children: [
           Text(c.text('screenPreview')),
           const SizedBox(height: 10),
-          Container(height: 16, decoration: BoxDecoration(color: _rgb(widget.colors[_index]),
-            borderRadius: BorderRadius.circular(8))),
+          GlowStrip(colors: [widget.colors[_index]], dotted: false),
           const SizedBox(height: 10),
           if (widget.preset != null) ...[
             SliderZone(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -323,8 +381,8 @@ class _IncludedPreviewState extends State<_IncludedPreview> with WidgetsBindingO
             unawaited(widget.transport.playColors(widget.colors, _interval, 50));
           }
         } : null, child: Text(c.text('tryScene'))),
-        FilledButton(onPressed: widget.transport.ready ? () => Navigator.pop(context, _interval) : null,
-          child: Text(c.text('apply'))),
+        GlowPrimaryButton(onPressed: widget.transport.ready ? () => Navigator.pop(context, _interval) : null,
+          label: Text(c.text('apply'))),
       ],
     ));
 }

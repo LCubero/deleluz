@@ -105,21 +105,23 @@ class _StripSelectorState extends State<StripSelector> {
               focusedBorder: _searchBorder(glowViolet))),
         ],
         const SizedBox(height: 12),
-        Semantics(expanded: c.stripsExpanded || query.isNotEmpty, child: TextButton(
-          style: TextButton.styleFrom(alignment: Alignment.centerLeft, padding: EdgeInsets.zero),
-          onPressed: query.isEmpty ? c.toggleStripsExpanded : null,
-          child: Row(spacing: 8, children: [
-            Expanded(child: _section(c.text('myStrips', {'count': savedMatches.length}))),
-            if (query.isEmpty) Icon(c.stripsExpanded ? Icons.expand_less : Icons.expand_more),
-          ]),
-        )),
-        if (c.stripsExpanded || query.isNotEmpty)
-          for (final strip in savedMatches) Padding(
-            key: ValueKey(strip.id), padding: const EdgeInsets.only(top: 10),
-            child: _row(strip, saved: strip, state: _connected(strip) ? 'connected'
-              : c.scanCompleted && !seen.contains(strip.id) ? 'stripOutOfRange' : 'rememberedStrip'),
-          ),
-        const SizedBox(height: 20),
+        if (saved.isNotEmpty) ...[
+          Semantics(expanded: c.stripsExpanded || query.isNotEmpty, child: TextButton(
+            style: TextButton.styleFrom(alignment: Alignment.centerLeft, padding: EdgeInsets.zero),
+            onPressed: query.isEmpty ? c.toggleStripsExpanded : null,
+            child: Row(spacing: 8, children: [
+              Expanded(child: _section(c.text('myStrips', {'count': savedMatches.length}))),
+              if (query.isEmpty) Icon(c.stripsExpanded ? Icons.expand_less : Icons.expand_more),
+            ]),
+          )),
+          if (c.stripsExpanded || query.isNotEmpty)
+            for (final strip in savedMatches) Padding(
+              key: ValueKey(strip.id), padding: const EdgeInsets.only(top: 10),
+              child: _row(strip, saved: strip, state: _connected(strip) ? 'connected'
+                : c.scanCompleted && !seen.contains(strip.id) ? 'stripOutOfRange' : 'rememberedStrip'),
+            ),
+          const SizedBox(height: 20),
+        ],
         _section(c.text('newNearbyStrips')),
         for (final strip in nearbyMatches) Padding(
           key: ValueKey(strip.id), padding: const EdgeInsets.only(top: 10), child: _row(strip),
@@ -169,9 +171,9 @@ class _StripSelectorState extends State<StripSelector> {
     final primary = !connected && failure == null && !pending; // Cancelar stays grey (L54).
     final pill = FilledButton(
       style: FilledButton.styleFrom(
-        minimumSize: const Size(0, 34),
+        minimumSize: const Size.square(48),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: const StadiumBorder(),
+        shape: const StadiumBorder(),
         backgroundColor: primary ? Colors.transparent : glowGlassSelected,
         foregroundColor: failure == null ? glowInk : error,
         side: primary ? null : BorderSide(color: failure == null ? glowLine : error),
@@ -188,7 +190,7 @@ class _StripSelectorState extends State<StripSelector> {
         borderRadius: BorderRadius.circular(16),
         onTap: c.busy || connected ? null : () => _connect(strip),
         onLongPress: saved == null || c.busy ? null : () => _menu(saved),
-        child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(spacing: 8, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Expanded(flex: 3, child: Padding(padding: EdgeInsets.zero,

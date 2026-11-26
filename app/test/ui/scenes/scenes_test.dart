@@ -1,6 +1,7 @@
 import 'package:deleluz/app_controller.dart';
 import 'package:deleluz/model/models.dart';
 import 'package:deleluz/ui/glow_glass.dart';
+import 'package:deleluz/ui/home_presets.dart';
 import 'package:deleluz/ui/scenes/scenes_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -39,7 +40,14 @@ void main() {
 
   Future<void> tap(WidgetTester tester, String value) async {
     final target = key(value);
-    await tester.ensureVisible(target);
+    // Tabs sit above the panels; cards below them.
+    if (target.evaluate().isEmpty) {
+      await tester.scrollUntilVisible(target, value.startsWith('scenes-') ? -100 : 100);
+    }
+    if (target.hitTestable().evaluate().isEmpty) {
+      await Scrollable.ensureVisible(tester.element(target), alignment: .5);
+      await tester.pumpAndSettle();
+    }
     await tester.tap(target);
     await tester.pumpAndSettle();
   }
@@ -48,6 +56,76 @@ void main() {
     now += ms;
     await tester.pump(Duration(milliseconds: ms));
   }
+
+  testWidgets('audit: scene primary actions use the shared gradient button', (tester) async {
+    await start(tester);
+    await tap(tester, 'scene-new');
+    expect(key('scene-save').hitTestable(), findsOneWidget);
+    expect(tester.widget(key('scene-save')), isA<GlowPrimaryButton>());
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(tester.widget(key('scene-new')), isA<GlowPrimaryButton>());
+    await tap(tester, 'scenes-included');
+    await tester.longPress(key('included-police'));
+    await tester.pumpAndSettle();
+    final apply = find.widgetWithText(GlowPrimaryButton, c.text('apply'));
+    expect(apply, findsOneWidget);
+    expect(tester.widget<GlowPrimaryButton>(apply).onPressed, isNull);
+  });
+
+  testWidgets('audit: failed command notice does not move scene tabs', (tester) async {
+    await start(tester, connected: true, size: const Size(320, 915), scale: 1.5);
+    final tabs = key('scenes-mine');
+    final before = tester.getRect(tabs);
+    ble.failWrite = (_) => true;
+    final failed = c.setEffect(1);
+    for (var i = 0; i < 5; i++) { await tick(tester, 100); }
+    expect(await failed, isFalse);
+    await tester.pumpAndSettle();
+    expect(find.text(c.text('commandFailed')), findsOneWidget);
+    expect(tester.getRect(tabs), before);
+    ble.failWrite = null;
+    final sent = c.setEffect(1);
+    for (var i = 0; i < 5; i++) { await tick(tester, 100); }
+    expect(await sent, isTrue);
+    await tester.pumpAndSettle();
+    expect(tester.getRect(tabs), before);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    expect(find.text(c.text('commandFailed')), findsNothing);
+    expect(tester.getRect(tabs), before);
+  });
+
+  testWidgets('audit: preview status does not move dialog actions', (tester) async {
+    await start(tester, connected: true, size: const Size(320, 1600), scale: 1.5);
+    await tap(tester, 'scenes-included');
+    final card = key('included-police');
+    await Scrollable.ensureVisible(tester.element(card), alignment: .5);
+    await tester.pumpAndSettle();
+    expect(card.hitTestable(), findsOneWidget);
+    await tester.longPress(card);
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.text(c.text('noCommand')), findsOneWidget);
+    final before = tester.getRect(key('scene-close'));
+    final sent = c.setEffect(1);
+    for (var i = 0; i < 5; i++) { await tick(tester, 100); }
+    expect(await sent, isTrue);
+    expect(find.textContaining(c.text('lastSent', {'command': ''})), findsOneWidget);
+    expect(tester.getRect(key('scene-close')), before);
+  });
+
+  testWidgets('audit: dialog preview uses an animated shared strip', (tester) async {
+    await start(tester);
+    await tap(tester, 'scenes-included');
+    await tester.longPress(key('included-police'));
+    await tester.pumpAndSettle();
+    final strip = find.descendant(of: find.byType(AlertDialog), matching: find.byType(GlowStrip));
+    expect(strip, findsOneWidget);
+    final before = tester.widget<GlowStrip>(strip).colors;
+    await tick(tester, 350);
+    expect(tester.widget<GlowStrip>(strip).colors, isNot(before));
+  });
 
   for (final mixed in [false, true]) {
     testWidgets('${mixed ? 'mixed' : 'legacy'} stored scene sends timed exact frames', (tester) async {
@@ -102,7 +180,7 @@ void main() {
     ]), isTrue);
     await tap(tester, 'scenes-mine');
     expect(find.text(c.text('scenesLimit', {'max': maxSequences})), findsOneWidget);
-    expect(tester.widget<FilledButton>(key('scene-new')).onPressed, isNull);
+    expect(tester.widget<GlowPrimaryButton>(key('scene-new')).onPressed, isNull);
     await tap(tester, 'scene-edit-1');
     final stepLimit = find.text(c.text('sceneStepsLimit', {'max': maxColors}));
     expect(stepLimit, findsOneWidget);
@@ -320,8 +398,26 @@ void main() {
       for (var i = 0; i < 5; i++) {
         await tick(tester, 100);
       }
+      for (var candidate = 1; candidate <= 4; candidate++) {
+        final card = key('scene-voice-$candidate');
+        expect(find.descendant(of: card, matching: find.byKey(GlowSelection.markerKey)),
+          candidate == mode ? findsOneWidget : findsNothing);
+        final material = tester.widget<Material>(find.descendant(of: card, matching: find.byType(Material)).first);
+        expect(material.color, candidate == mode ? GlowSelection.tint : glowGlass);
+        if (candidate == mode) {
+          expect((material.shape as RoundedRectangleBorder).side, GlowSelection.border);
+        }
+      }
     }
     expect(ble.writes.where((w) => w[2] == 11).map((w) => w[3]), [1, 2, 3, 4]);
+    ble.failWrite = (_) => true;
+    await tap(tester, 'scene-voice-1');
+    for (var i = 0; i < 5; i++) { await tick(tester, 100); }
+    expect(find.descendant(of: key('scene-voice-4'), matching: find.byKey(GlowSelection.markerKey)),
+      findsOneWidget);
+    expect(find.descendant(of: key('scene-voice-1'), matching: find.byKey(GlowSelection.markerKey)),
+      findsNothing);
+    ble.failWrite = null;
     await tester.ensureVisible(slider);
     for (final value in [0.0, 100.0]) {
       tester.widget<Slider>(slider).onChanged!(value);
@@ -331,6 +427,62 @@ void main() {
     expect(find.text(c.text('micSensitivity')), findsOneWidget);
     expect(find.textContaining(c.text('lastSent', {'command': ''})), findsNothing);
   });
+
+  for (final width in [320.0, 412.0]) {
+    testWidgets('last started scene owns the check without moving cards at $width dp', (tester) async {
+      await start(tester, connected: true, savedScenes: legacyScene,
+        size: Size(width, 1600), scale: 1.3);
+      const preset = 'included-police';
+      const effect = 'included-effect-1';
+      const saved = 'scene-play-1';
+      const music = 'scene-voice-1';
+      Finder check(String card) => find.descendant(of: key(card),
+        matching: find.byKey(GlowSelection.markerKey));
+      Future<void> play(String card) async {
+        await tap(tester, card);
+        for (var i = 0; i < 5; i++) { await tick(tester, 100); }
+        await tester.pumpAndSettle();
+      }
+      Future<void> select(String card) async {
+        await tester.scrollUntilVisible(key(card), 100);
+        await tester.pumpAndSettle();
+        final before = tester.getRect(key(card));
+        expect(check(card), findsNothing);
+        await play(card);
+        expect(check(card), findsOneWidget);
+        expect(tester.getRect(key(card)), before);
+        final material = tester.widget<Material>(find.descendant(of: key(card),
+          matching: find.byType(Material)).first);
+        expect(material.color, GlowSelection.tint);
+        expect((material.shape as RoundedRectangleBorder).side, GlowSelection.border);
+      }
+      await tap(tester, 'scenes-included');
+      await select(preset);
+      await select(effect);
+      await tester.scrollUntilVisible(key(preset), 100);
+      expect(check(preset), findsNothing);
+      await tap(tester, 'scenes-mine');
+      ble.failWrite = (_) => true;
+      await play(saved);
+      expect(check(saved), findsNothing);
+      await tap(tester, 'scenes-included');
+      expect(check(effect), findsOneWidget);
+      ble.failWrite = null;
+      await tap(tester, 'scenes-mine');
+      await select(saved);
+      await tap(tester, 'scenes-included');
+      expect(check(effect), findsNothing);
+      await tap(tester, 'scenes-music');
+      await select(music);
+      await tap(tester, 'scenes-mine');
+      expect(check(saved), findsNothing);
+      await select(saved);
+      await tap(tester, 'scenes-music');
+      expect(check(music), findsNothing);
+      c.setForeground(false);
+      await tick(tester, 100);
+    });
+  }
 
   testWidgets('draft player stops when the app loses foreground', (tester) async {
     await start(tester, connected: true);
@@ -437,7 +589,7 @@ void main() {
       },
     ]);
     await tap(tester, 'scenes-mine');
-    expect(tester.widget<FilledButton>(key('scene-new')).onPressed, isNull);
+    expect(tester.widget<GlowPrimaryButton>(key('scene-new')).onPressed, isNull);
     expect(ble.writes, isEmpty);
   });
 
@@ -458,4 +610,83 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  for (final language in const ['es', 'en']) {
+    testWidgets('scene cards say which need the app open and connected ($language)', (tester) async {
+      await start(tester, size: const Size(320, 915), savedScenes: legacyScene);
+      c.setLanguage(language);
+      await tester.pumpAndSettle();
+      await tap(tester, 'scenes-included');
+      Future<String> tagOf(String card) async {
+        await tester.scrollUntilVisible(key(card), 100);
+        return tester.widget<Text>(find.descendant(of: key(card),
+          matching: find.byKey(const Key('scene-runtime-tag')))).data!;
+      }
+      expect(find.text(c.text('needsAppLegend')), findsOneWidget);
+      for (final preset in homePresets.keys) {
+        expect(await tagOf('included-$preset'), c.text('needsApp'), reason: preset);
+      }
+      for (final id in const [255, 1, 2]) {
+        expect(await tagOf('included-effect-$id'), c.text('onStrip'), reason: '$id');
+      }
+      await tap(tester, 'scenes-mine');
+      expect(await tagOf('scene-play-1'), c.text('needsApp'));
+      expect(find.text(c.text('mineNeedsAppNote')), findsOneWidget);
+      expect(c.text('foregroundPlaybackHint'), contains(language == 'es' ? 'conectada' : 'connected'));
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final (width, scale, language) in const [(320.0, 1.0, 'es'), (320.0, 1.3, 'es'),
+      (320.0, 1.0, 'en'), (412.0, 1.0, 'es'), (412.0, 1.3, 'en')]) {
+    testWidgets('scene tabs keep labels and heights stable at $width dp x$scale $language', (tester) async {
+      await start(tester, size: Size(width, 915), scale: scale);
+      c.setLanguage(language);
+      await tester.pumpAndSettle();
+      const ids = ['included', 'mine', 'music'];
+      final targets = find.descendant(of: find.byType(GlowSegments<String>),
+        matching: find.byType(GlowSelectionTarget));
+      Map<String, Rect> labels() => {for (final id in ids) id: tester.getRect(key('scenes-$id'))};
+      List<double> heights() => [for (var i = 0; i < 3; i++) tester.getSize(targets.at(i)).height];
+      final first = labels();
+      for (final id in ids) {
+        await tap(tester, 'scenes-$id');
+        final checks = find.descendant(of: find.byType(GlowSegments<String>),
+          matching: find.byKey(GlowSelection.markerKey));
+        expect(checks, findsOneWidget, reason: 'one visible check for $id');
+        final now = labels();
+        for (final other in ids) {
+          expect(now[other], first[other], reason: '$other label moved when $id selected');
+        }
+        final h = heights();
+        expect(h.toSet().length, 1, reason: 'segment heights differ when $id selected: $h');
+        final check = tester.getRect(checks);
+        final target = tester.getRect(targets.at(ids.indexOf(id)));
+        expect(check.center.dy, closeTo(target.center.dy, 1), reason: 'check centered vertically');
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('my scenes note keeps a 12 dp gap above the cards', (tester) async {
+    await start(tester, savedScenes: legacyScene);
+    await tap(tester, 'scenes-mine');
+    final note = find.text(c.text('mineNeedsAppNote'));
+    final noteBox = find.ancestor(of: note, matching: find.byType(DecoratedBox)).first;
+    expect(tester.getTopLeft(key('scene-play-1')).dy - tester.getBottomLeft(noteBox).dy,
+      closeTo(12, 0.5));
+  });
+
+  testWidgets('included lists strip effects first, then app-driven scenes', (tester) async {
+    await start(tester, size: const Size(412, 3000));
+    await tap(tester, 'scenes-included');
+    final ids = ['included-effect-255', 'included-effect-1', 'included-effect-2',
+      for (final preset in homePresets.keys) 'included-$preset'];
+    final tops = [for (final id in ids) tester.getTopLeft(key(id))];
+    for (var i = 1; i < tops.length; i++) {
+      final before = tops[i - 1], now = tops[i];
+      expect(now.dy > before.dy || (now.dy == before.dy && now.dx > before.dx), isTrue,
+        reason: '${ids[i]} should follow ${ids[i - 1]}');
+    }
+  });
 }
