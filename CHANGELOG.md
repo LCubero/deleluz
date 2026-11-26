@@ -4,6 +4,27 @@
 
 This file records meaningful completed changes in chronological order, newest first. Current state and future work belong in `docs/repo-harness/current-state.md`.
 
+## 1.2.0 — 2026-11-26
+
+Android [v1.2.0](https://github.com/LCubero/deleluz/releases/tag/v1.2.0) (build 2015): universal and per-ABI APKs.
+
+### Added
+
+- Scene cards and a legend distinguish **Necesita la app** (keep the app open and the strip connected) from **En la tira**. Strip effects appear first.
+- Included, saved, and Music cards mark the last scene or mode successfully started in the current session.
+
+### Changed
+
+- Effect names are translated in Spanish, with consistent **directo/inverso** wording and a note about the translations. Search also accepts English names. The About tagline follows the app language.
+- Scene creation, apply, and save use the gradient primary buttons. Strip chooser actions have 48 dp touch targets.
+
+### Fixed
+
+- Scene tab checks and changing status text no longer shift the layout. Compact layouts avoid mid-word breaks, and cards in the same row have equal heights.
+- Quick Actions keeps its header aligned. The timer sheet has a seamless header and more space around notices. Removed empty gaps in the strip chooser and idle effects catalog.
+
+Known limit: the Samsung Galaxy A73 5G (Android 14) could not connect to the tested LEDDMX-03 in either DeleLuz or the vendor app. See [Android app limits](app/README.md#limits).
+
 ## 1.1.0 — 2026-11-25
 
 Android phase 1 shipped as [v1.1.0](https://github.com/LCubero/deleluz/releases/tag/v1.1.0) (build 2013), with universal and per-architecture APKs. The owner approved test build 2012, and the [automated compatibility matrix](app/test/ui/compat_test.dart) covered 16 phone sizes. See [the phase 1 log](odd/tasks/app-polish.md#log).

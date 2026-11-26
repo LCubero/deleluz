@@ -74,7 +74,7 @@ void main() {
       expect(find.text('LCubero'), findsNothing);
       await tap(tester, find.text(title));
       final tagline = language == 'es' ? '¡Dele, enciéndala, mae!' : 'Go on, light it up!';
-      for (final text in [description, '$version 1.1.0', author, 'LCubero',
+      for (final text in [description, '$version 1.2.0', author, 'LCubero',
         license, 'MIT', repository, 'github.com/LCubero/deleluz', tagline]) {
         expect(find.text(text), findsOneWidget);
       }

@@ -39,5 +39,7 @@ The owner chooses the next phase from [the plan](../PLAN.md): the webapp port (R
 
 - RH-W-0001 App polish (P1, completed): Android phase 1 released as [v1.1.0](https://github.com/LCubero/deleluz/releases/tag/v1.1.0) on 2026-11-25 (build 2013; [phase 1 log](../../odd/tasks/app-polish.md#log), L62). Origin: owner requests ([plan](../PLAN.md)). Evidence: core features `ad070b5`, `22a0c70`, `64b5b8b`, `4546165`, `0257279`; owner approved build 2012, and the automated matrix covered 16 phone sizes ([phase 1 log](../../odd/tasks/app-polish.md#log), L42–L47; [compatibility tests](../../app/test/ui/compat_test.dart)). Remaining: none. Tablets and the webapp port were outside Android phase 1.
 
+  Android follow-up: the [UI audit](../../odd/tasks/app-ui-audit.md#log) is complete. v1.2.0 (build 2015) publication is pending refreshed captures and showreel, then APK builds and release (audit T13–T14).
+
 - Strip configuration (RGB order + pixel count, T23): delivered in the webapp Ajustes tab (`odd/tasks/deleluz-webapp.md` T46-T49), verified on the strip at 100 and 150 LEDs.
 - Onboard-mic sensitivity (`0x0C`): verified on the strip (lab L59), implemented in the webapp and tested by the user (`335d91c`).

@@ -2,17 +2,31 @@
 
 Native Android app (Flutter) for the LEDDMX-03 LED strip controller, with the Glow Glass design of the phone webapp ([`../webapp/README.md`](../webapp/README.md)). It is shared as an APK, not through an app store. iPhone builds need macOS and are not covered here.
 
-<p align="center"><img src="../docs/app-screens/showreel.webp" width="300" alt="DeleLuz 1.1.0: fixed cyan, app AUTO cycling through effects, the built-in automatic cycle, and a countdown started and canceled"></p>
+<p align="center"><img src="../docs/app-screens/showreel.webp" width="300" alt="DeleLuz: fixed cyan, app AUTO cycling through effects, the built-in automatic cycle, and a countdown started and canceled"></p>
+
+Las capturas muestran la versión 1.2.0. / These screenshots show version 1.2.0.
 
 [Screenshot gallery](../docs/app-screens/) · [Quick Actions picker](../docs/app-screens/02b-accion-rapida-selector.png) · [Scene editor with color and effect steps](../docs/app-screens/05c-editor-escena.png)
 
 ## Install
 
-1. Download the universal `DeleLuz-1.1.0.apk` from the [v1.1.0 release](https://github.com/LCubero/deleluz/releases/tag/v1.1.0). It requires Android 7.0 or newer.
+1. Download the universal `DeleLuz-1.2.0.apk` from the [v1.2.0 release](https://github.com/LCubero/deleluz/releases/tag/v1.2.0). It requires Android 7.0 or newer.
 2. Open it on the phone and allow installing apps from that source. Google Play Protect may warn because the app is not from the store.
-3. Install over 1.0.0 or a test build signed with the same key to keep your data.
+3. Install 1.2.0 over 1.1.0, 1.0.0, or a test build signed with the same key to keep your data.
+
+Per-architecture APKs: `DeleLuz-1.2.0-arm64-v8a.apk`, `DeleLuz-1.2.0-armeabi-v7a.apk`, and `DeleLuz-1.2.0-x86_64.apk`. If unsure, use the universal APK.
 
 If Android rejects the update because the installed build uses a different key, uninstalling removes all app data (saved strips, aliases, scenes, quick actions, favorites, and settings). Android backup is disabled. The strip keeps its own settings.
+
+## Novedades de la versión 1.2.0
+
+- Las escenas indican si necesitan la app o se ejecutan en la tira. La última escena o modo de Música que se inició correctamente queda marcado.
+- Los efectos tienen nombres en español y se pueden buscar en español o inglés. La interfaz se adapta mejor a pantallas estrechas.
+
+## What's new in 1.2.0
+
+- Scene labels show whether playback needs the app or runs on the strip. The last successfully started scene or Music mode is marked.
+- Effects have Spanish names and can be searched in Spanish or English. The layout adapts better to narrow screens.
 
 ## What it does
 
@@ -32,7 +46,7 @@ One strip connected at a time; several can be saved, each with an alias that sta
 
 ## Limits
 
-- Scene playback and the off timer run in the app, not on the strip. Keep the app in the foreground; opening the notification shade does not stop them.
+- Scenes labeled **Necesita la app** and the off timer require the app in the foreground and the strip connected. Opening the notification shade does not stop them. Scenes labeled **En la tira** run on the strip.
 - Shortcuts are reordered from the long-press menu, not by dragging.
 - No per-LED control is known for this controller.
 - No automatic update notice: install a newer APK over the old one.
@@ -60,7 +74,7 @@ keyAlias=deleluz
 storeFile=../release/deleluz-release.jks
 ```
 
-Raise the build number in `pubspec.yaml` for every new build you share. The next build number must be greater than the v1.1.0 release's `2013`. Keep `lib/version.dart` in sync with the version name (a test checks it).
+Raise the build number in `pubspec.yaml` for every new build you share. The next build after v1.2.0 must use a number greater than `2015`. Keep `lib/version.dart` in sync with the version name (a test checks it).
 
 On Windows the release build sometimes fails with `stableIds.txt ... The device does not recognize the command`; delete `build/app/intermediates/stable_resource_ids_file` and build again.
 

@@ -12,6 +12,7 @@ DeleLuz controls the stock LEDDMX-03 from a native Android app (`app/`, publishe
 
 <!-- doc-role:recent-work -->
 
+- Completed the Android UI audit and prepared v1.2.0 (build 2015): scene runtime labels and selection, Spanish effect names, and layout fixes. Updated captures and showreel, APKs, and release publication are pending. See the [audit log](../../odd/tasks/app-ui-audit.md#log).
 - RH-W-0001 (Android phase 1) shipped as v1.1.0 (build 2013) on 2026-11-25. The owner approved test build 2012; the automated matrix covered 16 phone sizes. See [roadmap evidence](roadmap.md#resolved-records).
 - Published the native Android app v1.0.0 (one universal APK, `DeleLuz-1.0.0.apk`) on GitHub Releases; built on branch `feat/android-app`, merged to `main`, verified by the user on two phones and two strips; independent review and native risk reviews done (`odd/tasks/deleluz-android.md` L41-L56).
 - Added onboard-mic sensitivity to the webapp, verified on the strip by the user (`335d91c`; lab L59).
@@ -21,10 +22,12 @@ DeleLuz controls the stock LEDDMX-03 from a native Android app (`app/`, publishe
 
 <!-- doc-role:pending-work -->
 
+The [Samsung Galaxy A73 5G limit](../../app/README.md#limits) remains: DeleLuz and the vendor app could not connect to the tested LEDDMX-03 (Bluetooth link-layer failure).
+
 The webapp port and two-strip spike await the owner's choice. See the [roadmap](roadmap.md). Full firmware readout and a strip-side timer remain unconfirmed and do not block the Android app.
 
 ## Next Step
 
 <!-- doc-role:next-step -->
 
-The Android UI audit and the 1.1.0 screenshots and showreel (app-polish T21) are merged to `main` ([audit tasks](../../odd/tasks/app-ui-audit.md)); not yet released as a new APK. Open: a Samsung Galaxy A73 (Android 14) cannot connect to the LEDDMX-03 with DeleLuz or the vendor app (link-layer failure, GATT 133; audit Log L32-L34). Then the owner chooses the next phase from [the plan](../PLAN.md): the webapp port (RH-W-0003) or the two-strip spike (RH-W-0002). Get explicit owner approval in the current turn before any test on a physical phone or strip, and announce each visual strip command first ([audit log](../../odd/tasks/app-ui-audit.md#log), L19).
+After v1.2.0 is published, the owner chooses the next phase from [the plan](../PLAN.md): the webapp port (RH-W-0003) or the two-strip spike (RH-W-0002). Get explicit owner approval in the current turn before testing on a physical phone or strip. Announce what each visual strip command will do and wait for the owner's go-ahead before sending it; connecting or retrying does not authorize playback ([audit log](../../odd/tasks/app-ui-audit.md#log), L19).
