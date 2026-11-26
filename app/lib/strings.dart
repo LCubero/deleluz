@@ -226,7 +226,7 @@ const _strings = <String, (String, String)>{
   'foregroundPlaybackHint': ('Los pasos se reproducen en orden solo con la app abierta y la tira conectada.', 'Steps play in order only with the app open and the strip connected.'),
   'needsApp': ('Necesita la app', 'Needs the app'),
   'onStrip': ('En la tira', 'On the strip'),
-  'needsAppLegend': ('«Necesita la app»: solo funciona con la app abierta y la tira conectada. «En la tira»: la tira la reproduce sola.', '“Needs the app”: only works with the app open and the strip connected. “On the strip”: the strip plays it on its own.'),
+  'needsAppLegend': ('«En la tira»: la tira la reproduce sola. «Necesita la app»: solo funciona con la app abierta y la tira conectada.', '“On the strip”: the strip plays it on its own. “Needs the app”: only works with the app open and the strip connected.'),
   'mineNeedsAppNote': ('Tus escenas solo funcionan con la app abierta y la tira conectada.', 'Your scenes only work with the app open and the strip connected.'),
   'standNear': ('Acércate a la tira y toca Conectar.', 'Stand within a few meters of the strip and tap Connect.'),
   'frequentDrops': ('Se desconecta a menudo', 'It disconnects often'),

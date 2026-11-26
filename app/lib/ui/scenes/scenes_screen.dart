@@ -109,17 +109,18 @@ class _ScenesScreenState extends State<ScenesScreen> {
   );
 
   List<Widget> _included() => [
+    // Strip effects first; app-driven scenes below (owner L16).
+    for (final id in const [wire.autoEffect, 1, 2])
+      _card('included-effect-$id', _effectName(id), glowEffectColors,
+        () => _applyEffect(id),
+        () => _preview(_effectName(id), glowEffectColors, 650, (_) => _applyEffect(id), effect: id),
+        needsApp: false),
     for (final entry in homePresets.entries)
       _card('included-${entry.key}', c.text(entry.key), presetPreviewColors(entry.key),
         () => _applyPreset(entry.key),
         () => _preview(c.text(entry.key), entry.value.colors, entry.value.interval, (interval) {
           _transport.useShared({'kind': 'scene', 'preset': entry.key, 'interval': interval});
         }, preset: entry.key), needsApp: true),
-    for (final id in const [wire.autoEffect, 1, 2])
-      _card('included-effect-$id', _effectName(id), glowEffectColors,
-        () => _applyEffect(id),
-        () => _preview(_effectName(id), glowEffectColors, 650, (_) => _applyEffect(id), effect: id),
-        needsApp: false),
   ];
 
   String _effectName(int id) => id == wire.autoEffect ? c.text('autoCycle') : c.displayEffectName(id)!;

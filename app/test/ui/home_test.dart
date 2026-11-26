@@ -157,7 +157,8 @@ void main() {
           expectWholeWords(tester, key('scenes-included'));
           expectWholeWords(tester, key('scenes-mine'));
         }
-        final cards = [key('included-christmas-moving'), key('included-christmas-glow')];
+        // One grid row: a strip effect beside the first app-driven scene.
+        final cards = [key('included-effect-2'), key('included-christmas-moving')];
         if (cards.last.evaluate().isEmpty) {
           await tester.scrollUntilVisible(cards.last, 100);
           await tester.pumpAndSettle();
@@ -1733,6 +1734,11 @@ void main() {
     final c = await start(tester);
     await tapTab(tester, 'Escenas');
     await tapKey(tester, 'scenes-included');
+    await tester.scrollUntilVisible(find.byKey(const Key('included-police')), 100,
+      scrollable: find.ancestor(of: find.byKey(const Key('scenes-included')),
+        matching: find.byType(Scrollable)).first);
+    await tester.ensureVisible(find.byKey(const Key('included-police')));
+    await tester.pumpAndSettle();
     await tester.longPress(find.byKey(const Key('included-police')));
     await tester.pumpAndSettle();
     final target = sliderLabel(c, 'stepInterval');

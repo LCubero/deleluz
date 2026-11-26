@@ -617,4 +617,17 @@ void main() {
     expect(tester.getTopLeft(key('scene-play-1')).dy - tester.getBottomLeft(noteBox).dy,
       closeTo(12, 0.5));
   });
+
+  testWidgets('included lists strip effects first, then app-driven scenes', (tester) async {
+    await start(tester, size: const Size(412, 3000));
+    await tap(tester, 'scenes-included');
+    final ids = ['included-effect-255', 'included-effect-1', 'included-effect-2',
+      for (final preset in homePresets.keys) 'included-$preset'];
+    final tops = [for (final id in ids) tester.getTopLeft(key(id))];
+    for (var i = 1; i < tops.length; i++) {
+      final before = tops[i - 1], now = tops[i];
+      expect(now.dy > before.dy || (now.dy == before.dy && now.dx > before.dx), isTrue,
+        reason: '${ids[i]} should follow ${ids[i - 1]}');
+    }
+  });
 }
