@@ -79,7 +79,8 @@ class _ScenesScreenState extends State<ScenesScreen> {
           ...switch (_panel) {
             'mine' => _mine(),
             'music' => [_music()],
-            _ => [GlowGrid(columns: 2, children: _included())],
+            _ => [Notice(c.text('needsAppLegend')), const SizedBox(height: 12),
+              GlowGrid(columns: 2, children: _included())],
           },
         ],
       ));
@@ -92,11 +93,12 @@ class _ScenesScreenState extends State<ScenesScreen> {
         () => _applyPreset(entry.key),
         () => _preview(c.text(entry.key), entry.value.colors, entry.value.interval, (interval) {
           _transport.useShared({'kind': 'scene', 'preset': entry.key, 'interval': interval});
-        }, preset: entry.key)),
+        }, preset: entry.key), needsApp: true),
     for (final id in const [wire.autoEffect, 1, 2])
       _card('included-effect-$id', _effectName(id), glowEffectColors,
         () => _applyEffect(id),
-        () => _preview(_effectName(id), glowEffectColors, 650, (_) => _applyEffect(id), effect: id)),
+        () => _preview(_effectName(id), glowEffectColors, 650, (_) => _applyEffect(id), effect: id),
+        needsApp: false),
   ];
 
   String _effectName(int id) => id == wire.autoEffect ? c.text('autoCycle') : effectNames[id - 1];
@@ -130,7 +132,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
         icon: const Icon(Icons.add), label: Text(c.text('newSequence')),
         onPressed: items.length < maxSequences ? () => _edit(null) : null)),
       const SizedBox(height: 12),
-      if (items.isEmpty) Notice(c.text('sequencesEmpty')),
+      if (items.isEmpty) Notice(c.text('sequencesEmpty')) else Notice(c.text('mineNeedsAppNote')),
       if (items.length >= maxSequences)
         Notice(c.text('scenesLimit', {'max': maxSequences}), kind: NoticeKind.warning),
       GlowGrid(columns: 2, children: [
@@ -139,7 +141,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
             () {
               if (!_transport.ready) return _connectFirst();
               _transport.useShared({'kind': 'sequence', 'id': item['id']});
-            }, () => _edit(item), userName: true,
+            }, () => _edit(item), userName: true, needsApp: true,
             trailing: IconButton(key: Key('scene-edit-${item['id']}'),
               tooltip: c.text('renameSequence'), icon: const Icon(Icons.edit_outlined),
               onPressed: () => _edit(item))),
@@ -156,7 +158,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
   }
 
   Widget _card(String key, String title, List<List<int>> colors, VoidCallback tap,
-      VoidCallback hold, {Widget? trailing, bool userName = false}) => GlowTile(key: Key(key),
+      VoidCallback hold, {Widget? trailing, bool userName = false, required bool needsApp}) => GlowTile(key: Key(key),
     onTap: tap, onLongPress: hold, inset: glassInset + 1, minHeight: 92,
     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
       ConstrainedBox(constraints: BoxConstraints(minHeight: MediaQuery.textScalerOf(context).scale(15) * 2.6),
@@ -164,7 +166,10 @@ class _ScenesScreenState extends State<ScenesScreen> {
           key: userName ? const Key('scene-display-name') : null,
           maxLines: userName ? 2 : null, overflow: userName ? TextOverflow.ellipsis : null)),
       GlowStrip(colors: colors, dotted: false),
-      if (trailing != null) Align(alignment: AlignmentDirectional.centerEnd, child: trailing),
+      Row(children: [
+        Expanded(child: _RuntimeTag(text: c.text(needsApp ? 'needsApp' : 'onStrip'), needsApp: needsApp)),
+        ?trailing,
+      ]),
     ]),
   );
 
@@ -190,6 +195,20 @@ class _ScenesScreenState extends State<ScenesScreen> {
       onChangeEnd: (_) => c.saveSelection()),
     ]),
   ));
+}
+
+/// Icon plus text, so the runtime difference never relies on color alone.
+class _RuntimeTag extends StatelessWidget {
+  const _RuntimeTag({required this.text, required this.needsApp});
+  final String text;
+  final bool needsApp;
+
+  @override
+  Widget build(BuildContext context) => Row(spacing: 6, children: [
+    Icon(needsApp ? Icons.phone_android : Icons.memory, size: 16, color: glowMuted),
+    Flexible(child: Text(text, key: const Key('scene-runtime-tag'),
+      style: Theme.of(context).textTheme.bodySmall)),
+  ]);
 }
 
 class _LastSent extends StatelessWidget {

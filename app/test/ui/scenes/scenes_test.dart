@@ -1,6 +1,7 @@
 import 'package:deleluz/app_controller.dart';
 import 'package:deleluz/model/models.dart';
 import 'package:deleluz/ui/glow_glass.dart';
+import 'package:deleluz/ui/home_presets.dart';
 import 'package:deleluz/ui/scenes/scenes_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -39,6 +40,10 @@ void main() {
 
   Future<void> tap(WidgetTester tester, String value) async {
     final target = key(value);
+    // Tabs sit above the panels; cards below them.
+    if (target.evaluate().isEmpty) {
+      await tester.scrollUntilVisible(target, value.startsWith('scenes-') ? -100 : 100);
+    }
     await tester.ensureVisible(target);
     await tester.tap(target);
     await tester.pumpAndSettle();
@@ -455,6 +460,32 @@ void main() {
       c.setLanguage('en');
       await tester.pumpAndSettle();
       await tap(tester, 'scenes-music');
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final language in const ['es', 'en']) {
+    testWidgets('scene cards say which need the app open and connected ($language)', (tester) async {
+      await start(tester, size: const Size(320, 915), savedScenes: legacyScene);
+      c.setLanguage(language);
+      await tester.pumpAndSettle();
+      await tap(tester, 'scenes-included');
+      Future<String> tagOf(String card) async {
+        await tester.scrollUntilVisible(key(card), 100);
+        return tester.widget<Text>(find.descendant(of: key(card),
+          matching: find.byKey(const Key('scene-runtime-tag')))).data!;
+      }
+      expect(find.text(c.text('needsAppLegend')), findsOneWidget);
+      for (final preset in homePresets.keys) {
+        expect(await tagOf('included-$preset'), c.text('needsApp'), reason: preset);
+      }
+      for (final id in const [255, 1, 2]) {
+        expect(await tagOf('included-effect-$id'), c.text('onStrip'), reason: '$id');
+      }
+      await tap(tester, 'scenes-mine');
+      expect(await tagOf('scene-play-1'), c.text('needsApp'));
+      expect(find.text(c.text('mineNeedsAppNote')), findsOneWidget);
+      expect(c.text('foregroundPlaybackHint'), contains(language == 'es' ? 'conectada' : 'connected'));
       expect(tester.takeException(), isNull);
     });
   }

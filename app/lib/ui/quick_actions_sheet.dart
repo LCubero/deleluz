@@ -139,13 +139,16 @@ class _QuickActionsSheetState extends State<QuickActionsSheet> {
               if (mounted) setState(() {});
             }),
         ],
+        if (scenes.isNotEmpty) Notice(c.text('mineNeedsAppNote')),
         for (final scene in scenes) _sceneCard(scene),
-      ] else
+      ] else ...[
+        Notice(c.text('foregroundPlaybackHint'), key: const Key('quick-scenes-needs-app')),
         for (final preset in homePresets.keys)
           GlowTile(key: Key('quick-scene-$preset'), minHeight: 48,
             selected: _selected?['preset'] == preset,
             onTap: () => _select({'kind': 'scene', 'preset': preset}),
             child: Text(c.text(preset))),
+      ],
     ]);
   }
 
