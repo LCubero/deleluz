@@ -59,7 +59,7 @@ Checked at 320, 360, 412, 768, 1024, 1366 and 1920 px wide with device emulation
 
 Each phase gets its own ODD task document when it starts.
 
-1. **App polish — delivered on Android, unreleased.** The owner approved the implementation on one phone; the multi-phone compatibility pass (T17) is in progress. See [the phase 1 spec and delivery log](../odd/tasks/app-polish.md). The webapp port waits until the owner considers the Android app complete and tested.
+1. **App polish — Android phase 1 completed in 1.1.0.** See the [roadmap](repo-harness/roadmap.md) for delivery status and the [phase 1 spec and log](../odd/tasks/app-polish.md) for scope and decisions.
 2. **Two-strip spike, then groups:** open 2 links from Android, fan out one command, log the skew and reconnects. Build groups only if this holds up.
 3. **Webapp parity and responsive layouts:** port phase 1, add the strip list, then the tablet layout, the desktop layout and a home dashboard. Check every width with screenshots.
 4. **Hub spike on the Pi 3B+:** a Python service that talks BLE to the strips and serves a small local HTTP API (local network only, no cloud). Then move it to the ESP32-S3.

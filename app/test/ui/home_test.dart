@@ -547,7 +547,10 @@ void main() {
   });
 
   Future<void> connect(WidgetTester tester) async {
-    await tester.tap(find.text('Conectar'));
+    final connectButton = find.text('Conectar');
+    await tester.ensureVisible(connectButton);
+    await tester.pumpAndSettle();
+    await tester.tap(connectButton);
     await tester.pumpAndSettle();
     final row = find.byKey(ValueKey(FakeBle.strip.id));
     await tester.tap(find.descendant(of: row, matching: find.text('Conectar')));
@@ -684,8 +687,8 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await start(tester);
     final card = find.byType(GlassCard).first;
-    // Measured at 412×915 on the previous disconnected Inicio card.
-    expect(tester.getSize(card).height, lessThanOrEqualTo(181));
+    // Keep the compact card budget, allowing one extra line for the subtitle.
+    expect(tester.getSize(card).height, lessThanOrEqualTo(200));
     await tester.tap(find.text('Cambiar'));
     await tester.pumpAndSettle();
     expect(find.text('Elegir tira'), findsOneWidget);
@@ -1709,6 +1712,37 @@ void main() {
     expect(tester.widget<ColorDisc>(find.byType(ColorDisc)).color, const Color(0xffffc800));
   });
 
+  testWidgets('step duration retains the edit and focus across a live resize', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(600, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final c = await start(tester);
+    await tapTab(tester, 'Escenas');
+    await tapKey(tester, 'scene-new');
+    await tester.ensureVisible(find.byKey(const Key('scene-add-effect')));
+    await tester.pumpAndSettle();
+    await tapKey(tester, 'scene-add-effect');
+    final field = find.byKey(const Key('scene-step-duration'));
+    final editable = find.descendant(of: field, matching: find.byType(EditableText));
+    final label = c.text('sceneDurationSeconds');
+    expect(tester.widget<TextField>(find.descendant(of: field,
+      matching: find.byType(TextField))).decoration!.labelText, label);
+    await tester.ensureVisible(field);
+    await tester.pumpAndSettle();
+    await tester.enterText(field, '42.5');
+    await tester.pumpAndSettle();
+    for (final width in [280.0, 600.0]) {
+      await tester.binding.setSurfaceSize(Size(width, 900));
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextField>(find.descendant(of: field,
+        matching: find.byType(TextField))).decoration!.labelText, width == 280 ? null : label);
+      final input = tester.widget<EditableText>(editable);
+      expect(input.controller.text, '42.5');
+      expect(input.focusNode.hasFocus, isTrue);
+    }
+  });
+
   testWidgets('Inicio strip swipe previews the next saved strip without changing tabs', (tester) async {
     const next = RememberedStrip('second', 'Second strip');
     await Models(store, presetIds: {}).saveRememberedStrips([
@@ -1734,6 +1768,22 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(c.text('chooseStrip')), findsOneWidget);
     expect(ble.connections, isEmpty);
+  });
+
+  testWidgets('tapping the body of an unsaved scan result connects to its ID', (tester) async {
+    const nearby = Strip('nearby', 'LEDDMX Nearby');
+    ble.results = [FakeBle.strip, nearby];
+    final c = await start(tester);
+    await tester.tap(find.widgetWithText(FilledButton, c.text('connect')));
+    await tester.pumpAndSettle();
+    expect(c.rememberedStrips, isEmpty);
+    expect(ble.connections, isEmpty);
+    final rowBody = find.text(nearby.name);
+    expect(rowBody.hitTestable(), findsOneWidget);
+    await tester.tap(rowBody);
+    await tester.pumpAndSettle();
+    expect(ble.connections, [nearby.id]);
+    expect(c.link.strip?.id, nearby.id);
   });
 
   testWidgets('saved strip card connects and uses the existing pending and error states', (tester) async {
@@ -1780,7 +1830,10 @@ void main() {
       final c = await start(tester);
       c.setLanguage(language);
       await tester.pumpAndSettle();
-      await tester.tap(find.text(c.text('quickActions')));
+      final quickActions = find.text(c.text('quickActions'));
+      await tester.ensureVisible(quickActions);
+      await tester.pumpAndSettle();
+      await tester.tap(quickActions);
       await tester.pumpAndSettle();
       final shortcut = find.text(c.shortcutLabel(c.shortcuts.first));
       await tester.ensureVisible(shortcut);

@@ -139,7 +139,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
             () {
               if (!_transport.ready) return _connectFirst();
               _transport.useShared({'kind': 'sequence', 'id': item['id']});
-            }, () => _edit(item),
+            }, () => _edit(item), userName: true,
             trailing: IconButton(key: Key('scene-edit-${item['id']}'),
               tooltip: c.text('renameSequence'), icon: const Icon(Icons.edit_outlined),
               onPressed: () => _edit(item))),
@@ -156,12 +156,13 @@ class _ScenesScreenState extends State<ScenesScreen> {
   }
 
   Widget _card(String key, String title, List<List<int>> colors, VoidCallback tap,
-      VoidCallback hold, {Widget? trailing}) => GlowTile(key: Key(key),
+      VoidCallback hold, {Widget? trailing, bool userName = false}) => GlowTile(key: Key(key),
     onTap: tap, onLongPress: hold, inset: glassInset + 1, minHeight: 92,
     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
       ConstrainedBox(constraints: BoxConstraints(minHeight: MediaQuery.textScalerOf(context).scale(15) * 2.6),
         child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(height: 1.3),
-          maxLines: 2, overflow: TextOverflow.ellipsis)),
+          key: userName ? const Key('scene-display-name') : null,
+          maxLines: userName ? 2 : null, overflow: userName ? TextOverflow.ellipsis : null)),
       GlowStrip(colors: colors, dotted: false),
       if (trailing != null) Align(alignment: AlignmentDirectional.centerEnd, child: trailing),
     ]),

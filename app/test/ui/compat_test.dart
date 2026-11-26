@@ -1,7 +1,5 @@
 import 'package:deleluz/app_controller.dart';
 import 'package:deleluz/main.dart';
-import 'package:deleluz/ui/glow_glass.dart';
-import 'package:deleluz/ui/notice.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -53,10 +51,16 @@ void main() {
               for (final element in find.byType(RichText).hitTestable().evaluate()) {
                 final paragraph = element.renderObject! as RenderParagraph;
                 final text = paragraph.text.toPlainText();
-                // User names and shortcut names intentionally have a display limit.
-                final limitedName = paragraph.maxLines != null && element.findAncestorWidgetOfExactType<ConnectionChip>() == null &&
-                    element.findAncestorWidgetOfExactType<Notice>() == null;
-                if (!limitedName && paragraph.didExceedMaxLines) issues.add('$stage: clipped "$text"');
+                // Only explicit device, user-scene and shortcut name widgets may truncate.
+                const limitedNames = [
+                  Key('strip-display-name'), Key('strip-bluetooth-name'),
+                  Key('scene-display-name'), Key('shortcut-display-name'),
+                  Key('settings-strip-display-name'), Key('settings-setup-device-name'),
+                ];
+                final textKey = element.findAncestorWidgetOfExactType<Text>()?.key;
+                if (!limitedNames.contains(textKey) && paragraph.didExceedMaxLines) {
+                  issues.add('$stage: clipped "$text"');
+                }
               }
               final controls = find.byWidgetPredicate((w) => w is ButtonStyleButton ||
                 w is IconButton || w is ChoiceChip || w is Slider || w is SwitchListTile ||
@@ -143,6 +147,17 @@ void main() {
             await tap(key('scene-apply-step'));
             await tap(key('scene-add-effect'));
             check('Scene effect step', modal: true);
+            if (width == 320 || scale == 2) {
+              final durationLabel = label('sceneDurationSeconds');
+              await tester.ensureVisible(key('scene-step-duration'));
+              await tester.pumpAndSettle();
+              expect(durationLabel.hitTestable(), findsOneWidget);
+              final paragraph = tester.renderObject<RenderParagraph>(durationLabel);
+              expect(paragraph.didExceedMaxLines, isFalse);
+              expect(paragraph.getMinIntrinsicWidth(double.infinity),
+                lessThanOrEqualTo(paragraph.size.width + .01),
+                reason: 'The full duration label must fit or wrap');
+            }
             await tester.binding.handlePopRoute();
             await tester.pumpAndSettle();
             await tap(key('scene-close'));

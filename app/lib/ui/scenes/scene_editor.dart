@@ -281,10 +281,12 @@ class _StepPickerState extends State<_StepPicker> {
                 helperText: widget.effect ? '1–600 s' : '150–2000 ms',
                 errorText: _duration == null ? c.text('sceneInvalidDuration') : null),
               onChanged: _changeDuration);
-            return outside ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 4, children: [
-              ExcludeSemantics(child: Text(label, style: style)),
-              Semantics(label: label, child: input),
-            ]) : input;
+            return Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 4, children: [
+              if (outside) ExcludeSemantics(child: Text(label, style: style)),
+              // Keep the field under the same parent so resizing preserves its edit and focus.
+              Semantics(key: const Key('scene-step-duration-semantics'),
+                label: outside ? label : null, child: input),
+            ]);
           }),
           FilledButton(key: const Key('scene-apply-step'), onPressed: !enabled ? null : () {
             Navigator.pop(context, <String, Object?>{

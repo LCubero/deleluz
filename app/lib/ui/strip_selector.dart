@@ -186,7 +186,7 @@ class _StripSelectorState extends State<StripSelector> {
         side: BorderSide(color: failure != null ? error : connected ? glowViolet : glowLine)),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: saved == null || c.busy || connected ? null : () => _connect(strip),
+        onTap: c.busy || connected ? null : () => _connect(strip),
         onLongPress: saved == null || c.busy ? null : () => _menu(saved),
         child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

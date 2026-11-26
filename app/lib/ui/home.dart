@@ -142,7 +142,8 @@ class _HomeScreenState extends State<HomeScreen> {
           else Icon(kind.icon, size: 14, color: glowLink),
           Flexible(child: Text(c.text(kind.label), style: Theme.of(context).textTheme.bodySmall)),
         ]),
-        Text(c.shortcutLabel(item), maxLines: 2, overflow: TextOverflow.ellipsis,
+        Text(c.shortcutLabel(item), key: const Key('shortcut-display-name'),
+          maxLines: 2, overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
       ],
     ));
@@ -193,12 +194,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final glow = rgb == null ? null : Color.fromARGB(255, rgb[0], rgb[1], rgb[2]);
     final theme = Theme.of(context).textTheme;
     final name = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text(strip?.label ?? 'LEDDMX', style: theme.titleMedium,
-        maxLines: 1, overflow: TextOverflow.ellipsis),
+      Text(strip?.label ?? 'LEDDMX', key: const Key('strip-display-name'),
+        style: theme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
       // Show the Bluetooth name under an alias, never the name twice.
-      Text(strip != null && strip.label != strip.name ? strip.name
-          : c.text(status == LinkStatus.lost ? 'keepsColor' : 'controller'),
-        style: theme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+      if (strip != null && strip.label != strip.name)
+        Text(strip.name, key: const Key('strip-bluetooth-name'), style: theme.bodySmall,
+          maxLines: 1, overflow: TextOverflow.ellipsis)
+      else
+        Text(c.text(status == LinkStatus.lost ? 'keepsColor' : 'controller'), style: theme.bodySmall),
     ]);
     final card = GlassCard(onTap: chooseStrip, child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: [

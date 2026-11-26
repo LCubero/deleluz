@@ -255,7 +255,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: glassInset + 1),
       title: Text(_text('strips'), style: const TextStyle(
         fontSize: 15, fontWeight: FontWeight.w600, color: glowInk)),
-      subtitle: alias == null ? null : Text(alias, maxLines: 2, overflow: TextOverflow.ellipsis),
+      subtitle: alias == null ? null : Text(alias, key: const Key('settings-strip-display-name'),
+        maxLines: 2, overflow: TextOverflow.ellipsis),
       trailing: const Icon(Icons.chevron_right, size: 18),
       onTap: () => StripSelector.open(context, c, backLabel: 'backToSettings'),
     ));
@@ -270,7 +271,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _section(String key, List<Widget> children, {String? subtitle}) => _row(
     GlowDisclosure(titleKey: ValueKey('settings-$key'), title: _text(key), smallChevron: true,
-      subtitle: subtitle == null ? null : Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
+      subtitle: subtitle == null ? null : Text(subtitle, key: const Key('settings-setup-device-name'),
+        maxLines: 2, overflow: TextOverflow.ellipsis),
       padding: const EdgeInsets.symmetric(horizontal: glassInset + 1),
       children: [Padding(padding: const EdgeInsets.fromLTRB(glassInset + 1, 0, glassInset + 1, 14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 12, children: children))],
