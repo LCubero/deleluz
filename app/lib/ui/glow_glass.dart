@@ -36,20 +36,31 @@ class GlowChoice extends StatelessWidget {
   final ValueChanged<bool>? onSelected;
 
   @override
-  Widget build(BuildContext context) => ChoiceChip(key: choiceKey,
-    // Swatches match the selection marker; keep the standard Material chip inset.
-    avatarBoxConstraints: avatar == null ? null : const BoxConstraints.tightFor(width: 18, height: 18),
-    labelPadding: avatar == null ? null : const EdgeInsets.symmetric(horizontal: 4),
-    selected: selected, onSelected: onSelected, showCheckmark: false,
-    avatar: selected ? GlowSelection.check() : avatar,
-    color: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected)
-      ? GlowSelection.tint : glowGlass),
-    side: WidgetStateBorderSide.resolveWith((states) => states.contains(WidgetState.focused)
-      ? const BorderSide(color: glowCyan, width: 2)
-      : selected ? GlowSelection.border : const BorderSide(color: glowLine)),
-    labelStyle: const TextStyle(color: glowInk),
-    materialTapTargetSize: MaterialTapTargetSize.padded,
-    label: label);
+  Widget build(BuildContext context) {
+    final disabled = onSelected == null;
+    final showBoth = selected && avatar != null;
+    return ChoiceChip(key: choiceKey,
+      avatarBoxConstraints: avatar == null ? null
+        : BoxConstraints.tightFor(width: showBoth ? 38 : 18, height: 18),
+      // Keep the three white presets on one row at the owner viewport.
+      padding: avatar == null ? null : const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      labelPadding: avatar == null ? null : const EdgeInsets.symmetric(horizontal: 4),
+      selected: selected, onSelected: onSelected, showCheckmark: false,
+      avatar: showBoth ? Row(children: [
+        SizedBox.square(dimension: 18, child: avatar),
+        const SizedBox(width: 2),
+        GlowSelection.check(),
+      ]) : avatar ?? (selected ? GlowSelection.check() : null),
+      color: WidgetStateProperty.resolveWith((states) =>
+        !disabled && states.contains(WidgetState.selected) ? GlowSelection.tint : glowGlass),
+      side: WidgetStateBorderSide.resolveWith((states) => disabled
+        ? const BorderSide(color: glowLine)
+        : states.contains(WidgetState.focused) ? const BorderSide(color: glowCyan, width: 2)
+        : selected ? GlowSelection.border : const BorderSide(color: glowLine)),
+      labelStyle: TextStyle(color: disabled ? glowMuted : glowInk),
+      materialTapTargetSize: MaterialTapTargetSize.padded,
+      label: label);
+  }
 }
 const glowLine = Color(0x24ffffff);
 const glowGlass = Color(0x11ffffff);

@@ -96,8 +96,8 @@ void main() {
     expect(position.pixels, greaterThan(0));
   });
 
-  testWidgets('White chips send the exact RGB presets and have 48 dp targets', (tester) async {
-    await start(tester, connected: true);
+  testWidgets('White chips keep the swatch and fit one row at 411 dp after selection', (tester) async {
+    await start(tester, connected: true, size: const Size(411, 834));
     for (final (label, rgb) in [
       ('Cálido', wire.color(255, 200, 128)),
       ('Neutro', wire.color(255, 228, 196)),
@@ -112,6 +112,11 @@ void main() {
       await flush(tester);
       expect(ble.writes.last, rgb);
       expect(tester.widget<ChoiceChip>(chip).selected, isTrue);
+      expect(find.descendant(of: chip, matching: find.byType(CircleAvatar)), findsOneWidget);
+      expect(find.descendant(of: chip, matching: find.byKey(GlowSelection.markerKey)), findsOneWidget);
+      for (final tone in ['Cálido', 'Neutro', 'Frío']) {
+        expect(tester.getTopLeft(find.widgetWithText(ChoiceChip, tone)).dy, tester.getTopLeft(chip).dy);
+      }
     }
   });
 
@@ -206,11 +211,30 @@ void main() {
       await flush(tester);
       expect(tester.widget<Text>(keyed('app-auto-current')).data, '01 · ${effectNames.first}');
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      final duration = keyed('app-auto-${controller.appAutoSeconds}');
+      final disabled = tester.widget<ChoiceChip>(duration);
+      const disabledSelected = {WidgetState.disabled, WidgetState.selected};
+      expect(disabled.selected, isTrue);
+      expect(disabled.onSelected, isNull);
+      expect(disabled.color!.resolve(disabledSelected), glowGlass);
+      expect(disabled.labelStyle!.color, glowMuted);
+      expect(WidgetStateProperty.resolveAs<BorderSide?>(disabled.side, disabledSelected),
+          const BorderSide(color: glowLine));
+      expect(find.descendant(of: duration, matching: find.byKey(GlowSelection.markerKey)), findsOneWidget);
       final mask = tester.widget<ShaderMask>(keyed('app-auto-gradient'));
       expect(mask.shaderCallback, glowProgressGradient.createShader);
       expect(glowProgressGradient.colors, [glowViolet, glowPink]);
+      final other = keyed('app-auto-${Models.appAutoDurations.firstWhere((s) => s != controller.appAutoSeconds)}');
+      final unselected = tester.widget<ChoiceChip>(other);
+      expect(unselected.onSelected, isNull);
+      expect(unselected.labelStyle!.color, glowMuted);
+      expect(find.descendant(of: other, matching: find.byKey(GlowSelection.markerKey)), findsNothing);
       await tap(tester, 'app-auto-toggle');
       expect(find.byType(LinearProgressIndicator), findsNothing);
+      final enabled = tester.widget<ChoiceChip>(duration);
+      expect(enabled.onSelected, isNotNull);
+      expect(enabled.labelStyle!.color, glowInk);
+      expect(enabled.color!.resolve({WidgetState.selected}), GlowSelection.tint);
       final count = ble.writes.length;
       now += 30000;
       await tester.pump(const Duration(seconds: 30));

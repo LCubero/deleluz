@@ -86,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
       const SizedBox(height: 6),
       ConstrainedBox(constraints: BoxConstraints(
         minHeight: 2 * MediaQuery.textScalerOf(context).scale(13) * 1.4),
-        child: Text(last == null ? c.text('noCommand') : c.text('lastSentShort', {'command': last}),
+        child: Text(last == null ? c.text('noCommand') : c.text('lastSent', {'command': last}),
           textAlign: TextAlign.center, style: style.bodySmall,
           strutStyle: const StrutStyle(fontSize: 13, height: 1.4, forceStrutHeight: true))),
       const SizedBox(height: 8),

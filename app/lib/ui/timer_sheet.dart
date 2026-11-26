@@ -174,12 +174,15 @@ class _CountdownRing extends CustomPainter {
     canvas.drawCircle(center, radius, Paint()..color = const Color(0xff1b1436));
     final stroke = Paint()..style = PaintingStyle.stroke..strokeWidth = 10;
     canvas.drawCircle(center, radius, stroke..color = glowMuted.withValues(alpha: .35));
-    stroke.strokeCap = StrokeCap.round;
     final sweep = 2 * math.pi * fraction.clamp(0, 1);
     if (sweep <= 0) return;
-    stroke.shader = SweepGradient(colors: glowProgressGradient.colors, endAngle: sweep,
-      transform: const GradientRotation(-math.pi / 2)).createShader(bounds);
-    canvas.drawArc(bounds, -math.pi / 2, sweep, false, stroke);
+    final progress = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke.strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..shader = SweepGradient(colors: glowProgressGradient.colors, endAngle: sweep,
+        transform: const GradientRotation(-math.pi / 2)).createShader(bounds);
+    canvas.drawArc(bounds, -math.pi / 2, sweep, false, progress);
   }
 
   @override

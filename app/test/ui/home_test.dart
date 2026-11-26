@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'dart:ui' show Tristate;
+import 'dart:ui' show ImageByteFormat, Tristate;
 
 import 'package:deleluz/app_controller.dart';
 import 'package:deleluz/link.dart';
@@ -11,7 +11,8 @@ import 'package:deleluz/protocol.dart' as wire;
 import 'package:deleluz/ui/glow_glass.dart';
 import 'package:deleluz/ui/notice.dart';
 import 'package:deleluz/ui/color_disc.dart';
-import 'package:flutter/rendering.dart' show RenderParagraph;
+import 'package:deleluz/ui/timer_sheet.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph, RenderRepaintBoundary;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:universal_ble/universal_ble.dart' show AvailabilityState;
@@ -172,6 +173,29 @@ void main() {
     expectBrightnessAboveNavigation(tester, 'brightness');
     expect(find.byKey(const Key('speed')), findsNothing);
   });
+
+  for (final (language, prefix) in [
+    ('es', 'Último comando enviado:'), ('en', 'Last command sent:'),
+  ]) {
+    testWidgets('Inicio shows the full command status without moving brightness ($language)', (tester) async {
+      useOwnerPhoneView(tester);
+      final c = await start(tester);
+      c.setLanguage(language);
+      await c.connect(FakeBle.strip);
+      await tester.pumpAndSettle();
+      final card = find.ancestor(of: find.byKey(const Key('brightness')), matching: find.byType(GlassCard));
+      final before = tester.getRect(card);
+      final sent = c.setEffect(1);
+      for (var i = 0; i < 4; i++) {
+        now += 60;
+        await tester.pump(const Duration(milliseconds: 60));
+      }
+      expect(await sent, isTrue);
+      await tester.pumpAndSettle();
+      expect(find.textContaining(prefix), findsOneWidget);
+      expect(tester.getRect(card), before);
+    });
+  }
 
   testWidgets('Color fijo fits the whole brightness card on the owner phone', (tester) async {
     useOwnerPhoneView(tester);
@@ -469,7 +493,7 @@ void main() {
   });
 
   for (final size in [const Size(320, 640), const Size(412, 915)]) {
-    testWidgets('command changes do not move quick actions at $size', (tester) async {
+    testWidgets('command status reserves two lines and wraps long readouts at $size', (tester) async {
       await tester.binding.setSurfaceSize(size);
       tester.platformDispatcher.textScaleFactorTestValue = 1.5;
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -480,14 +504,19 @@ void main() {
       final quick = find.text('Acciones rápidas');
       await tester.scrollUntilVisible(quick, 100);
       await tester.pumpAndSettle();
-      final before = tester.getTopLeft(quick).dy;
+      final position = tester.state<ScrollableState>(find.byType(Scrollable)).position;
+      final before = tester.getTopLeft(quick).dy + position.pixels;
+      final idle = find.text(c.text('noCommand'));
+      final reserved = tester.getSize(idle).height;
       expect(await c.setChipConfig('GRB', 1024), isTrue);
       await tester.pumpAndSettle();
-      expect(tester.getTopLeft(quick).dy, before);
-      final position = tester.state<ScrollableState>(find.byType(Scrollable)).position;
-      position.jumpTo(0);
-      await tester.pumpAndSettle();
-      expect(find.textContaining('GRB · 1024 LEDs'), findsOneWidget);
+      final readout = find.textContaining('Último comando enviado:');
+      expect(readout, findsOneWidget);
+      expect(tester.widget<Text>(readout).data, contains('GRB · 1024 LEDs'));
+      expect(tester.renderObject<RenderParagraph>(readout).didExceedMaxLines, isFalse);
+      final growth = tester.getSize(readout).height - reserved;
+      expect(growth, greaterThanOrEqualTo(0));
+      expect(tester.getTopLeft(quick).dy + position.pixels, closeTo(before + growth, .01));
       expect(tester.takeException(), isNull);
     });
   }
@@ -1286,6 +1315,54 @@ void main() {
     await tester.tap(target);
     await tester.pumpAndSettle();
   }
+
+  testWidgets('timer ring paints a gradient half arc over the unfilled track', (tester) async {
+    final c = await start(tester);
+    await connect(tester);
+    c.startTimer(60, fade: false);
+    now = 30000;
+    const capture = Key('timer-capture');
+    await tester.pumpWidget(MaterialApp(theme: glowTheme(), home: Scaffold(
+      body: RepaintBoundary(key: capture, child: TimerSheet(controller: c)),
+    )));
+    await tester.pump(const Duration(seconds: 1));
+    expect(c.timerFraction, .5);
+    final ring = find.ancestor(of: find.text('0:30'), matching: find.byType(CustomPaint)).first;
+    final rect = tester.getRect(ring).shift(-tester.getTopLeft(find.byKey(capture)));
+    final radius = rect.width / 2 - 6;
+    final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(capture));
+    await tester.runAsync(() async {
+      final image = await boundary.toImage();
+      try {
+        final bytes = (await image.toByteData(format: ImageByteFormat.rawRgba))!;
+        Color pixel(double x, double y) {
+          final point = rect.center + Offset(x * radius, y * radius);
+          final i = 4 * (point.dy.round() * image.width + point.dx.round());
+          return Color.fromARGB(255, bytes.getUint8(i), bytes.getUint8(i + 1), bytes.getUint8(i + 2));
+        }
+        void expectGradient(Color actual, double fraction) {
+          final expected = Color.lerp(glowViolet, glowPink, fraction)!;
+          expect(actual.r, closeTo(expected.r, .025));
+          expect(actual.g, closeTo(expected.g, .025));
+          expect(actual.b, closeTo(expected.b, .025));
+        }
+        expectGradient(pixel(.707, -.707), .25);
+        expectGradient(pixel(.707, .707), .75);
+        // Sample the outer half of the stroke, clear of the ring's fill edge.
+        final outside = 1 + 2 / radius;
+        final track = pixel(-outside, 0);
+        final background = pixel(-1.15, 0);
+        final expectedTrack = Color.alphaBlend(glowMuted.withValues(alpha: .35), background);
+        expect(track.r, closeTo(expectedTrack.r, .01));
+        expect(track.g, closeTo(expectedTrack.g, .01));
+        expect(track.b, closeTo(expectedTrack.b, .01));
+        expect(pixel(-.707 * outside, .707 * outside), track);
+      } finally {
+        image.dispose();
+      }
+    });
+    c.cancelTimer();
+  });
 
   testWidgets('timer sheet counts down, extends and cancels', (tester) async {
     final c = await start(tester);
