@@ -266,6 +266,10 @@ class GlassCard extends StatelessWidget {
   }
 }
 
+// Treat larger type like a narrower viewport without changing the font size.
+bool glowCompactLayout(BuildContext context) =>
+  MediaQuery.sizeOf(context).width / MediaQuery.textScalerOf(context).scale(1) < 300;
+
 class GlowGrid extends StatelessWidget {
   const GlowGrid({super.key, required this.columns, required this.children});
   final int columns;
@@ -274,10 +278,10 @@ class GlowGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Column(spacing: 10, children: [
     for (var start = 0; start < children.length; start += columns)
-      Row(crossAxisAlignment: CrossAxisAlignment.start, spacing: 10, children: [
+      IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 10, children: [
         for (var i = start; i < start + columns; i++)
           Expanded(child: i < children.length ? children[i] : const SizedBox.shrink()),
-      ]),
+      ])),
   ]);
 }
 
@@ -528,13 +532,9 @@ class GlowSegments<T> extends StatelessWidget {
   final ValueChanged<T> onSelected;
 
   @override
-  Widget build(BuildContext context) => Material(color: glowGlass,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14),
-      side: const BorderSide(color: glowLine)),
-    // Equal-height segments; every segment reserves the check slot so labels never move or rewrap.
-    child: Padding(padding: const EdgeInsets.all(4), child: IntrinsicHeight(child: Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      for (final segment in segments) Expanded(child: GlowSelectionTarget(
+  Widget build(BuildContext context) {
+    final items = [
+      for (final segment in segments) GlowSelectionTarget(
         radius: 10, clear: true, selected: segment.value == selected,
         onTap: segment.enabled ? () => onSelected(segment.value) : null,
         child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48),
@@ -546,8 +546,19 @@ class GlowSegments<T> extends StatelessWidget {
                   color: segment.value == selected ? glowInk : glowMuted),
                 child: segment.label ?? const SizedBox.shrink())),
             ])))),
-      )),
-    ]))));
+      ),
+    ];
+    // Every segment reserves the check slot so selection never moves or rewraps labels.
+    return Material(color: glowGlass,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: glowLine)),
+      child: Padding(padding: const EdgeInsets.all(4),
+        child: glowCompactLayout(context)
+          ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: items)
+          : IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [for (final item in items) Expanded(child: item)]))),
+    );
+  }
 }
 
 class ConnectionChip extends StatelessWidget {

@@ -105,21 +105,23 @@ class _StripSelectorState extends State<StripSelector> {
               focusedBorder: _searchBorder(glowViolet))),
         ],
         const SizedBox(height: 12),
-        Semantics(expanded: c.stripsExpanded || query.isNotEmpty, child: TextButton(
-          style: TextButton.styleFrom(alignment: Alignment.centerLeft, padding: EdgeInsets.zero),
-          onPressed: query.isEmpty ? c.toggleStripsExpanded : null,
-          child: Row(spacing: 8, children: [
-            Expanded(child: _section(c.text('myStrips', {'count': savedMatches.length}))),
-            if (query.isEmpty) Icon(c.stripsExpanded ? Icons.expand_less : Icons.expand_more),
-          ]),
-        )),
-        if (c.stripsExpanded || query.isNotEmpty)
-          for (final strip in savedMatches) Padding(
-            key: ValueKey(strip.id), padding: const EdgeInsets.only(top: 10),
-            child: _row(strip, saved: strip, state: _connected(strip) ? 'connected'
-              : c.scanCompleted && !seen.contains(strip.id) ? 'stripOutOfRange' : 'rememberedStrip'),
-          ),
-        const SizedBox(height: 20),
+        if (saved.isNotEmpty) ...[
+          Semantics(expanded: c.stripsExpanded || query.isNotEmpty, child: TextButton(
+            style: TextButton.styleFrom(alignment: Alignment.centerLeft, padding: EdgeInsets.zero),
+            onPressed: query.isEmpty ? c.toggleStripsExpanded : null,
+            child: Row(spacing: 8, children: [
+              Expanded(child: _section(c.text('myStrips', {'count': savedMatches.length}))),
+              if (query.isEmpty) Icon(c.stripsExpanded ? Icons.expand_less : Icons.expand_more),
+            ]),
+          )),
+          if (c.stripsExpanded || query.isNotEmpty)
+            for (final strip in savedMatches) Padding(
+              key: ValueKey(strip.id), padding: const EdgeInsets.only(top: 10),
+              child: _row(strip, saved: strip, state: _connected(strip) ? 'connected'
+                : c.scanCompleted && !seen.contains(strip.id) ? 'stripOutOfRange' : 'rememberedStrip'),
+            ),
+          const SizedBox(height: 20),
+        ],
         _section(c.text('newNearbyStrips')),
         for (final strip in nearbyMatches) Padding(
           key: ValueKey(strip.id), padding: const EdgeInsets.only(top: 10), child: _row(strip),

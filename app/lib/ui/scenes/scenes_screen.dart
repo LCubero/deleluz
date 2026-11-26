@@ -101,7 +101,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
             'mine' => _mine(),
             'music' => [_music()],
             _ => [Notice(c.text('needsAppLegend')), const SizedBox(height: 12),
-              GlowGrid(columns: 2, children: _included())],
+              GlowGrid(columns: glowCompactLayout(context) ? 1 : 2, children: _included())],
           },
         ],
       ));
@@ -156,7 +156,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
       if (items.isEmpty) Notice(c.text('sequencesEmpty')) else Notice(c.text('mineNeedsAppNote')),
       if (items.length >= maxSequences)
         Notice(c.text('scenesLimit', {'max': maxSequences}), kind: NoticeKind.warning),
-      GlowGrid(columns: 2, children: [
+      GlowGrid(columns: glowCompactLayout(context) ? 1 : 2, children: [
         for (final item in items)
           _card('scene-play-${item['id']}', item['name'] as String, item['colors'] as List<List<int>>,
             () {
@@ -181,15 +181,18 @@ class _ScenesScreenState extends State<ScenesScreen> {
   Widget _card(String key, String title, List<List<int>> colors, VoidCallback tap,
       VoidCallback hold, {Widget? trailing, bool userName = false, required bool needsApp}) => GlowTile(key: Key(key),
     onTap: tap, onLongPress: hold, inset: glassInset + 1, minHeight: 92,
-    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
+    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween, spacing: 8, children: [
       ConstrainedBox(constraints: BoxConstraints(minHeight: MediaQuery.textScalerOf(context).scale(15) * 2.6),
         child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(height: 1.3),
           key: userName ? const Key('scene-display-name') : null,
           maxLines: userName ? 2 : null, overflow: userName ? TextOverflow.ellipsis : null)),
-      GlowStrip(colors: colors, dotted: false),
-      Row(children: [
-        Expanded(child: _RuntimeTag(text: c.text(needsApp ? 'needsApp' : 'onStrip'), needsApp: needsApp)),
-        ?trailing,
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
+        GlowStrip(colors: colors, dotted: false),
+        Row(children: [
+          Expanded(child: _RuntimeTag(text: c.text(needsApp ? 'needsApp' : 'onStrip'), needsApp: needsApp)),
+          ?trailing,
+        ]),
       ]),
     ]),
   );
@@ -200,12 +203,13 @@ class _ScenesScreenState extends State<ScenesScreen> {
     const SizedBox(height: 8),
     Notice(c.text('musicHint')),
     const SizedBox(height: 12),
-    GlowGrid(columns: 2, children: [
+    GlowGrid(columns: glowCompactLayout(context) ? 1 : 2, children: [
       for (var mode = 1; mode <= 4; mode++)
         GlowTile(key: Key('scene-voice-$mode'), selected: _transport.lastVoiceMode == mode, onTap: () {
           if (!_transport.ready) return _connectFirst();
           unawaited(_transport.playVoice(mode));
-        }, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
+        }, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween, spacing: 8, children: [
           Text('${c.text('voiceModeWord')} $mode', style: Theme.of(context).textTheme.titleMedium),
           GlowStrip(colors: _voiceColors[mode - 1], dotted: false),
         ])),

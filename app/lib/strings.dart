@@ -130,7 +130,7 @@ const _strings = <String, (String, String)>{
   'autoCycle': ('Ciclo automático', 'Auto cycle'),
   'autoCycleAll': ('Ciclo automático: todos los efectos', 'Auto cycle: all effects'),
   'effectCatalog': ('Catálogo', 'Catalog'),
-  'effectSearch': ('Buscar por nombre o número', 'Search by name or number'),
+  'effectSearch': ('Buscar', 'Search'),
   'effectFavorite': ('Favorito: {name}', 'Favorite: {name}'),
   'effectCatalogAll': ('Todos los efectos', 'All effects'),
   'effectSearchEmpty': ('No hay coincidencias.', 'No matching effects.'),

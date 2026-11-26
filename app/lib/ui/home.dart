@@ -102,15 +102,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _quick(BuildContext context) {
     final count = c.shortcuts.length + (c.shortcuts.length < maxShortcuts ? 1 : 0);
     return Column(children: [
-      Semantics(button: true, expanded: _quickOpen, child: InkWell(
+      Semantics(button: true, expanded: _quickOpen, child: Material(
+        color: _quickOpen ? glowGlass : Colors.transparent,
+        borderRadius: BorderRadius.circular(16), child: InkWell(
+        borderRadius: BorderRadius.circular(16),
         onTap: () => setState(() => _quickOpen = !_quickOpen),
-        child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48), child: Row(spacing: 8, children: [
+        child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48), child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: glassInset), child: Row(spacing: 8, children: [
           Expanded(child: Text(c.text('quickActions'), style: const TextStyle(
             color: glowMuted, fontSize: 16, fontWeight: FontWeight.w600))),
           RotatedBox(quarterTurns: _quickOpen ? 1 : 0,
             child: const GlowIcon(GlowGlyph.chevron, color: glowMuted, size: 18)),
-        ])),
-      )),
+        ]))),
+      ))),
       if (_quickOpen) ...[
         const SizedBox(height: 10),
         GlowGrid(columns: count == 1 ? 1 : 2, children: [
@@ -209,7 +213,12 @@ class _HomeScreenState extends State<HomeScreen> {
     ]);
     final card = GlassCard(onTap: chooseStrip, child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: [
-      LayoutBuilder(builder: (context, constraints) => Row(spacing: 12,
+      if (glowCompactLayout(context))
+        Column(crossAxisAlignment: CrossAxisAlignment.start, spacing: 8, children: [
+          name,
+          ConnectionChip(controller: c, status: status),
+        ])
+      else LayoutBuilder(builder: (context, constraints) => Row(spacing: 12,
         crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(child: name),
           // Give the status room before wrapping it, without crowding out the name.

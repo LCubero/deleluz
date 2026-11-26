@@ -85,10 +85,12 @@ class _ColorScreenState extends State<ColorScreen> {
       Center(child: GlowChoice(choiceKey: const Key('effect-auto'),
         label: Text(c.text('stripCycle')), selected: _auto,
         onSelected: c.canSend ? (_) => _playEffect(wire.autoEffect) : null)),
-      const SizedBox(height: 12),
-      GlowStatusSlot(lines: MediaQuery.textScalerOf(context).scale(13) > 16 ? 6 : 3,
-        live: true, text: name == null ? null :
-          c.text('manualEffectPlaying', {'id': '$manual'.padLeft(2, '0'), 'name': name})),
+      if (c.canSend) ...[
+        const SizedBox(height: 12),
+        GlowStatusSlot(lines: MediaQuery.textScalerOf(context).scale(13) > 16 ? 6 : 3,
+          live: true, text: name == null ? null :
+            c.text('manualEffectPlaying', {'id': '$manual'.padLeft(2, '0'), 'name': name})),
+      ],
       const SizedBox(height: 8),
       EffectList(favorites: c.effectFavorites, text: c.text, language: c.language,
         selected: _auto || c.appAutoPlaying ? null : _effect, onFavorite: c.toggleEffectFavorite,
