@@ -276,23 +276,45 @@ void main() {
     expect(tester.widget<ListTile>(keyed('effect-row-210')).selected, isTrue);
   });
 
-  testWidgets('audit: active effect label does not move the catalog', (tester) async {
-    await start(tester, connected: true, size: const Size(320, 915), scale: 1.5);
-    await tap(tester, 'color-effects');
-    final catalog = keyed('effect-search');
-    await tester.ensureVisible(keyed('effect-row-1'));
-    await tester.pumpAndSettle();
-    final before = tester.getRect(catalog);
-    await tester.tap(keyed('effect-row-1'));
-    await flush(tester);
-    final label = find.text(controller.text('manualEffectPlaying', {'id': '01', 'name': 'Sueño directo'}));
-    expect(label, findsOneWidget);
-    expect(tester.getRect(catalog), before);
-    controller.setPower(false);
-    await flush(tester);
-    expect(label, findsNothing);
-    expect(tester.getRect(catalog), before);
-  });
+  for (final (width, scale, language) in [
+    (412.0, 1.0, 'es'), (320.0, 1.0, 'es'),
+    (412.0, 1.5, 'en'), (320.0, 1.5, 'es'),
+  ]) {
+    testWidgets('audit: idle catalog has no empty status gap at $width dp ($scale, $language)', (tester) async {
+      await start(tester, connected: true, size: Size(width, 915), scale: scale);
+      controller.setLanguage(language);
+      await tester.pump();
+      await tap(tester, 'color-effects');
+      expect(controller.canSend, isTrue);
+      expect(controller.hasActiveEffect, isFalse);
+      final catalog = find.text(controller.text('effectCatalog'));
+      final cycleBottom = tester.getRect(keyed('effect-auto')).bottom;
+      final before = tester.getRect(catalog);
+      final idle = find.text(controller.text('effectRange'));
+      final idleGap = idle.evaluate().isEmpty
+          ? before.top - cycleBottom
+          : tester.getRect(idle).top - cycleBottom;
+      expect(idleGap, lessThanOrEqualTo(12), reason: 'Blank space below Ciclo de la tira');
+      expect(idle, findsOneWidget);
+      if (scale == 1) {
+        // Allow the second reserved line plus the 8 dp section spacing.
+        expect(before.top - tester.getRect(idle).bottom, lessThanOrEqualTo(27));
+      }
+      await tester.tap(keyed('effect-row-1'));
+      await flush(tester);
+      final label = find.text(controller.text('manualEffectPlaying', {
+        'id': '01', 'name': controller.displayEffectName(1),
+      }));
+      expect(label, findsOneWidget);
+      expect(idle, findsNothing);
+      expect(tester.getRect(catalog), before);
+      controller.setPower(false);
+      await flush(tester);
+      expect(label, findsNothing);
+      expect(idle, findsOneWidget);
+      expect(tester.getRect(catalog), before);
+    });
+  }
 
   for (final (language, width, prefix) in [('es', 320.0, 'En la tira'), ('en', 412.0, 'On the strip')]) {
     testWidgets('Searching preserves the manual now-playing label and BLE writes ($language)', (tester) async {

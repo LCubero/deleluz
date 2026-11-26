@@ -43,7 +43,7 @@ Branch `feat/ui-polish-2`. Standard: `design/system.md` and the `deleluz-design-
 - T8 [S1, S3, S6] Full UI test suite + emulator or simulated screenshots at 320/412 dp, ES/EN, large text; no strip. Route: inline. Commit: -
 - T9 [S1, F9-F14] Fix the emulator-audit defects: no mid-word breaks (compact layout when a word cannot fit), equal row heights in GlowGrid, search hint and catalog gap, quick actions header, timer sheet seam and spacing, strip selector gap; tests + re-capture. Route: gentle-ai-worker. Commit: see L12
 - T10 [S1, F15] Mark the last successfully sent Incluidas preset/effect and Mis escenas scene as selected (cyan tint + border + check), like Musica; session state only. Route: gentle-ai-worker. Commit: see L20
-- T11 [S1, F17] Verify F17 is real; if so, no visible empty gap when nothing is playing, without layout jumps (follow the design rules). Route: gentle-ai-worker. Commit: -
+- T11 [S1, F17] Verify F17 is real; if so, no visible empty gap when nothing is playing, without layout jumps (follow the design rules). Route: gentle-ai-worker. Commit: see L30
 
 ## Log
 
@@ -85,3 +85,4 @@ no voy a conectar la tira aun, hasta que el app esté perffecta visualmente"
 - L27 (parent decision, 2026-11-26): the L26 approval includes reconnecting and the app's own power-on/brightness preparation before AUTO (same as L24; the strip is already on, so it adds no new visual). 04-efectos must be re-taken connected for gallery consistency.
 - L28 (re-capture, 2026-11-26): worker mwxwz79c-e-gwty reconnected, ran app AUTO (with app prep) and stopped it; the first stop tap missed, so AUTO ran past the 20 s limit (reached at least effect 06) before stopping; app left on Inicio. 04-efectos (connected) and 04b-auto-app show the fixed note. Follow-up F17 (not fixed): connected Efectos tab keeps a visible empty reserved slot between "Ciclo de la tira" and "Catálogo".
 - L29 (owner, 2026-11-26): "arregla eso si es verdad, y tengo algo mas antes de main" -> T11; owner has more requests before merging to main.
+- L30 (T11, 2026-11-26): worker mwxx4z6s-f-a9ny. F17 real: 75 dp blank at 320 and 412 dp (idle GlowStatusSlot reserved 3 lines). Fix: idle slot shows the localized effect-range hint 8 dp below the cycle button; 2 lines reserved at default size; Catálogo moves 0 dp when playback starts/stops. Suite 397 pass (parent rerun).
