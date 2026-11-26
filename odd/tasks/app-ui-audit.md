@@ -44,8 +44,8 @@ Branch `feat/ui-polish-2`. Standard: `design/system.md` and the `deleluz-design-
 - T9 [S1, F9-F14] Fix the emulator-audit defects: no mid-word breaks (compact layout when a word cannot fit), equal row heights in GlowGrid, search hint and catalog gap, quick actions header, timer sheet seam and spacing, strip selector gap; tests + re-capture. Route: gentle-ai-worker. Commit: see L12
 - T10 [S1, F15] Mark the last successfully sent Incluidas preset/effect and Mis escenas scene as selected (cyan tint + border + check), like Musica; session state only. Route: gentle-ai-worker. Commit: see L20
 - T11 [S1, F17] Verify F17 is real; if so, no visible empty gap when nothing is playing, without layout jumps (follow the design rules). Route: gentle-ai-worker. Commit: see L30
-- T12 [L38] Release prep 1.2.0+2015: version bump, CHANGELOG 1.2.0, README/app README install links and "what's new", current-state. Route: gentle-ai-worker. Commit: see L39
-- T13 [L38] Re-capture screens changed since T21 (About shows the version; effects note/gap) and re-record the showreel on the owner phone (announced list). Route: gentle-ai-worker. Commit: -
+- T12 [L38] Release prep 1.2.0+2015: version bump, CHANGELOG 1.2.0, README/app README install links and "what's new", current-state. Route: gentle-ai-worker. Commit: 0681e07
+- T13 [L38] Re-capture screens changed since T21 (About shows the version; effects note/gap) and re-record the showreel on the owner phone (announced list). Route: gentle-ai-worker. Commit: see L42
 - T14 [L38] Build universal + per-ABI APKs, tag v1.2.0, GitHub release, cleanup (merged branch, untracked shots, temp builds). Route: inline. Commit: -
 
 ## Log
@@ -100,3 +100,4 @@ no voy a conectar la tira aun, hasta que el app esté perffecta visualmente"
 - L39 (T12, 2026-11-26): parent bumped app/pubspec.yaml 1.2.0+2015 and app/lib/version.dart 1.2.0 (About test updated to 1.2.0); worker mwy0masa-i-0yss updated CHANGELOG 1.2.0, README, app/README, current-state, roadmap. Suite 397 pass. Release APKs built to OS temp (universal 50.6 MB, arm64 18.6, armv7 16.3, x86_64 20.0).
 - L40 (owner, 2026-11-26): "dale" -> T13 approved as one session on the Note10 Lite: cyan (with app power-on/brightness prep if needed), app AUTO ~20 s then stop, Ciclo automático, timer started and cancelled; reconnect allowed. Release APK 1.2.0+2015 installed over.
 - L41 (owner, 2026-11-26): "mae tenes el celualñr conectado adb pordes hacer todo" -> the parent/workers may operate the Note10 Lite over adb as needed for T13 (e.g. turn Bluetooth on), still limited to the L40 strip command list.
+- L42 (T13, 2026-11-26): worker mwy1ch6n-l-el4a reconnected "Sala" and ran exactly the L40 list in both passes (cyan, app AUTO ~10 s / ~17 s then stopped and verified, Ciclo automático from Escenas > Incluidas, 15 min timer cancelled). 13 PNG 540x1095 re-captured (06-musica unchanged), showreel.webp 28 frames 36.15 s 373 KB. Parent review: 08-configuracion and 09-acerca-de were swapped by the worker; parent swapped them back (09 shows About with "Versión 1.2.0").
