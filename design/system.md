@@ -45,7 +45,6 @@ Source snapshot for [T14 / S18](../odd/tasks/app-polish.md). Flutter is the Andr
 | `glowLine` | `0x24ffffff` | Glass outline | `app/lib/ui/glow_glass.dart` |
 | `glowGlass` | `0x11ffffff` | Translucent fill | `app/lib/ui/glow_glass.dart` |
 | `glowGlassSelected` | `0x1cffffff` | Selected glass or status pill | `app/lib/ui/glow_glass.dart` |
-| `GlowSegments.selectedBorder` | `0x2effffff` | Selected outline; validate contrast before reuse | `app/lib/ui/glow_glass.dart` |
 | `_FlushSliderTrack.inactive` | `0x1fffffff` | Unfilled track | `app/lib/ui/glow_glass.dart` |
 | `--glass` | `rgba(255,255,255,.065)` | Translucent fill | `webapp/style.css` |
 | `--glass-2` | `rgba(255,255,255,.11)` | Stronger glass | `webapp/style.css` |
@@ -103,12 +102,13 @@ Glass in `GlassCard` is tint plus border, not a backdrop filter. Blur values bel
 | `filledButton.minimumSize` | `48 × 48` | Action touch target | `app/lib/ui/glow_glass.dart` |
 | `GlowSegments.inset` | `4` | Outer inset | `app/lib/ui/glow_glass.dart` |
 | `GlowSegments.labelInset` | `horizontal 2; vertical 8` | Segment padding | `app/lib/ui/glow_glass.dart` |
-| `GlowSegments.minHeight` | `44` | Existing segment minimum; not the target for new UI | `app/lib/ui/glow_glass.dart` |
+| `GlowSegments.minHeight` | `48` | Segment touch target; all segments share one height | `app/lib/ui/glow_glass.dart` |
+| `GlowSegments.checkSlot` | `18 + gap 4` | Reserved in every segment so labels never move | `app/lib/ui/glow_glass.dart` |
 | `ConnectionChip.padding` | `horizontal 12; vertical 6` | Status pill inset | `app/lib/ui/glow_glass.dart` |
 | `ConnectionChip.metrics` | `minHeight 36; dot 8; gap 8` | Noninteractive status | `app/lib/ui/glow_glass.dart` |
 | `slider.trackHeight` | `10` | Flush track | `app/lib/ui/glow_glass.dart` |
 | `slider.thumbRadius` | `14` | White thumb | `app/lib/ui/glow_glass.dart` |
-| `slider.overlayRadius` | `22` | Slider overlay, not a touch-target guarantee | `app/lib/ui/glow_glass.dart` |
+| `slider.overlayRadius` | `24` | Slider overlay, not a touch-target guarantee | `app/lib/ui/glow_glass.dart` |
 | `GlowStrip.height` | `10` | Strip preview | `app/lib/ui/glow_glass.dart` |
 | `GlowValueLabel.spacing` | `8` | Label row gap | `app/lib/ui/glow_glass.dart` |
 | `TimerSheet.padding` | `LTRB(16, 0, 16, 16)` | Scroll content | `app/lib/ui/timer_sheet.dart` |
@@ -142,12 +142,15 @@ Glass in `GlassCard` is tint plus border, not a backdrop filter. Blur values bel
 | Component | Source pattern and usage | Source |
 |---|---|---|
 | Cards and tiles | Use `GlassCard` for sections and `GlowTile` for tap actions; align paired tiles with `GlowGrid`. | `app/lib/ui/glow_glass.dart` |
-| Segmented tabs | Use `GlowSegments`: equal-width siblings, centered wrapping labels, selected tint and outline plus semantic selection. Check actual target size and contrast. | `app/lib/ui/glow_glass.dart` |
+| Segmented tabs | Use `GlowSegments`: equal-width, equal-height siblings; every segment reserves the check slot; labels and check centered vertically; selected cyan tint, cyan border and check plus semantic selection. Selecting must not move, rewrap or resize any label. | `app/lib/ui/glow_glass.dart` |
 | Chips | Status combines a dot with a text label; timer presets are wrapping `ChoiceChip`s. Add a visible selection cue for interactive choices. Do not copy existing status ellipsis into new work. | `app/lib/ui/glow_glass.dart`, `app/lib/ui/timer_sheet.dart` |
 | Sliders | Use the shared flush track and glowing thumb with a label and current value. `SliderZone` keeps horizontal control drags out of tab swipe. | `app/lib/ui/glow_glass.dart`, `app/lib/ui/home.dart` |
 | Bottom sheets | Use safe areas, keyboard insets, scrollable content and a labeled close action. Timer uses a vertical gradient; quick actions separates type selection from the picker and confirmation. | `app/lib/ui/timer_sheet.dart`, `app/lib/ui/quick_actions_sheet.dart` |
 | Navigation | Use equal-width Home, Color, Scenes and Settings items; combine icon and label, expose selected state and respect bottom safe area. | `app/lib/ui/app_shell.dart` |
 | Warning card | Put the Bluetooth-off notice above the device controls. Use the amber border, icon and heading with explanatory copy, a clear enable action and live announcements. | `app/lib/ui/home.dart`, `app/lib/ui/bluetooth_card.dart` |
 | Color and effects | Reuse the shared color picker and `EffectList` across entry points instead of cloning them. Treat current implementation differences as gaps, not new variants. | `app/lib/ui/color_disc.dart`, `app/lib/ui/effect_list.dart`, `app/lib/ui/quick_actions_sheet.dart` |
+| Status slots | Text that appears or changes (last sent, countdown, now playing) lives in `GlowStatusSlot` with reserved lines; transient command errors float (`showGlowNotice`) instead of pushing content. | `app/lib/ui/glow_glass.dart`, `app/lib/ui/notice.dart` |
+| Runtime tag | Scene cards show icon + text: «Necesita la app» (app-driven timers; app open and strip connected) or «En la tira» (native strip effect), with a legend above the list. Pickers of app-driven scenes repeat the note. | `app/lib/ui/scenes/scenes_screen.dart`, `app/lib/ui/quick_actions_sheet.dart` |
+| Sheet headers | Reserve the Back slot on every step so the title keeps its axis. | `app/lib/ui/quick_actions_sheet.dart` |
 
 For new work, the design-rules skill sets the accessibility bar: 48 dp interactive targets, WCAG AA contrast on the composited surface, non-color selection cues, wrapped Spanish/English labels, meaningful semantics and a scroll hint when content continues. Source values above describe current code, not blanket accessibility conformance.
