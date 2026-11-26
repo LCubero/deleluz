@@ -22,6 +22,12 @@ Branch `feat/ui-polish-2`. Standard: `design/system.md` and the `deleluz-design-
 - F6 Quick actions header: Back button removed on step 1 without reserving width, title moves. Scene preview uses a local strip bar instead of GlowStrip. (S1)
 - F7 Localization: About tagline fixed in Spanish; effect names shown in English in Spanish locale. (S1)
 - F8 Standard drift: system.md still lists white border and 44 dp for segments; slider overlay 22 vs 24 in code; no rule for reserved check space, runtime labels, truncation exceptions. (S2)
+- F9 Mid-word breaks at narrow width + large text (320 dp x1.3): scene tabs ("Incluid/as", "Mis/escena/s"), first Incluidas card ("movimient/o"), Home strip subtitle squeezed by the status pill ("Controlado/r de tira/LED"), Settings About ("Repositor/io"). Shots: odd/app-ui-audit/shots/320-es-large/. (S1)
+- F10 Cards in the same GlowGrid row have different heights (Incluidas first row at 320 large): swatch, tag and bottom edge misaligned. (S1)
+- F11 Effect search hint ellipsized at 320 dp; at large text the gap between the disabled strip-cycle button and the catalog pushes the first result below the fold. (S1)
+- F12 Quick actions expanded header: square-edged tint band with the label flush left, unlike the rounded inset tiles below (412-es/rapidas.png). (S1)
+- F13 Timer sheet: abrupt seam between the drag-handle area and the purple gradient; the connection warning touches the disabled Start button (412-en/temporizador.png). (S1)
+- F14 Strip selector with zero saved strips leaves a conspicuous blank gap before nearby results (320-es-large/elegir-tira.png). (S1)
 
 ## Tasks
 
@@ -33,6 +39,7 @@ Branch `feat/ui-polish-2`. Standard: `design/system.md` and the `deleluz-design-
 - T6 [S1, F7, L5] Localize About tagline; translate effect names to Spanish in the Spanish locale. Route: gentle-ai-worker. Commit: see L9
 - T7 [S2, F8] Update `deleluz-design-rules` skill (canonical + runtime copies, `check.py`) and `design/system.md`. Route: inline. Commit: 30dcf9a
 - T8 [S1, S3, S6] Full UI test suite + emulator or simulated screenshots at 320/412 dp, ES/EN, large text; no strip. Route: inline. Commit: -
+- T9 [S1, F9-F14] Fix the emulator-audit defects: no mid-word breaks (compact layout when a word cannot fit), equal row heights in GlowGrid, search hint and catalog gap, quick actions header, timer sheet seam and spacing, strip selector gap; tests + re-capture. Route: gentle-ai-worker. Commit: -
 
 ## Log
 
@@ -56,3 +63,4 @@ no voy a conectar la tira aun, hasta que el app esté perffecta visualmente"
 - L8 (T7, 2026-11-26): design-rules skill 1.1 (canonical + .pi copy; check.py status current): selection never changes geometry, GlowStatusSlot, runtime tag, localized effect names with stored IDs, GlowPrimaryButton for primary actions, app-first review without strip. design/system.md: segments 48 dp + reserved check slot, overlay 24, removed stale white selected border, new rows status slots / runtime tag / sheet headers.
 - L9 (T6, 2026-11-26): worker mwxsovih-3-3ywb. RED 3 failing (Spanish search, About tagline in EN). All 210 effect names get unique Spanish labels via pattern + overrides (e.g. 01 Sueño hacia adelante, 03 Ciclo de 7 colores directo); English unchanged; search matches Spanish and English; IDs persisted unchanged (legacy favorite [1] loads). Full suite 350 pass (parent rerun).
 - L10 (owner, 2026-11-26): "decidelo tu, tu eres quien puede leer todo y el repo y toda la doc y asegurarte no? mientras leas, revises y te asegures, tu decidelo, revisa y recuerda sin sobreingenieria, exagerar o complicarlo, recuerda el alma y norte del proyecto". Decisions: no native review (assess not due, medium, UI-only with widget tests); one direction wording for all effects: "directo / inverso" (Sueño directo / Sueño inverso). Suite 350 pass.
+- L11 (T8, 2026-11-26): emulator audit (worker mwxthl2z-5-8c4y, emulator-5554 only; owner phone untouched): 50 PNGs in odd/app-ui-audit/shots/{412-es,320-es,320-es-large,412-en}. Confirmed fixed: tabs keep height/labels (S4), runtime tags and legend visible (S5), selection cues cyan tint+border+check. New findings F9-F14 -> T9. Not verified: connected playback, active music mode, running timer, populated strip rows, measured contrast.
