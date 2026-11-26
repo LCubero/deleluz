@@ -216,8 +216,8 @@ class _SceneEditorState extends State<SceneEditor> {
         } : null, child: Text(c.text('playSequence'))),
         TextButton(key: const Key('scene-stop'), onPressed: widget.transport.previewing
           ? widget.transport.stopPreview : null, child: Text(c.text('stopSequence'))),
-        FilledButton(key: const Key('scene-save'), onPressed: _busy ? null : _save,
-          child: Text(c.text('saveSequence'))),
+        GlowPrimaryButton(key: const Key('scene-save'), onPressed: _busy ? null : _save,
+          label: Text(c.text('saveSequence'))),
       ])),
       ]))),
     ));

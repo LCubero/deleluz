@@ -9,7 +9,8 @@ import '../../model/models.dart';
 class SceneTransport extends ChangeNotifier with WidgetsBindingObserver {
   SceneTransport(this.controller) {
     WidgetsBinding.instance.addObserver(this);
-    controller.addListener(notifyListeners);
+    _readSentVoice();
+    controller.addListener(_controllerChanged);
   }
 
   final AppController controller;
@@ -17,6 +18,21 @@ class SceneTransport extends ChangeNotifier with WidgetsBindingObserver {
   bool get previewing => controller.previewing;
   bool get failed => controller.message == 'commandFailed';
   int get sensitivity => controller.sensitivity;
+  int? _lastVoiceMode;
+  int? get lastVoiceMode => _lastVoiceMode;
+
+  // Capture the successful voice command before the controller sends sensitivity.
+  void _readSentVoice() {
+    if (controller.lastCommand != 'musicMode') return;
+    if (controller.lastValues['id'] case final int mode) {
+      _lastVoiceMode = mode;
+    }
+  }
+
+  void _controllerChanged() {
+    _readSentVoice();
+    notifyListeners();
+  }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -40,7 +56,7 @@ class SceneTransport extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    controller.removeListener(notifyListeners);
+    controller.removeListener(_controllerChanged);
     controller.stopDraftPreview(restore: false);
     super.dispose();
   }

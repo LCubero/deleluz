@@ -36,8 +36,32 @@ class ScenesScreen extends StatefulWidget {
 
 class _ScenesScreenState extends State<ScenesScreen> {
   AppController get c => widget.controller;
-  late SceneTransport _transport = SceneTransport(c);
+  late SceneTransport _transport;
   String _panel = 'mine';
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _bindTransport();
+  }
+
+  void _bindTransport() {
+    _transport = SceneTransport(c)..addListener(_noticeFailure);
+    _failed = _transport.failed;
+  }
+
+  void _noticeFailure() {
+    final show = !_failed && _transport.failed && widget.active;
+    _failed = _transport.failed;
+    if (!show) return;
+    // Dialogs own their existing inline feedback; the screen uses a floating notice.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && widget.active && _transport.failed && ModalRoute.of(context)?.isCurrent == true) {
+        showGlowNotice(context, c.text('commandFailed'), kind: NoticeKind.error);
+      }
+    });
+  }
 
   @override
   void didUpdateWidget(ScenesScreen oldWidget) {
@@ -45,7 +69,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
     if (!oldWidget.active && widget.active) _panel = 'mine';
     if (oldWidget.controller != c) {
       _transport.dispose();
-      _transport = SceneTransport(c);
+      _bindTransport();
     }
   }
 
@@ -65,8 +89,6 @@ class _ScenesScreenState extends State<ScenesScreen> {
         padding: glowScreenPadding,
         children: [
           GlowHeader(title: c.text('scenes'), controller: c),
-          if (_transport.failed)
-            Notice(c.text('commandFailed'), kind: NoticeKind.error, live: true),
           const SizedBox(height: 12),
           GlowSegments<String>(selected: _panel,
             onSelected: (panel) => setState(() => _panel = panel), segments: [
@@ -128,7 +150,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
   List<Widget> _mine() {
     final items = c.models.loadSequences();
     return [
-      Align(alignment: Alignment.center, child: FilledButton.icon(key: const Key('scene-new'),
+      Align(alignment: Alignment.center, child: GlowPrimaryButton(key: const Key('scene-new'),
         icon: const Icon(Icons.add), label: Text(c.text('newSequence')),
         onPressed: items.length < maxSequences ? () => _edit(null) : null)),
       const SizedBox(height: 12),
@@ -181,7 +203,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
     const SizedBox(height: 12),
     GlowGrid(columns: 2, children: [
       for (var mode = 1; mode <= 4; mode++)
-        GlowTile(key: Key('scene-voice-$mode'), onTap: () {
+        GlowTile(key: Key('scene-voice-$mode'), selected: _transport.lastVoiceMode == mode, onTap: () {
           if (!_transport.ready) return _connectFirst();
           unawaited(_transport.playVoice(mode));
         }, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
@@ -219,8 +241,10 @@ class _LastSent extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = transport.controller;
     final command = c.lastSentLabel;
-    return Text(command == null ? c.text('noCommand') : c.text('lastSent', {'command': command}),
-      textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall);
+    final scaled = MediaQuery.textScalerOf(context).scale(13);
+    return GlowStatusSlot(lines: scaled > 16 ? 5 : 3,
+      text: command == null ? c.text('noCommand') : c.text('lastSent', {'command': command}),
+      textAlign: TextAlign.center);
   }
 }
 
@@ -311,8 +335,7 @@ class _IncludedPreviewState extends State<_IncludedPreview> with WidgetsBindingO
         children: [
           Text(c.text('screenPreview')),
           const SizedBox(height: 10),
-          Container(height: 16, decoration: BoxDecoration(color: _rgb(widget.colors[_index]),
-            borderRadius: BorderRadius.circular(8))),
+          GlowStrip(colors: [widget.colors[_index]], dotted: false),
           const SizedBox(height: 10),
           if (widget.preset != null) ...[
             SliderZone(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -342,8 +365,8 @@ class _IncludedPreviewState extends State<_IncludedPreview> with WidgetsBindingO
             unawaited(widget.transport.playColors(widget.colors, _interval, 50));
           }
         } : null, child: Text(c.text('tryScene'))),
-        FilledButton(onPressed: widget.transport.ready ? () => Navigator.pop(context, _interval) : null,
-          child: Text(c.text('apply'))),
+        GlowPrimaryButton(onPressed: widget.transport.ready ? () => Navigator.pop(context, _interval) : null,
+          label: Text(c.text('apply'))),
       ],
     ));
 }

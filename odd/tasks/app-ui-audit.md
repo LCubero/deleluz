@@ -26,11 +26,11 @@ Branch `feat/ui-polish-2`. Standard: `design/system.md` and the `deleluz-design-
 ## Tasks
 
 - T1 [S4, F1] Scene tabs: reserve check space in every segment, equal height, stable label; widget test. Route: inline. Commit: fcf6938
-- T2 [S5, F2] Runtime tag on scene cards ("Necesita la app" / "En la tira") plus legend; notes in Mis escenas and quick-action scene pickers; test. Route: inline. Commit: see L4
-- T3 [S1, F3] Selection and primary buttons consistent (Music selected, gradient primary). Route: inline. Commit: -
-- T4 [S1, F4] Reserve space for changing status/notice text (Scenes, Home, Color). Route: inline. Commit: -
-- T5 [S1, F5, F6] 48 dp targets in strip selector; quick actions header alignment; preview uses GlowStrip. Route: inline. Commit: -
-- T6 [S1, F7] Localize About tagline; effect names decision. Route: inline. Commit: -
+- T2 [S5, F2] Runtime tag on scene cards ("Necesita la app" / "En la tira") plus legend; notes in Mis escenas and quick-action scene pickers; test. Route: inline. Commit: b662d78
+- T3 [S1, F3] Selection and primary buttons consistent (Music selected, gradient primary). Route: gentle-ai-worker. Commit: see L6
+- T4 [S1, F4] Reserve space for changing status/notice text (Scenes, Home, Color). Route: gentle-ai-worker. Commit: see L6
+- T5 [S1, F5, F6] 48 dp targets in strip selector; quick actions header alignment; preview uses GlowStrip. Route: gentle-ai-worker. Commit: see L6
+- T6 [S1, F7, L5] Localize About tagline; translate effect names to Spanish in the Spanish locale. Route: inline. Commit: -
 - T7 [S2, F8] Update `deleluz-design-rules` skill (canonical + runtime copies, `check.py`) and `design/system.md`. Route: inline. Commit: -
 - T8 [S1, S3, S6] Full UI test suite + emulator or simulated screenshots at 320/412 dp, ES/EN, large text; no strip. Route: inline. Commit: -
 
@@ -50,3 +50,5 @@ no voy a conectar la tira aun, hasta que el app esté perffecta visualmente"
 - L2 (audit, 2026-11-26): read-only explorer audit; findings F1-F8 above, evidence in code paths cited per finding. Not observed at runtime yet.
 - L3 (T1, 2026-11-26): RED observed: selecting a scene tab moved its label 22 dp and at 320 dp wrapped "Incluidas" (40 -> 60 dp tall). Fix: every segment reserves the 18 dp check slot; equal-height segments; labels and check centered vertically. Changed pinned home_test rule "first line tops align" to "labels share one vertical center" (segments now equal height). Full suite 340 pass.
 - L4 (T2, 2026-11-26): RED observed (no tag). Every Incluidas card shows an icon + text tag: six presets "Necesita la app", Ciclo automático / Forward / Backward Dreaming "En la tira"; legend notice above the grid; Mis escenas cards tagged and a note when scenes exist; quick-action scene pickers show the same note; preview/editor hint now says "solo con la app abierta y la tira conectada". Test helper scrolls lazily built cards/tabs into view. Full suite 342 pass.
+- L5 (owner decision, 2026-11-26): effect names -> "Traducirlos al español" (Spanish names when the app is in Spanish, English when in English). Screenshots -> "Ambos" (emulator for sizes; owner's phone over USB for final confirmation, asking right before).
+- L6 (T3-T5, 2026-11-26): worker mwxs0ez3-2-ety0, RED then GREEN per rule. Music cards mark last sent voice mode (session only; failed send keeps previous). Scenes new/apply/save use GlowPrimaryButton. Scenes command-failure notice floats; shared GlowStatusSlot reserves height for last-sent, Home countdown, Color now-playing (RED shifts 101/18/89 dp). Strip selector actions >=48 dp (was 44); quick actions Back slot reserved (title shifted 48 dp); preview uses GlowStrip. Full suite 348 pass (parent rerun).

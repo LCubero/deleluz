@@ -276,6 +276,24 @@ void main() {
     expect(tester.widget<ListTile>(keyed('effect-row-210')).selected, isTrue);
   });
 
+  testWidgets('audit: active effect label does not move the catalog', (tester) async {
+    await start(tester, connected: true, size: const Size(320, 915), scale: 1.5);
+    await tap(tester, 'color-effects');
+    final catalog = keyed('effect-search');
+    await tester.ensureVisible(keyed('effect-row-1'));
+    await tester.pumpAndSettle();
+    final before = tester.getRect(catalog);
+    await tester.tap(keyed('effect-row-1'));
+    await flush(tester);
+    final label = find.text(controller.text('manualEffectPlaying', {'id': '01', 'name': effectNames.first}));
+    expect(label, findsOneWidget);
+    expect(tester.getRect(catalog), before);
+    controller.setPower(false);
+    await flush(tester);
+    expect(label, findsNothing);
+    expect(tester.getRect(catalog), before);
+  });
+
   for (final (language, width, prefix) in [('es', 320.0, 'En la tira'), ('en', 412.0, 'On the strip')]) {
     testWidgets('Searching preserves the manual now-playing label and BLE writes ($language)', (tester) async {
       await start(tester, connected: true, size: Size(width, 915), scale: 1.5);

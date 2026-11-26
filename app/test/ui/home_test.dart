@@ -165,6 +165,24 @@ void main() {
     }
   }
 
+  testWidgets('audit: Home countdown does not move power', (tester) async {
+    useOwnerPhoneView(tester);
+    final c = await start(tester);
+    await c.connect(FakeBle.strip);
+    await tester.pumpAndSettle();
+    final power = find.byKey(const Key('power'));
+    final before = tester.getRect(power);
+    c.startTimer(60, fade: false);
+    await tester.pump();
+    final countdown = find.textContaining(c.text('offIn', {'time': ''}));
+    expect(countdown, findsOneWidget);
+    expect(tester.getRect(power), before);
+    c.cancelTimer();
+    await tester.pump();
+    expect(countdown, findsNothing);
+    expect(tester.getRect(power), before);
+  });
+
   testWidgets('Inicio fits the whole brightness card on the owner phone', (tester) async {
     useOwnerPhoneView(tester);
     final c = await start(tester);
@@ -849,7 +867,11 @@ void main() {
       final color = find.byKey(const Key('quick-type-color'));
       await tap(add);
       expect(first, findsOneWidget);
+      final header = find.descendant(of: find.byKey(const Key('glow-sheet')),
+        matching: find.byWidgetPredicate((widget) => widget is Semantics && widget.properties.header == true));
+      final titleX = tester.getTopLeft(header).dx;
       await tap(color);
+      expect(tester.getTopLeft(header).dx, titleX);
       expect(second, findsOneWidget);
       await tap(find.byTooltip('Volver a los tipos'));
       expect(first, findsOneWidget);
@@ -1136,6 +1158,8 @@ void main() {
     final row = find.byKey(const ValueKey('one'));
     Finder within(Finder child) => find.descendant(of: row, matching: child);
     expect(tester.getSize(within(find.byType(Material)).first).height, lessThanOrEqualTo(104)); // Larger icons and pill (L34) with 48 dp targets; first version was 141 dp.
+    expect(tester.getSize(within(find.widgetWithText(FilledButton, 'Conectar'))).shortestSide,
+      greaterThanOrEqualTo(48));
     final actionY = tester.getCenter(within(find.text('Conectar'))).dy;
     for (final label in ['Renombrar', 'Olvidar']) {
       final icon = within(find.byTooltip(label));

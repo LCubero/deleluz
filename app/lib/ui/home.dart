@@ -53,8 +53,11 @@ class _HomeScreenState extends State<HomeScreen> {
           style: IconButton.styleFrom(fixedSize: const Size.square(48), padding: EdgeInsets.zero),
           onPressed: off ? null : () => TimerSheet.open(context, c))),
       ]),
-      if (c.remaining case final seconds?)
-        Text(c.text('offIn', {'time': formatRemaining(seconds)}), style: style.bodySmall),
+      GlowStatusSlot(lines: MediaQuery.textScalerOf(context).scale(13) > 16 ? 2 : 1,
+        text: switch (c.remaining) {
+        final seconds? => c.text('offIn', {'time': formatRemaining(seconds)}),
+        null => null,
+      }),
       const SizedBox(height: 12),
       if (off) ...[
         BluetoothCard(controller: c),

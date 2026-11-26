@@ -54,6 +54,76 @@ void main() {
     await tester.pump(Duration(milliseconds: ms));
   }
 
+  testWidgets('audit: scene primary actions use the shared gradient button', (tester) async {
+    await start(tester);
+    await tap(tester, 'scene-new');
+    expect(key('scene-save').hitTestable(), findsOneWidget);
+    expect(tester.widget(key('scene-save')), isA<GlowPrimaryButton>());
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(tester.widget(key('scene-new')), isA<GlowPrimaryButton>());
+    await tap(tester, 'scenes-included');
+    await tester.longPress(key('included-police'));
+    await tester.pumpAndSettle();
+    final apply = find.widgetWithText(GlowPrimaryButton, c.text('apply'));
+    expect(apply, findsOneWidget);
+    expect(tester.widget<GlowPrimaryButton>(apply).onPressed, isNull);
+  });
+
+  testWidgets('audit: failed command notice does not move scene tabs', (tester) async {
+    await start(tester, connected: true, size: const Size(320, 915), scale: 1.5);
+    final tabs = key('scenes-mine');
+    final before = tester.getRect(tabs);
+    ble.failWrite = (_) => true;
+    final failed = c.setEffect(1);
+    for (var i = 0; i < 5; i++) { await tick(tester, 100); }
+    expect(await failed, isFalse);
+    await tester.pumpAndSettle();
+    expect(find.text(c.text('commandFailed')), findsOneWidget);
+    expect(tester.getRect(tabs), before);
+    ble.failWrite = null;
+    final sent = c.setEffect(1);
+    for (var i = 0; i < 5; i++) { await tick(tester, 100); }
+    expect(await sent, isTrue);
+    await tester.pumpAndSettle();
+    expect(tester.getRect(tabs), before);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    expect(find.text(c.text('commandFailed')), findsNothing);
+    expect(tester.getRect(tabs), before);
+  });
+
+  testWidgets('audit: preview status does not move dialog actions', (tester) async {
+    await start(tester, connected: true, size: const Size(320, 1600), scale: 1.5);
+    await tap(tester, 'scenes-included');
+    final card = key('included-police');
+    await Scrollable.ensureVisible(tester.element(card), alignment: .5);
+    await tester.pumpAndSettle();
+    expect(card.hitTestable(), findsOneWidget);
+    await tester.longPress(card);
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.text(c.text('noCommand')), findsOneWidget);
+    final before = tester.getRect(key('scene-close'));
+    final sent = c.setEffect(1);
+    for (var i = 0; i < 5; i++) { await tick(tester, 100); }
+    expect(await sent, isTrue);
+    expect(find.textContaining(c.text('lastSent', {'command': ''})), findsOneWidget);
+    expect(tester.getRect(key('scene-close')), before);
+  });
+
+  testWidgets('audit: dialog preview uses an animated shared strip', (tester) async {
+    await start(tester);
+    await tap(tester, 'scenes-included');
+    await tester.longPress(key('included-police'));
+    await tester.pumpAndSettle();
+    final strip = find.descendant(of: find.byType(AlertDialog), matching: find.byType(GlowStrip));
+    expect(strip, findsOneWidget);
+    final before = tester.widget<GlowStrip>(strip).colors;
+    await tick(tester, 350);
+    expect(tester.widget<GlowStrip>(strip).colors, isNot(before));
+  });
+
   for (final mixed in [false, true]) {
     testWidgets('${mixed ? 'mixed' : 'legacy'} stored scene sends timed exact frames', (tester) async {
       await start(tester, connected: true);
@@ -107,7 +177,7 @@ void main() {
     ]), isTrue);
     await tap(tester, 'scenes-mine');
     expect(find.text(c.text('scenesLimit', {'max': maxSequences})), findsOneWidget);
-    expect(tester.widget<FilledButton>(key('scene-new')).onPressed, isNull);
+    expect(tester.widget<GlowPrimaryButton>(key('scene-new')).onPressed, isNull);
     await tap(tester, 'scene-edit-1');
     final stepLimit = find.text(c.text('sceneStepsLimit', {'max': maxColors}));
     expect(stepLimit, findsOneWidget);
@@ -325,8 +395,26 @@ void main() {
       for (var i = 0; i < 5; i++) {
         await tick(tester, 100);
       }
+      for (var candidate = 1; candidate <= 4; candidate++) {
+        final card = key('scene-voice-$candidate');
+        expect(find.descendant(of: card, matching: find.byKey(GlowSelection.markerKey)),
+          candidate == mode ? findsOneWidget : findsNothing);
+        final material = tester.widget<Material>(find.descendant(of: card, matching: find.byType(Material)).first);
+        expect(material.color, candidate == mode ? GlowSelection.tint : glowGlass);
+        if (candidate == mode) {
+          expect((material.shape as RoundedRectangleBorder).side, GlowSelection.border);
+        }
+      }
     }
     expect(ble.writes.where((w) => w[2] == 11).map((w) => w[3]), [1, 2, 3, 4]);
+    ble.failWrite = (_) => true;
+    await tap(tester, 'scene-voice-1');
+    for (var i = 0; i < 5; i++) { await tick(tester, 100); }
+    expect(find.descendant(of: key('scene-voice-4'), matching: find.byKey(GlowSelection.markerKey)),
+      findsOneWidget);
+    expect(find.descendant(of: key('scene-voice-1'), matching: find.byKey(GlowSelection.markerKey)),
+      findsNothing);
+    ble.failWrite = null;
     await tester.ensureVisible(slider);
     for (final value in [0.0, 100.0]) {
       tester.widget<Slider>(slider).onChanged!(value);
@@ -442,7 +530,7 @@ void main() {
       },
     ]);
     await tap(tester, 'scenes-mine');
-    expect(tester.widget<FilledButton>(key('scene-new')).onPressed, isNull);
+    expect(tester.widget<GlowPrimaryButton>(key('scene-new')).onPressed, isNull);
     expect(ble.writes, isEmpty);
   });
 

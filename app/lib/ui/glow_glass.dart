@@ -92,6 +92,26 @@ class GlowPrimaryButton extends StatelessWidget {
   }
 }
 
+/// Keeps changing status text in a stable space. Long text still wraps and can scroll.
+class GlowStatusSlot extends StatelessWidget {
+  const GlowStatusSlot({super.key, this.text, required this.lines, this.textAlign,
+    this.live = false});
+  final String? text;
+  final int lines;
+  final TextAlign? textAlign;
+  final bool live;
+
+  @override
+  Widget build(BuildContext context) {
+    final height = lines * MediaQuery.textScalerOf(context).scale(13) * 1.4;
+    final label = text == null ? null : Semantics(liveRegion: live, child: Text(text!, textAlign: textAlign,
+      style: Theme.of(context).textTheme.bodySmall,
+      strutStyle: const StrutStyle(fontSize: 13, height: 1.4, forceStrutHeight: true)));
+    return SizedBox(height: height.ceilToDouble(),
+      child: label == null ? null : SingleChildScrollView(primary: false, child: label));
+  }
+}
+
 const glassInset = 16.0;
 const glowScreenPadding = EdgeInsets.fromLTRB(18, 16, 18, 18);
 

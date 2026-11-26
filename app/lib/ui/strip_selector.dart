@@ -169,9 +169,9 @@ class _StripSelectorState extends State<StripSelector> {
     final primary = !connected && failure == null && !pending; // Cancelar stays grey (L54).
     final pill = FilledButton(
       style: FilledButton.styleFrom(
-        minimumSize: const Size(0, 34),
+        minimumSize: const Size.square(48),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap, shape: const StadiumBorder(),
+        shape: const StadiumBorder(),
         backgroundColor: primary ? Colors.transparent : glowGlassSelected,
         foregroundColor: failure == null ? glowInk : error,
         side: primary ? null : BorderSide(color: failure == null ? glowLine : error),
@@ -188,7 +188,7 @@ class _StripSelectorState extends State<StripSelector> {
         borderRadius: BorderRadius.circular(16),
         onTap: c.busy || connected ? null : () => _connect(strip),
         onLongPress: saved == null || c.busy ? null : () => _menu(saved),
-        child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(spacing: 8, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Expanded(flex: 3, child: Padding(padding: EdgeInsets.zero,
