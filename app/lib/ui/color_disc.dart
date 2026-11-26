@@ -36,7 +36,8 @@ class ColorDisc extends StatelessWidget {
           void update(DragUpdateDetails details) => select(details.localPosition);
 
           return Semantics(label: label, value: '#${hex.toUpperCase()}',
-            child: GestureDetector(
+            // Restrict pointer-down hit testing without clipping the glow or marker.
+            child: ClipOval(clipBehavior: Clip.none, child: GestureDetector(
               key: const Key('color-disc'),
               excludeFromSemantics: true,
               behavior: HitTestBehavior.opaque,
@@ -70,7 +71,7 @@ class ColorDisc extends StatelessWidget {
                   )),
                 ),
               ]),
-            ),
+            )),
           );
         }),
       ),

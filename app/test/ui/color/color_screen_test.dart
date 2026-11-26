@@ -84,6 +84,18 @@ void main() {
     expect(ble.writes.last, wire.color(255, 255, 255));
   });
 
+  testWidgets('A drag from a blank disc corner scrolls without sending color', (tester) async {
+    await start(tester, connected: true, size: const Size(320, 480));
+    final disc = keyed('color-disc');
+    final page = find.byType(Scrollable);
+    final position = tester.state<ScrollableState>(page).position;
+    final corner = tester.getBottomLeft(disc) + const Offset(4, -4);
+    await tester.dragFrom(corner, const Offset(0, -80));
+    await flush(tester);
+    expect(ble.writes, isEmpty);
+    expect(position.pixels, greaterThan(0));
+  });
+
   testWidgets('White chips send the exact RGB presets and have 48 dp targets', (tester) async {
     await start(tester, connected: true);
     for (final (label, rgb) in [
@@ -239,6 +251,41 @@ void main() {
     expect(tester.widget<ChoiceChip>(keyed('effect-auto')).selected, isFalse);
     expect(tester.widget<ListTile>(keyed('effect-row-210')).selected, isTrue);
   });
+
+  for (final (language, width, prefix) in [('es', 320.0, 'En la tira'), ('en', 412.0, 'On the strip')]) {
+    testWidgets('Searching preserves the manual now-playing label and BLE writes ($language)', (tester) async {
+      await start(tester, connected: true, size: Size(width, 915), scale: 1.5);
+      controller.setLanguage(language);
+      await tester.pump();
+      await tap(tester, 'color-effects');
+      final search = keyed('effect-search');
+      final label = find.text('$prefix: 210 · ${effectNames.last}');
+      expect(label, findsNothing);
+      await tester.enterText(search, '210');
+      await tester.pumpAndSettle();
+      await tester.tap(keyed('effect-row-210'));
+      await flush(tester);
+      expect(ble.writes.last, wire.effect(210));
+      final writes = ble.writes.map(wire.hex).toList();
+
+      await tester.enterText(search, 'Forward Dreaming');
+      await tester.pumpAndSettle();
+      expect(keyed('effect-row-210'), findsNothing);
+      expect(keyed('effect-row-1'), findsOneWidget);
+      expect(ble.writes.map(wire.hex), writes);
+      expect(label, findsOneWidget);
+      expect(tester.getRect(label).bottom, lessThan(tester.getRect(find.byType(EffectList)).top));
+      final viewport = tester.getRect(find.byType(SingleChildScrollView).first);
+      expect(tester.getRect(label).top, greaterThanOrEqualTo(viewport.top));
+      expect(tester.getRect(label).bottom, lessThanOrEqualTo(viewport.bottom));
+      expect(tester.takeException(), isNull);
+
+      await tap(tester, 'effect-auto');
+      await flush(tester);
+      expect(label, findsNothing);
+      expect(keyed('strip-cycle-all'), findsOneWidget);
+    });
+  }
 
   testWidgets('effect favorites move, reload, and unstar without sending', (tester) async {
     final store = Store();

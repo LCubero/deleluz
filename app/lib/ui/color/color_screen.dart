@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app_controller.dart';
+import '../../model/effects.dart';
 import '../../protocol.dart' as wire;
 import '../color_picker.dart';
 import '../effect_list.dart';
@@ -24,6 +25,7 @@ class _ColorScreenState extends State<ColorScreen> {
   AppController get c => widget.controller;
   late List<int> _rgb;
   late int _effect;
+  int? _manualEffect;
   bool _effects = false;
   bool _auto = false;
 
@@ -36,6 +38,7 @@ class _ColorScreenState extends State<ColorScreen> {
   void _loadSelection() {
     final saved = c.models.loadState();
     _rgb = saved['rgb'] as List<int>;
+    _manualEffect = null;
     _auto = c.effect == wire.autoEffect;
     _effect = _auto ? 1 : c.effect;
   }
@@ -51,6 +54,7 @@ class _ColorScreenState extends State<ColorScreen> {
     setState(() {
       _rgb = rgb;
       _auto = false;
+      _manualEffect = null;
     });
     if (c.canSend) {
       unawaited(c.applyShortcut({'kind': 'color', 'rgb': rgb}));
@@ -65,11 +69,15 @@ class _ColorScreenState extends State<ColorScreen> {
     if (!sent || !mounted || c != controller) return;
     setState(() {
       _auto = id == wire.autoEffect;
+      _manualEffect = _auto ? null : id;
       if (!_auto) _effect = id;
     });
   }
 
   Widget _effectCard() {
+    final manual = _manualEffect;
+    final name = manual != null && manual == c.effect && c.hasActiveEffect && !c.appAutoPlaying
+        ? effectName(manual) : null;
     return GlassCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (_auto) ...[
         Text(c.text('allEffects'), key: const Key('strip-cycle-all'), textAlign: TextAlign.center),
@@ -79,6 +87,13 @@ class _ColorScreenState extends State<ColorScreen> {
         label: Text(c.text('stripCycle')), selected: _auto,
         onSelected: c.canSend ? (_) => _playEffect(wire.autoEffect) : null)),
       const SizedBox(height: 12),
+      if (name != null) ...[
+        Semantics(liveRegion: true, child: Text(
+          c.text('manualEffectPlaying', {'id': '$manual'.padLeft(2, '0'), 'name': name}),
+          style: Theme.of(context).textTheme.bodySmall,
+        )),
+        const SizedBox(height: 8),
+      ],
       EffectList(favorites: c.effectFavorites, text: c.text,
         selected: _auto || c.appAutoPlaying ? null : _effect, onFavorite: c.toggleEffectFavorite,
         onSelected: c.canSend ? _playEffect : null),
@@ -126,7 +141,10 @@ class _ColorScreenState extends State<ColorScreen> {
             _effectCard(),
             const SizedBox(height: 12),
             AppAutoCard(key: const Key('app-auto'), controller: c,
-              onStart: () => setState(() => _auto = false)),
+              onStart: () => setState(() {
+                _auto = false;
+                _manualEffect = null;
+              })),
           ] else ...[
             SharedColorPicker(controller: c, rgb: _rgb, showDiscHint: false,
               onChanged: (rgb, _) => _choose(rgb)),

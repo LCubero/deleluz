@@ -126,6 +126,7 @@ const _strings = <String, (String, String)>{
   'appAutoCurrent': ('Efecto actual: {effect}', 'Current effect: {effect}'),
   'durationShortSeconds': ('{value} s', '{value} s'),
   'durationShortMinutes': ('{value} min', '{value} min'),
+  'manualEffectPlaying': ('En la tira: {id} · {name}', 'On the strip: {id} · {name}'),
   'stripCycle': ('Ciclo de la tira', 'Strip auto cycle'),
   'autoCycle': ('Ciclo automático', 'Auto cycle'),
   'autoCycleAll': ('Ciclo automático: todos los efectos', 'Auto cycle: all effects'),
