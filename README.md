@@ -40,13 +40,13 @@ Install 1.1.0 over 1.0.0 or a test build signed with the same key to keep your d
 
 ## What it looks like
 
-Las capturas muestran la versión 1.0.0. / These screenshots show version 1.0.0.
+Las capturas muestran la versión 1.1.0. / These screenshots show version 1.1.0.
 
-<p align="center"><img src="docs/app-screens/showreel.webp" width="300" alt="DeleLuz Android app tour: Inicio, Color, Escenas, Música, strip selector and Ajustes"></p>
+<p align="center"><img src="docs/app-screens/showreel.webp" width="300" alt="DeleLuz 1.1.0: fixed cyan, app AUTO cycling through effects, the built-in automatic cycle, and a countdown started and canceled"></p>
 
-| Inicio | Color | Escenas | Elegir tira |
+| Inicio | Color fijo | Escenas | Temporizador |
 |---|---|---|---|
-| <img src="docs/app-screens/01-inicio.png" width="180" alt="Inicio: connected strip, power and sliders"> | <img src="docs/app-screens/03-color.png" width="180" alt="Color wheel"> | <img src="docs/app-screens/05-escenas.png" width="180" alt="Included scenes"> | <img src="docs/app-screens/07-elegir-tira.png" width="180" alt="Strip selector with an alias"> |
+| <img src="docs/app-screens/01-inicio.png" width="180" alt="Home with Sala connected and Quick Actions expanded"> | <img src="docs/app-screens/03-color.png" width="180" alt="Color wheel with cyan selected, three white presets, and a brightness slider"> | <img src="docs/app-screens/05-escenas.png" width="180" alt="Included scenes with Ciclo automático selected"> | <img src="docs/app-screens/10-temporizador.png" width="180" alt="Shutdown timer counting down with a violet and pink ring and a Cancel control"> |
 
 **[List of the 210 built-in effects / Lista de los 210 efectos integrados](docs/EFFECTS.md)**, with the number and name shown in the app.
 

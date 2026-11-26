@@ -2,7 +2,9 @@
 
 Native Android app (Flutter) for the LEDDMX-03 LED strip controller, with the Glow Glass design of the phone webapp ([`../webapp/README.md`](../webapp/README.md)). It is shared as an APK, not through an app store. iPhone builds need macOS and are not covered here.
 
-<p align="center"><img src="../docs/app-screens/showreel.webp" width="300" alt="DeleLuz 1.0.0 Android app tour"></p>
+<p align="center"><img src="../docs/app-screens/showreel.webp" width="300" alt="DeleLuz 1.1.0: fixed cyan, app AUTO cycling through effects, the built-in automatic cycle, and a countdown started and canceled"></p>
+
+[Screenshot gallery](../docs/app-screens/) · [Quick Actions picker](../docs/app-screens/02b-accion-rapida-selector.png) · [Scene editor with color and effect steps](../docs/app-screens/05c-editor-escena.png)
 
 ## Install
 

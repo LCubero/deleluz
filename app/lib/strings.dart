@@ -135,7 +135,7 @@ const _strings = <String, (String, String)>{
   'effectCatalogAll': ('Todos los efectos', 'All effects'),
   'effectSearchEmpty': ('No hay coincidencias.', 'No matching effects.'),
   'allEffects': ('Todos', 'All'),
-  'effectsNote': ('El controlador incluye los efectos del 1 al 210. Los nombres son los de la app del fabricante.', 'Effects 1–210 are built into the controller. Names come from the vendor app.'),
+  'effectsNote': ('El controlador incluye los efectos del 1 al 210. Los nombres están traducidos de la app del fabricante.', 'Effects 1–210 are built into the controller. Names come from the vendor app.'),
   'speed': ('Velocidad', 'Speed'),
   'speedEffectsHint': ('La velocidad aplica a efectos', 'Speed applies to effects'),
   'micSensitivity': ('Sensibilidad del micrófono', 'Microphone sensitivity'),
