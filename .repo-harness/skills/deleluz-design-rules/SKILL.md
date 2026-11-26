@@ -4,7 +4,7 @@ description: "Trigger: any DeleLuz UI change (Android app or webapp): screens, s
 license: "MIT"
 metadata:
   author: DeleLuz
-  version: "1.1"
+  version: "1.2"
   canonical-source: core/deleluz-design-rules:1.0
 ---
 
@@ -24,6 +24,11 @@ Read `design/system.md` before changing DeleLuz UI. Skip for non-UI work.
 - Tell the user how a scene runs before they play it: icon + text tag «Necesita la app» (app-driven; app open and strip connected) or «En la tira» (native effect).
 - Localize effect names (Spanish in the Spanish locale); store IDs, never display names. Truncate only user-given names (aliases, scene names) to at most two lines.
 - Use `GlowPrimaryButton` for the primary action of every screen, sheet and dialog; never a plain `FilledButton`.
+- Never split a word across lines. When width / text scale < 300 dp (`glowCompactLayout`), stack segments full width, use one column for card grids, and move side pills or labels above or below the text instead of squeezing it.
+- Cards in the same grid row share the tallest height; swatches and tags align to the bottom.
+- Mark what is playing: the last successfully started scene, effect or music mode shows the selection style; one at a time; a failed send keeps the previous one.
+- List strip-native effects («En la tira») before app-driven scenes («Necesita la app»).
+- A reserved status slot never shows as an empty hole: when idle it shows a useful hint (e.g. the effect range).
 
 ## Decision Gates
 

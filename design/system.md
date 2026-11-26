@@ -151,6 +151,9 @@ Glass in `GlassCard` is tint plus border, not a backdrop filter. Blur values bel
 | Color and effects | Reuse the shared color picker and `EffectList` across entry points instead of cloning them. Treat current implementation differences as gaps, not new variants. | `app/lib/ui/color_disc.dart`, `app/lib/ui/effect_list.dart`, `app/lib/ui/quick_actions_sheet.dart` |
 | Status slots | Text that appears or changes (last sent, countdown, now playing) lives in `GlowStatusSlot` with reserved lines; transient command errors float (`showGlowNotice`) instead of pushing content. | `app/lib/ui/glow_glass.dart`, `app/lib/ui/notice.dart` |
 | Runtime tag | Scene cards show icon + text: «Necesita la app» (app-driven timers; app open and strip connected) or «En la tira» (native strip effect), with a legend above the list. Pickers of app-driven scenes repeat the note. | `app/lib/ui/scenes/scenes_screen.dart`, `app/lib/ui/quick_actions_sheet.dart` |
+| Compact layout | `glowCompactLayout`: width / text scale < 300 dp stacks `GlowSegments`, uses one-column `GlowGrid` and moves side pills below text; never shrink fonts. | `app/lib/ui/glow_glass.dart` |
+| Grid rows | `GlowGrid` rows take the tallest tile height; scene footers (swatch, tag) bottom-aligned. | `app/lib/ui/glow_glass.dart`, `app/lib/ui/scenes/scenes_screen.dart` |
+| Playing state | `SceneTransport` keeps one session-only selection across Incluidas, Mis escenas and Música. | `app/lib/ui/scenes/scene_transport.dart` |
 | Sheet headers | Reserve the Back slot on every step so the title keeps its axis. | `app/lib/ui/quick_actions_sheet.dart` |
 
 For new work, the design-rules skill sets the accessibility bar: 48 dp interactive targets, WCAG AA contrast on the composited surface, non-color selection cues, wrapped Spanish/English labels, meaningful semantics and a scroll hint when content continues. Source values above describe current code, not blanket accessibility conformance.
