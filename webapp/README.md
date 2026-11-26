@@ -13,7 +13,7 @@ adb reverse tcp:8000 tcp:8000   # phone connected over USB
 
 Open `http://localhost:8000/webapp/` in Chrome on Android. Close the LED LAMP app first: the controller accepts one connection. Add `?sim` to the URL to log frames instead of sending them; simulation is automatic when the browser has no Web Bluetooth (for example, iPhone browsers).
 
-Spanish is the default; choose English in Help (Ayuda).
+Spanish is the default; choose English in Settings → Language (Ajustes → Idioma).
 
 ## What it does
 
@@ -30,7 +30,7 @@ Spanish is the default; choose English in Help (Ayuda).
 ## Limits
 
 - The controller reports nothing back: the app shows what it last sent, not the strip's real state.
-- Page scenes and the off timer run only while this page is open and in front; the strip has no timer of its own. If the page closes, the strip stays on with its last color.
+- Page scenes and the off timer run in this page, not on the strip. Keep the page open and in the foreground. If the page closes, the strip stays on with its last color.
 - Commands sent: power, brightness, whole-strip color, built-in effect, speed, voice mode (1–4), mic sensitivity, and chip configuration. The page does not capture or stream audio.
 - Only RGB, GRB and BGR orders, at 150 pixels, were confirmed on the physical strip. Other orders follow the vendor list, and the app accepts the vendor range of 1–1024 pixels.
 - Commands are spaced 50 ms apart (the strip follows changes down to ~35 ms, see `docs/CAPABILITIES.md`); the scene step interval starts at 150 ms, and fade scenes send intermediate colors about every 50 ms.

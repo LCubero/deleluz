@@ -12,7 +12,7 @@ DeleLuz controls the stock LEDDMX-03 from a native Android app (`app/`, publishe
 
 <!-- doc-role:recent-work -->
 
-- RH-W-0001 (Android phase 1) completed in v1.1.0 on 2026-11-25. The owner approved test build 2012; the automated matrix covered 16 phone sizes ([phase 1 log](../../odd/tasks/app-polish.md#log), L42–L47; [compatibility tests](../../app/test/ui/compat_test.dart)).
+- RH-W-0001 (Android phase 1) shipped as v1.1.0 (build 2013) on 2026-11-25. The owner approved test build 2012; the automated matrix covered 16 phone sizes. See [roadmap evidence](roadmap.md#resolved-records).
 - Published the native Android app v1.0.0 (one universal APK, `DeleLuz-1.0.0.apk`) on GitHub Releases; built on branch `feat/android-app`, merged to `main`, verified by the user on two phones and two strips; independent review and native risk reviews done (`odd/tasks/deleluz-android.md` L41-L56).
 - Added onboard-mic sensitivity to the webapp, verified on the strip by the user (`335d91c`; lab L59).
 - Recorded Linux BLE connection behavior, power-source observations, and GATT discovery (lab L55–L60).
@@ -21,7 +21,7 @@ DeleLuz controls the stock LEDDMX-03 from a native Android app (`app/`, publishe
 
 <!-- doc-role:pending-work -->
 
-The webapp port and two-strip spike await the owner's choice. See the [roadmap](roadmap.md). Firmware readback and a strip-side timer remain unconfirmed and do not block the Android app.
+The webapp port and two-strip spike await the owner's choice. See the [roadmap](roadmap.md). Full firmware readout and a strip-side timer remain unconfirmed and do not block the Android app.
 
 ## Next Step
 

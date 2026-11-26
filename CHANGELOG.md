@@ -6,7 +6,7 @@ This file records meaningful completed changes in chronological order, newest fi
 
 ## 1.1.0 — 2026-11-25
 
-Android phase 1 was released on GitHub as [v1.1.0](https://github.com/LCubero/deleluz/releases/tag/v1.1.0). The owner tested it on two phones (Samsung Galaxy Note10 Lite class and Motorola edge 60 fusion), and the [automated compatibility matrix](app/test/ui/compat_test.dart) covered 16 phone sizes. See [the phase 1 log](odd/tasks/app-polish.md#log).
+Android phase 1 shipped as [v1.1.0](https://github.com/LCubero/deleluz/releases/tag/v1.1.0) (build 2013), with universal and per-architecture APKs. The owner approved test build 2012, and the [automated compatibility matrix](app/test/ui/compat_test.dart) covered 16 phone sizes. See [the phase 1 log](odd/tasks/app-polish.md#log).
 
 ### Added
 
@@ -18,7 +18,8 @@ Android phase 1 was released on GitHub as [v1.1.0](https://github.com/LCubero/de
 
 - Renamed Quick scenes to Quick actions and added built-in effects with a two-step add sheet. Kept the strip cycle separate from App AUTO.
 - Redesigned the off timer with a countdown ring, shutoff time, +5 and +15 min controls, and custom minutes and seconds capped at 12 hours.
-- Made the Bluetooth-off card prominent and added icons to notices.
+- Moved effect speed out of Home. The strip card opens the chooser on tap and previews other saved strips on swipe without switching tabs or connecting. Tap a saved or nearby strip in the chooser to connect.
+- Made the Bluetooth-off card prominent, added icons to notices and dark blur to snackbars, and clarified that Android 11 and older require location permission to scan.
 
 ### Fixed
 

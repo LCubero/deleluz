@@ -57,11 +57,11 @@ Checked at 320, 360, 412, 768, 1024, 1366 and 1920 px wide with device emulation
 
 ## Phases
 
-Each phase gets its own ODD task document when it starts.
+The [roadmap](repo-harness/roadmap.md) owns status and the next-phase choice. The list below describes scope, not a fixed order. Each phase gets its own ODD task document when it starts.
 
 1. **App polish — Android phase 1 completed in 1.1.0.** See the [roadmap](repo-harness/roadmap.md) for delivery status and the [phase 1 spec and log](../odd/tasks/app-polish.md) for scope and decisions.
 2. **Two-strip spike, then groups:** open 2 links from Android, fan out one command, log the skew and reconnects. Build groups only if this holds up.
-3. **Webapp parity and responsive layouts:** port phase 1, add the strip list, then the tablet layout, the desktop layout and a home dashboard. Check every width with screenshots.
+3. **Webapp parity and responsive layouts:** finish the Android port, including scenes, quick actions and the timer; add the strip list, then tablet, desktop and home dashboard layouts. Check each target layout with screenshots.
 4. **Hub spike on the Pi 3B+:** a Python service that talks BLE to the strips and serves a small local HTTP API (local network only, no cloud). Then move it to the ESP32-S3.
 5. **Integrations on the hub:** Home Assistant, a Matter bridge for Alexa and Google, an MCP or tool API for AI assistants, and a CasaOS/Docker package.
 

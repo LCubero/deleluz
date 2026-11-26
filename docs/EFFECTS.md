@@ -1,8 +1,8 @@
 # Built-in effects
 
-The LEDDMX-03 controller has 210 built-in effects. DeleLuz shows them in **Color → Efectos integrados** with these numbers and names, which are the ones the vendor app uses. **Ciclo automático** (Auto) plays all of them in turn. Speed applies to every effect; brightness applies to everything.
+The LEDDMX-03 controller has 210 built-in effects. DeleLuz shows them in **Color → Efectos integrados** with these numbers and names, which are the ones the vendor app uses. **Ciclo de la tira** runs on the controller without reporting the current effect. **AUTO de la app** sends individual effects on a schedule while the app is in the foreground and connected. **Velocidad** adjusts the strip's animation speed, not how long App AUTO holds each effect.
 
-Wire format: `7B FF 03 <ID> FF FF FF FF BF`, with ID `01`–`D2` (1–210) or `FF` for Auto. See [PROTOCOL.md](PROTOCOL.md).
+Wire format: `7B FF 03 <ID> FF FF FF FF BF`, with ID `01`–`D2` (1–210) or `FF` for the strip cycle. See [PROTOCOL.md](PROTOCOL.md).
 
 | # | Name |
 |---|---|
