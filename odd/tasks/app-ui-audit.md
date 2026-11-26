@@ -28,6 +28,7 @@ Branch `feat/ui-polish-2`. Standard: `design/system.md` and the `deleluz-design-
 - F12 Quick actions expanded header: square-edged tint band with the label flush left, unlike the rounded inset tiles below (412-es/rapidas.png). (S1)
 - F13 Timer sheet: abrupt seam between the drag-handle area and the purple gradient; the connection warning touches the disabled Start button (412-en/temporizador.png). (S1)
 - F14 Strip selector with zero saved strips leaves a conspicuous blank gap before nearby results (320-es-large/elegir-tira.png). (S1)
+- F15 Incluidas (and Mis escenas) cards never show which scene/effect is playing, while Musica cards do (phone strip test, shots/phone-strip/2-navidad.png vs 3-musica.png). (S1)
 
 ## Tasks
 
@@ -40,6 +41,7 @@ Branch `feat/ui-polish-2`. Standard: `design/system.md` and the `deleluz-design-
 - T7 [S2, F8] Update `deleluz-design-rules` skill (canonical + runtime copies, `check.py`) and `design/system.md`. Route: inline. Commit: 30dcf9a
 - T8 [S1, S3, S6] Full UI test suite + emulator or simulated screenshots at 320/412 dp, ES/EN, large text; no strip. Route: inline. Commit: -
 - T9 [S1, F9-F14] Fix the emulator-audit defects: no mid-word breaks (compact layout when a word cannot fit), equal row heights in GlowGrid, search hint and catalog gap, quick actions header, timer sheet seam and spacing, strip selector gap; tests + re-capture. Route: gentle-ai-worker. Commit: see L12
+- T10 [S1, F15] Mark the last successfully sent Incluidas preset/effect and Mis escenas scene as selected (cyan tint + border + check), like Musica; session state only. Route: gentle-ai-worker. Commit: -
 
 ## Log
 
@@ -68,3 +70,4 @@ no voy a conectar la tira aun, hasta que el app esté perffecta visualmente"
 - L14 (re-capture, 2026-11-26): worker mwxua5ml-7-26ua re-captured 50 PNGs from APK 86f3aa9 on emulator-5554; F9-F14 all FIXED, no new defect; trade-off: compact layout shows fewer items above the fold at 320 x1.3 (scroll cue visible). Parent spot-checked contact-3. Pending: owner review, then owner phone check (L5).
 - L15 (owner, 2026-11-26): "hazlo sin la tira dale". Test build 1.1.0+2014 (release signer) installed over on the owner phone RF8N32E2SCP (1080x2400, 420 dpi); data kept. Worker mwxul2ul-8-tlh3 captured 11 PNGs in odd/app-ui-audit/shots/phone/ (no connect, no settings changed): no mid-word breaks, clipping or overlap; tabs and runtime tags correct. One defect: Mis escenas note touched the first card row -> fixed with a 12 dp gap (RED 0 dp). Suite 391 pass. Not verified: strip playback, active music mode, running timer, measured contrast.
 - L16 (owner, 2026-11-26): "lo veo bien, nada más me gustarias en escenas incluidas que pirmero aparezcan las de la tira y abajo las que necesita el app". Done: Incluidas lists Ciclo automático, Sueño directo, Sueño inverso first, then the six app-driven scenes; legend order matches. RED order test; two existing tests adjusted for the new positions (same-row pair and scrolling to Policía). Suite 392 pass.
+- L17 (owner, 2026-11-26): "listo" then "revisa de nuevo": strip test on owner phone. First connect failed ("No se pudo conectar."), second connected (Sala LEDDMX-03-03C1). Played Ciclo automatico, Navidad en movimiento, Musica Modo 1; owner confirmation of strip output pending. Finding F15 -> T10.
