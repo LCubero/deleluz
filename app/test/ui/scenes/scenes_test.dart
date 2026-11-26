@@ -44,7 +44,10 @@ void main() {
     if (target.evaluate().isEmpty) {
       await tester.scrollUntilVisible(target, value.startsWith('scenes-') ? -100 : 100);
     }
-    await tester.ensureVisible(target);
+    if (target.hitTestable().evaluate().isEmpty) {
+      await Scrollable.ensureVisible(tester.element(target), alignment: .5);
+      await tester.pumpAndSettle();
+    }
     await tester.tap(target);
     await tester.pumpAndSettle();
   }
@@ -424,6 +427,62 @@ void main() {
     expect(find.text(c.text('micSensitivity')), findsOneWidget);
     expect(find.textContaining(c.text('lastSent', {'command': ''})), findsNothing);
   });
+
+  for (final width in [320.0, 412.0]) {
+    testWidgets('last started scene owns the check without moving cards at $width dp', (tester) async {
+      await start(tester, connected: true, savedScenes: legacyScene,
+        size: Size(width, 1600), scale: 1.3);
+      const preset = 'included-police';
+      const effect = 'included-effect-1';
+      const saved = 'scene-play-1';
+      const music = 'scene-voice-1';
+      Finder check(String card) => find.descendant(of: key(card),
+        matching: find.byKey(GlowSelection.markerKey));
+      Future<void> play(String card) async {
+        await tap(tester, card);
+        for (var i = 0; i < 5; i++) { await tick(tester, 100); }
+        await tester.pumpAndSettle();
+      }
+      Future<void> select(String card) async {
+        await tester.scrollUntilVisible(key(card), 100);
+        await tester.pumpAndSettle();
+        final before = tester.getRect(key(card));
+        expect(check(card), findsNothing);
+        await play(card);
+        expect(check(card), findsOneWidget);
+        expect(tester.getRect(key(card)), before);
+        final material = tester.widget<Material>(find.descendant(of: key(card),
+          matching: find.byType(Material)).first);
+        expect(material.color, GlowSelection.tint);
+        expect((material.shape as RoundedRectangleBorder).side, GlowSelection.border);
+      }
+      await tap(tester, 'scenes-included');
+      await select(preset);
+      await select(effect);
+      await tester.scrollUntilVisible(key(preset), 100);
+      expect(check(preset), findsNothing);
+      await tap(tester, 'scenes-mine');
+      ble.failWrite = (_) => true;
+      await play(saved);
+      expect(check(saved), findsNothing);
+      await tap(tester, 'scenes-included');
+      expect(check(effect), findsOneWidget);
+      ble.failWrite = null;
+      await tap(tester, 'scenes-mine');
+      await select(saved);
+      await tap(tester, 'scenes-included');
+      expect(check(effect), findsNothing);
+      await tap(tester, 'scenes-music');
+      await select(music);
+      await tap(tester, 'scenes-mine');
+      expect(check(saved), findsNothing);
+      await select(saved);
+      await tap(tester, 'scenes-music');
+      expect(check(music), findsNothing);
+      c.setForeground(false);
+      await tick(tester, 100);
+    });
+  }
 
   testWidgets('draft player stops when the app loses foreground', (tester) async {
     await start(tester, connected: true);

@@ -41,7 +41,7 @@ Branch `feat/ui-polish-2`. Standard: `design/system.md` and the `deleluz-design-
 - T7 [S2, F8] Update `deleluz-design-rules` skill (canonical + runtime copies, `check.py`) and `design/system.md`. Route: inline. Commit: 30dcf9a
 - T8 [S1, S3, S6] Full UI test suite + emulator or simulated screenshots at 320/412 dp, ES/EN, large text; no strip. Route: inline. Commit: -
 - T9 [S1, F9-F14] Fix the emulator-audit defects: no mid-word breaks (compact layout when a word cannot fit), equal row heights in GlowGrid, search hint and catalog gap, quick actions header, timer sheet seam and spacing, strip selector gap; tests + re-capture. Route: gentle-ai-worker. Commit: see L12
-- T10 [S1, F15] Mark the last successfully sent Incluidas preset/effect and Mis escenas scene as selected (cyan tint + border + check), like Musica; session state only. Route: gentle-ai-worker. Commit: -
+- T10 [S1, F15] Mark the last successfully sent Incluidas preset/effect and Mis escenas scene as selected (cyan tint + border + check), like Musica; session state only. Route: gentle-ai-worker. Commit: see L20
 
 ## Log
 
@@ -73,3 +73,4 @@ no voy a conectar la tira aun, hasta que el app esté perffecta visualmente"
 - L17 (owner, 2026-11-26): "listo" then "revisa de nuevo": strip test on owner phone. First connect failed ("No se pudo conectar."), second connected (Sala LEDDMX-03-03C1). Played Ciclo automatico, Navidad en movimiento, Musica Modo 1; owner confirmation of strip output pending. Finding F15 -> T10.
 - L18 (owner, 2026-11-26): "funciona di" -> strip confirmed: Ciclo automatico, Navidad en movimiento and Musica Modo 1 behave as expected.
 - L19 (owner, 2026-11-26): "ok y vuelve a recordar que antes de enviar cosas visuales me debes decir y esperar a que yo te diga xq no siempre estoy viendo". Rule: announce each visual strip command (what will be sent) and wait for the owner's go-ahead in that moment; connecting/retrying does not authorize playback. The L17 playback was sent without that announcement.
+- L20 (T10, 2026-11-26): worker mwxvk8sh-9-paji. One session-only selection across Incluidas, Mis escenas and Musica: last successfully started card shows cyan tint + border + check (reserved slot, rects unchanged); failed send keeps previous. Color/quick actions do not clear it (no source signal in the controller). RED at 320/412 (no check on Policia). Suite 394 pass (parent rerun).

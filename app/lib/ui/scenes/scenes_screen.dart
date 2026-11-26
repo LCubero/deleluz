@@ -118,16 +118,17 @@ class _ScenesScreenState extends State<ScenesScreen> {
     for (final entry in homePresets.entries)
       _card('included-${entry.key}', c.text(entry.key), presetPreviewColors(entry.key),
         () => _applyPreset(entry.key),
-        () => _preview(c.text(entry.key), entry.value.colors, entry.value.interval, (interval) {
-          _transport.useShared({'kind': 'scene', 'preset': entry.key, 'interval': interval});
-        }, preset: entry.key), needsApp: true),
+        () => _preview(c.text(entry.key), entry.value.colors, entry.value.interval,
+          (interval) => _applyPreset(entry.key, interval: interval), preset: entry.key), needsApp: true),
   ];
 
   String _effectName(int id) => id == wire.autoEffect ? c.text('autoCycle') : c.displayEffectName(id)!;
 
-  void _applyPreset(String preset) {
+  void _applyPreset(String preset, {int? interval}) {
     if (!_transport.ready) return _connectFirst();
-    _transport.useShared({'kind': 'scene', 'preset': preset});
+    _transport.playShortcut('included-$preset', {
+      'kind': 'scene', 'preset': preset, if (interval != null) 'interval': interval,
+    }, {'rgb': homePresets[preset]!.colors.first});
   }
 
   void _applyEffect(int effect) {
@@ -163,7 +164,8 @@ class _ScenesScreenState extends State<ScenesScreen> {
           _card('scene-play-${item['id']}', item['name'] as String, item['colors'] as List<List<int>>,
             () {
               if (!_transport.ready) return _connectFirst();
-              _transport.useShared({'kind': 'sequence', 'id': item['id']});
+              _transport.playShortcut('scene-play-${item['id']}',
+                {'kind': 'sequence', 'id': item['id']}, sceneSteps(item).first);
             }, () => _edit(item), userName: true, needsApp: true,
             trailing: IconButton(key: Key('scene-edit-${item['id']}'),
               tooltip: c.text('renameSequence'), icon: const Icon(Icons.edit_outlined),
@@ -181,23 +183,32 @@ class _ScenesScreenState extends State<ScenesScreen> {
   }
 
   Widget _card(String key, String title, List<List<int>> colors, VoidCallback tap,
-      VoidCallback hold, {Widget? trailing, bool userName = false, required bool needsApp}) => GlowTile(key: Key(key),
-    onTap: tap, onLongPress: hold, inset: glassInset + 1, minHeight: 92,
-    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween, spacing: 8, children: [
-      ConstrainedBox(constraints: BoxConstraints(minHeight: MediaQuery.textScalerOf(context).scale(15) * 2.6),
-        child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(height: 1.3),
-          key: userName ? const Key('scene-display-name') : null,
-          maxLines: userName ? 2 : null, overflow: userName ? TextOverflow.ellipsis : null)),
-      Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
-        GlowStrip(colors: colors, dotted: false),
-        Row(children: [
-          Expanded(child: _RuntimeTag(text: c.text(needsApp ? 'needsApp' : 'onStrip'), needsApp: needsApp)),
-          ?trailing,
+      VoidCallback hold, {Widget? trailing, bool userName = false, required bool needsApp}) {
+    final selected = _transport.isSelected(key);
+    return GlowSelectionTarget(key: Key(key), selected: selected, onTap: tap, onLongPress: hold,
+      child: Container(constraints: const BoxConstraints(minHeight: 92),
+        padding: const EdgeInsets.all(glassInset + 1),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween, spacing: 8, children: [
+          // Reserve the check beside the title; the aligned footer keeps its full width.
+          ConstrainedBox(constraints: BoxConstraints(minHeight: MediaQuery.textScalerOf(context).scale(15) * 2.6),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, spacing: 8, children: [
+              Expanded(child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(height: 1.3),
+                key: userName ? const Key('scene-display-name') : null,
+                maxLines: userName ? 2 : null, overflow: userName ? TextOverflow.ellipsis : null)),
+              if (selected) GlowSelection.check() else const SizedBox.square(dimension: 18),
+            ])),
+          Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [
+            GlowStrip(colors: colors, dotted: false),
+            Row(children: [
+              Expanded(child: _RuntimeTag(text: c.text(needsApp ? 'needsApp' : 'onStrip'), needsApp: needsApp)),
+              ?trailing,
+            ]),
+          ]),
         ]),
-      ]),
-    ]),
-  );
+      ),
+    );
+  }
 
   Widget _music() => SliderZone(child: GlassCard(
     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -207,7 +218,7 @@ class _ScenesScreenState extends State<ScenesScreen> {
     const SizedBox(height: 12),
     GlowGrid(columns: glowCompactLayout(context) ? 1 : 2, children: [
       for (var mode = 1; mode <= 4; mode++)
-        GlowTile(key: Key('scene-voice-$mode'), selected: _transport.lastVoiceMode == mode, onTap: () {
+        GlowTile(key: Key('scene-voice-$mode'), selected: _transport.isSelected('scene-voice-$mode'), onTap: () {
           if (!_transport.ready) return _connectFirst();
           unawaited(_transport.playVoice(mode));
         }, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
